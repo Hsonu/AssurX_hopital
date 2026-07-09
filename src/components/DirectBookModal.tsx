@@ -397,35 +397,6 @@ export default function DirectBookModal({
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span>{validationError}</span>
                   </p>
-                  {(validationError.includes("Verification") || 
-                    validationError.includes("Sign-In") || 
-                    validationError.includes("session") || 
-                    validationError.toLowerCase().includes("pop") || 
-                    validationError.toLowerCase().includes("block") || 
-                    validationError.toLowerCase().includes("close") || 
-                    validationError.toLowerCase().includes("fail")) && (
-                    <div className="bg-emerald-50 border border-emerald-100 p-3.5 rounded-xl space-y-2 text-left">
-                      <p className="text-xs text-emerald-800 font-medium leading-relaxed">
-                        Are pop-ups blocked on your laptop/desktop browser? You can bypass Google Sign-In and book using our instant Demo Patient Account.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setValidationError('');
-                          try {
-                            const demoUser = await loginWithDemo();
-                            // Proceed directly to booking submission
-                            handleBookAndPayAtLab(undefined, demoUser);
-                          } catch (err: any) {
-                            setValidationError("Failed to activate Demo Account: " + err.message);
-                          }
-                        }}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
-                      >
-                        Bypass with Demo Guest Account
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 

@@ -496,20 +496,7 @@ export default function Header({
                     setIsLoginModalOpen(false);
                   } catch (err: any) {
                     console.error("Google sign in failed:", err);
-                    if (
-                      err?.code === 'auth/popup-closed-by-user' ||
-                      err?.code === 'auth/cancelled-popup-request' ||
-                      err?.code === 'auth/unauthorized-domain' ||
-                      err?.message?.includes('popup-closed') ||
-                      err?.message?.includes('cancelled-popup') ||
-                      err?.message?.includes('unauthorized-domain')
-                    ) {
-                      console.log("Popup blocked, closed, cancelled or unauthorized domain. Seamlessly falling back to Demo Patient account.");
-                      await loginWithDemo();
-                      setIsLoginModalOpen(false);
-                    } else {
-                      setLoginError(err.message || String(err));
-                    }
+                    setLoginError(err.message || String(err));
                   }
                 }}
                 className="w-full py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2.5 shadow-xs hover:border-slate-350 transition-all cursor-pointer active:scale-[0.99]"
@@ -523,38 +510,6 @@ export default function Header({
                 </svg>
                 <span>Continue with Google Account</span>
               </button>
-
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-150"></div>
-                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Recommended Fallback</span>
-                <div className="flex-grow border-t border-slate-150"></div>
-              </div>
-
-              {/* Demo Sign-in */}
-              <button
-                onClick={async () => {
-                  try {
-                    await loginWithDemo();
-                    setIsLoginModalOpen(false);
-                  } catch (err: any) {
-                    console.error("Demo sign in failed:", err);
-                  }
-                }}
-                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-emerald-100 hover:shadow-lg transition-all cursor-pointer active:scale-[0.99]"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-100" />
-                <span>Instant Demo Patient Bypass (1-Click)</span>
-              </button>
-            </div>
-
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5">
-              <div className="flex items-center gap-1.5 text-slate-500 font-bold text-[10px]">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Why is this fallback here?</span>
-              </div>
-              <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
-                Google Authentication uses pop-up windows which can be blocked by standard security sandboxes inside iframes (like the AI Studio web preview). Using the **Instant Demo Account** bypasses these constraints immediately so you can test all patient tracking & reports seamlessly!
-              </p>
             </div>
 
             <div className="text-center">

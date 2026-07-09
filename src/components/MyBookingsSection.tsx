@@ -214,37 +214,6 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
                   </svg>
                   <span>Authorize with Google Profile</span>
                 </button>
-
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-slate-150"></div>
-                  <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Sandbox Fallback</span>
-                  <div className="flex-grow border-t border-slate-150"></div>
-                </div>
-
-                {/* Instant Demo Account */}
-                <button
-                  onClick={async () => {
-                    try {
-                      await loginWithDemo();
-                    } catch (e) {
-                      console.error("Demo login failed", e);
-                    }
-                  }}
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 transition-all cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  <Sparkles className="w-4 h-4 text-emerald-100" />
-                  <span>1-Click Demo Patient Portal Bypass</span>
-                </button>
-              </div>
-
-              <div className="p-4 bg-amber-50/20 border border-amber-100/50 rounded-2xl space-y-1">
-                <div className="flex items-center gap-1.5 text-amber-850 font-bold text-[10px]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Why use the Demo Fallback?</span>
-                </div>
-                <p className="text-[9.5px] text-slate-500 leading-relaxed font-semibold">
-                  Web preview containers inside secure sandboxes block third-party pop-up authentications. The Instant Demo Patient bypass immediately provisions a verified clinical test history so you can review full visual reports effortlessly.
-                </p>
               </div>
             </div>
           </div>
