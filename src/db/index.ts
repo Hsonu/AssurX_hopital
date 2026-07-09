@@ -7,6 +7,10 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/assurx';
 
+if (!process.env.MONGODB_URI) {
+  console.warn("⚠️ WARNING: MONGODB_URI environment variable is NOT set! Falling back to local database.");
+}
+
 let isConnected = false;
 
 export async function connectDB() {
@@ -15,11 +19,16 @@ export async function connectDB() {
   }
 
   try {
+    const maskedURI = MONGODB_URI.includes('@') 
+      ? MONGODB_URI.replace(/:([^:@]+)@/, ':***@') 
+      : MONGODB_URI;
+    console.log(`Connecting to MongoDB: ${maskedURI}`);
+    
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 10000,
     });
     isConnected = true;
-    console.log(`✅ MongoDB connected: ${MONGODB_URI.split('@').pop() || 'localhost'}`);
+    console.log(`✅ MongoDB connected successfully.`);
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error);
     throw error;
