@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@media print {
+  /* Hide every single element on the page */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Selectively make the printable area and all of its inner elements visible */
+  #printable-receipt-panel, #printable-receipt-panel *,
+  #printable-receipt-panel-direct, #printable-receipt-panel-direct *,
+  #printable-report-area, #printable-report-area * {
+    visibility: visible;
+  }
+  
+  /* Reset layout of the printed block to use the full page paper canvas nicely */
+  #printable-receipt-panel, #printable-receipt-panel-direct, #printable-report-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+}
+
