@@ -1,8 +1,21 @@
 import express from "express";
 import path from "path";
+import https from "https";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser } from "./src/db/users.ts";
+
+function pingServer(url: string) {
+  try {
+    https.get(`${url}/api/health`, (res) => {
+      console.log(`[Self-Ping] Status Code: ${res.statusCode} at ${new Date().toISOString()}`);
+    }).on("error", (err) => {
+      console.error("[Self-Ping] Error:", err.message);
+    });
+  } catch (err: any) {
+    console.error("[Self-Ping] Exception:", err.message);
+  }
+}
 import {
   createBooking,
   getUserBookings,
@@ -852,6 +865,21 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+
+    // Self-pinging routine to keep the Render instance awake (since it sleeps after 15 mins of inactivity)
+    const APP_URL = process.env.APP_URL || "https://assurx-hopital.onrender.com";
+    if (APP_URL) {
+      console.log(`Initializing self-ping to ${APP_URL} every 5 minutes`);
+      // Ping once shortly after boot (10 seconds delay)
+      setTimeout(() => {
+        pingServer(APP_URL);
+      }, 10000);
+
+      // Ping every 5 minutes
+      setInterval(() => {
+        pingServer(APP_URL);
+      }, 5 * 60 * 1000);
+    }
   });
 }
 
