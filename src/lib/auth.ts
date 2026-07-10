@@ -88,27 +88,7 @@ export function useAuth() {
           setState({ user, idToken: null, sessionId: loadSessionId(), loading: false });
         }
       } else {
-        // Check for demo user
-        const isDemo = localStorage.getItem('assurx_demo_user') === 'true';
-        if (isDemo) {
-          const existingSession = loadSessionId();
-          const sessionId = existingSession || createSessionId();
-
-          const mockUser = {
-            uid: 'demo-user-123',
-            email: 'demo@assurx.com',
-            displayName: 'Demo Patient',
-            photoURL: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150',
-            emailVerified: true,
-            phoneNumber: null,
-            metadata: {},
-            providerData: [],
-            getIdToken: async () => 'DEMO_TOKEN_BYPASS',
-          } as any;
-          setState({ user: mockUser, idToken: 'DEMO_TOKEN_BYPASS', sessionId, loading: false });
-        } else {
-          setState({ user: null, idToken: null, sessionId: null, loading: false });
-        }
+        setState({ user: null, idToken: null, sessionId: null, loading: false });
       }
     });
 
@@ -146,44 +126,6 @@ export function useAuth() {
     }
   };
 
-  // ── loginWithDemo ───────────────────────────────────────────────────────────
-  const loginWithDemo = async () => {
-    localStorage.setItem('assurx_demo_user', 'true');
-
-    // Create a fresh session ID — kicks any other demo session
-    const sessionId = createSessionId();
-
-    const mockUser = {
-      uid: 'demo-user-123',
-      email: 'demo@assurx.com',
-      displayName: 'Demo Patient',
-      photoURL: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150',
-      emailVerified: true,
-      phoneNumber: null,
-      metadata: {},
-      providerData: [],
-      getIdToken: async () => 'DEMO_TOKEN_BYPASS',
-    } as any;
-
-    try {
-      // Register session on server and sync demo user
-      await registerSessionOnServer('DEMO_TOKEN_BYPASS', sessionId);
-      await fetch('/api/users/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer DEMO_TOKEN_BYPASS',
-          'X-User-Session': sessionId,
-        }
-      });
-    } catch (e) {
-      console.error('Failed to sync demo user:', e);
-    }
-
-    setState({ user: mockUser, idToken: 'DEMO_TOKEN_BYPASS', sessionId, loading: false });
-    return mockUser;
-  };
-
   // ── logout ──────────────────────────────────────────────────────────────────
   const logout = async () => {
     try {
@@ -214,7 +156,6 @@ export function useAuth() {
   return {
     ...state,
     loginWithGoogle,
-    loginWithDemo,
     logout,
   };
 }

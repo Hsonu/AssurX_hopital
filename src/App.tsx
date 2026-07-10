@@ -14,7 +14,7 @@ import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES, FREQUENT_QUESTIONS, CUSTOMER_TEST
 import { auth } from './lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuth } from './lib/auth.ts';
-import { onSessionKicked } from './lib/sessionGuard.ts';
+import { onSessionKicked, getUserSessionId, getAdminSessionId } from './lib/sessionGuard.ts';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import PrescriptionUpload from './components/PrescriptionUpload';
@@ -83,8 +83,12 @@ export default function App() {
   useEffect(() => {
     const unsubUser = onSessionKicked('user', () => {
       // Auto-logout the user
-      localStorage.removeItem('userSession');
-      localStorage.removeItem('assurx_demo_user');
+      const storedUserId = localStorage.getItem('userSession');
+      const myUserId = getUserSessionId();
+      if (!storedUserId || storedUserId === myUserId) {
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('assurx_demo_user');
+      }
       logout().catch(() => {});
       setCurrentTab('home');
       setSessionKickedType('user');
@@ -92,8 +96,12 @@ export default function App() {
 
     const unsubAdmin = onSessionKicked('admin', () => {
       // Auto-logout the admin
-      localStorage.removeItem('adminSession');
-      localStorage.removeItem('assurx_admin_auth');
+      const storedAdminId = localStorage.getItem('adminSession');
+      const myAdminId = getAdminSessionId();
+      if (!storedAdminId || storedAdminId === myAdminId) {
+        localStorage.removeItem('adminSession');
+        localStorage.removeItem('assurx_admin_auth');
+      }
       sessionStorage.removeItem('assurx_admin_auth');
       setCurrentTab('home');
       setSessionKickedType('admin');

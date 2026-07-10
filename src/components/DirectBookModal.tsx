@@ -22,7 +22,7 @@ export default function DirectBookModal({
   selectedBranch,
   onBookingSuccess,
 }: DirectBookModalProps) {
-  const { user, loginWithDemo } = useAuth();
+  const { user } = useAuth();
 
   // Helper to safely get pending booking details from localStorage
   const getPendingBooking = () => {
@@ -135,61 +135,6 @@ export default function DirectBookModal({
       }
     }
 
-    // Auth verification
-    let currentUser = auth.currentUser || bypassedUser || user;
-    if (!currentUser) {
-      // Save all details to localStorage so we can resume after login if the page reloads
-      const pendingBooking = {
-        item: selectedItem,
-        patientName,
-        patientAge,
-        patientGender,
-        phoneNumber,
-        collectionType,
-        streetAddress,
-        pincode,
-        city,
-        grandTotal,
-        appointmentDate,
-        appointmentTime
-      };
-      localStorage.setItem('assurx_pending_direct_booking', JSON.stringify(pendingBooking));
-
-      try {
-        isPopupLoggingIn.current = true;
-        const result = await signInWithPopup(auth, googleAuthProvider);
-        currentUser = result.user;
-        // If popup worked without page reload, we clear the pending booking as we proceed
-        localStorage.removeItem('assurx_pending_direct_booking');
-      } catch (error: any) {
-        console.error("Sign in failed before booking:", error);
-        if (
-          error?.code === 'auth/popup-closed-by-user' || 
-          error?.code === 'auth/cancelled-popup-request' || 
-          error?.code === 'auth/unauthorized-domain' ||
-          error?.message?.includes('popup-closed') || 
-          error?.message?.includes('cancelled-popup') ||
-          error?.message?.includes('unauthorized-domain')
-        ) {
-          console.log("Popup blocked, closed, cancelled or unauthorized domain. Seamlessly falling back to Demo Patient account.");
-          try {
-            currentUser = await loginWithDemo();
-            localStorage.removeItem('assurx_pending_direct_booking');
-          } catch (demoErr: any) {
-            setValidationError(`Google login failed/unauthorized, and Demo fallback failed: ${demoErr.message}`);
-            return;
-          }
-        } else {
-          setValidationError(`Verification failed. Error: ${error.message || error}. Please try again or use the Demo Bypass.`);
-          return;
-        }
-      } finally {
-        setTimeout(() => {
-          isPopupLoggingIn.current = false;
-        }, 1000);
-      }
-    }
-
     setIsSubmitting(true);
     const steps = [
       'Validating pathology slots with central lab...',
@@ -223,17 +168,14 @@ export default function DirectBookModal({
           const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
           
           // Use the live auth.currentUser to avoid any stale closures
-          const activeUser = auth.currentUser || currentUser;
-          if (!activeUser) {
-            throw new Error("Active session not found. Please login again.");
-          }
-          const token = await activeUser.getIdToken();
+          const activeUser = auth.currentUser || user;
+          const token = activeUser ? await activeUser.getIdToken() : '';
 
           const response = await userFetch('/api/bookings', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Authorization': token ? `Bearer ${token}` : ''
             },
             body: JSON.stringify({
               bookingId: `ASX-${bookingIdNum}`,

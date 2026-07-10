@@ -30,7 +30,7 @@ export default function CheckoutModal({
   grandTotal,
   onBookingSuccess,
 }: CheckoutModalProps) {
-  const { user, loginWithDemo } = useAuth();
+  const { user } = useAuth();
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'netbanking' | 'cash_at_center'>('upi');
   const [isPaying, setIsPaying] = useState(false);
   const [payStep, setPayStep] = useState('');
@@ -89,54 +89,8 @@ export default function CheckoutModal({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleSimulatePayment = async (bypassedUser?: any) => {
+  const handleSimulatePayment = async () => {
     setValidationError('');
-    let currentUser = auth.currentUser || bypassedUser || user;
-    if (!currentUser) {
-      // Save checkout states to localStorage so we can resume after page reload/login
-      const pendingCheckout = {
-        cart,
-        bookingDetails,
-        grandTotal,
-        paymentMethod
-      };
-      localStorage.setItem('assurx_pending_checkout_booking', JSON.stringify(pendingCheckout));
-
-      try {
-        isPopupLoggingIn.current = true;
-        const result = await signInWithPopup(auth, googleAuthProvider);
-        currentUser = result.user;
-        // If popup worked without page reload, we clear the pending checkout immediately
-        localStorage.removeItem('assurx_pending_checkout_booking');
-      } catch (error: any) {
-        console.error("Sign in failed before payment:", error);
-        if (
-          error?.code === 'auth/popup-closed-by-user' || 
-          error?.code === 'auth/cancelled-popup-request' || 
-          error?.code === 'auth/unauthorized-domain' ||
-          error?.message?.includes('popup-closed') || 
-          error?.message?.includes('cancelled-popup') ||
-          error?.message?.includes('unauthorized-domain')
-        ) {
-          console.log("Popup blocked, closed, cancelled or unauthorized domain. Seamlessly falling back to Demo Patient account.");
-          try {
-            currentUser = await loginWithDemo();
-            localStorage.removeItem('assurx_pending_checkout_booking');
-          } catch (demoErr: any) {
-            setValidationError(`Google login failed/unauthorized, and Demo fallback failed: ${demoErr.message}`);
-            return;
-          }
-        } else {
-          setValidationError(`Verification failed. Error: ${error.message || error}. Please try again or use the Demo Bypass.`);
-          return;
-        }
-      } finally {
-        setTimeout(() => {
-          isPopupLoggingIn.current = false;
-        }, 1000);
-      }
-    }
-
     setIsPaying(true);
     
     const steps = [
@@ -161,17 +115,14 @@ export default function CheckoutModal({
           const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
           
           // Use the live auth.currentUser to avoid stale closures
-          const activeUser = auth.currentUser || currentUser;
-          if (!activeUser) {
-            throw new Error("Active session not found. Please login again.");
-          }
-          const token = await activeUser.getIdToken();
+          const activeUser = auth.currentUser || user;
+          const token = activeUser ? await activeUser.getIdToken() : '';
           
           const response = await userFetch('/api/bookings', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Authorization': token ? `Bearer ${token}` : ''
             },
             body: JSON.stringify({
               bookingId: `ASX-${bookingIdNum}`,

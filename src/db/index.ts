@@ -8,7 +8,7 @@ dotenv.config();
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sonurajsonuraj4515_db_user:Sonu@cluster0.cxyxqda.mongodb.net/assurx?retryWrites=true&w=majority&appName=Cluster0';
 
 if (!process.env.MONGODB_URI) {
-  console.warn("⚠️ WARNING: MONGODB_URI environment variable is NOT set! Falling back to local database.");
+  console.warn("⚠️ WARNING: MONGODB_URI environment variable is NOT set! Falling back to cloud database.");
 }
 
 let isConnected = false;

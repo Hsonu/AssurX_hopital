@@ -27,7 +27,40 @@ export type SessionType = 'user' | 'admin';
 export const SESSION_KICKED_MESSAGE = 'Your account has been logged in on another device. Please log in again.';
 
 // Global kick handlers — registered once by App.tsx
+// Global kick handlers — registered once by App.tsx
 const kickHandlers: Record<SessionType, (() => void)[]> = { user: [], admin: [] };
+
+// In-memory cache of session IDs, preventing tabs from silently adopting new session IDs set by other tabs in localStorage
+let userSessionIdInMemory = typeof window !== 'undefined' ? (localStorage.getItem('userSession') || '') : '';
+let adminSessionIdInMemory = typeof window !== 'undefined' ? (localStorage.getItem('adminSession') || '') : '';
+
+if (typeof window !== 'undefined') {
+  const originalSetItem = localStorage.setItem;
+  const originalRemoveItem = localStorage.removeItem;
+
+  // Intercept local writes to localStorage so the in-memory cache updates instantly on the active tab
+  localStorage.setItem = function (key: string, value: string) {
+    if (key === 'adminSession') adminSessionIdInMemory = value;
+    if (key === 'userSession') userSessionIdInMemory = value;
+    originalSetItem.call(localStorage, key, value);
+  };
+
+  localStorage.removeItem = function (key: string) {
+    if (key === 'adminSession') adminSessionIdInMemory = '';
+    if (key === 'userSession') userSessionIdInMemory = '';
+    originalRemoveItem.call(localStorage, key);
+  };
+
+  // Listen for storage events (which fire only on OTHER tabs/windows of the same origin when localStorage changes)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'adminSession' && event.newValue && event.newValue !== adminSessionIdInMemory) {
+      fireKick('admin');
+    }
+    if (event.key === 'userSession' && event.newValue && event.newValue !== userSessionIdInMemory) {
+      fireKick('user');
+    }
+  });
+}
 
 /**
  * Register a callback to be invoked when a session-conflict 401 is detected.
@@ -50,14 +83,14 @@ function fireKick(type: SessionType) {
  * Get the stored user session ID from localStorage.
  */
 export function getUserSessionId(): string {
-  return localStorage.getItem('userSession') || '';
+  return userSessionIdInMemory;
 }
 
 /**
  * Get the stored admin session ID from localStorage.
  */
 export function getAdminSessionId(): string {
-  return localStorage.getItem('adminSession') || '';
+  return adminSessionIdInMemory;
 }
 
 /**

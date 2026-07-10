@@ -396,6 +396,8 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
 
   // Load bookings and prescriptions from the real Cloud SQL database using REST APIs
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
+
     fetchDatabaseData(false); // Non-silent on first load so user sees syncing state
 
     // Set up a background interval to poll every 5 seconds for live, real-time sync
@@ -411,7 +413,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
     return () => {
       clearInterval(intervalId);
     };
-  }, [currentTab, activeTab, bookingRefreshKey]);
+  }, [currentTab, activeTab, bookingRefreshKey, isAdminAuthenticated]);
 
   // Dispatcher actions
   const handleUpdateStatus = async (bookingId: string, newStatus: Booking['bookingStatus']) => {

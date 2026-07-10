@@ -41,7 +41,7 @@ interface MyBookingsSectionProps {
 }
 
 export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSectionProps) {
-  const { user, idToken, loginWithGoogle, loginWithDemo, logout } = useAuth();
+  const { user, idToken, loginWithGoogle, logout } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

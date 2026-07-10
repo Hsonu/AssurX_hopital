@@ -97,6 +97,7 @@ async function startServer() {
   // JSON parsing middleware
   app.use(express.json());
 
+
   // --- SECURITY ENHANCEMENTS: SECURITY HEADERS & RATE LIMITER ---
 
   // 1. Secure HTTP Headers Middleware
@@ -249,6 +250,16 @@ async function startServer() {
       };
       return next();
     }
+    // Allow guest bookings if no token is provided
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ") || authHeader.split("Bearer ")[1] === "undefined" || authHeader.split("Bearer ")[1] === "") {
+      (req as any).user = {
+        uid: "guest-user",
+        email: "guest@assurx.com"
+      };
+      return next();
+    }
+
     // Otherwise require normal auth
     return requireAuth(req as any, res, next);
   }, async (req: AuthRequest, res) => {
@@ -418,21 +429,20 @@ async function startServer() {
       );
 
       if (!isAdmin) {
-        // If not admin, standard users MUST be authenticated and must be the booking person (owner of the booking)
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-          return res.status(401).json({ error: "Unauthorized: Please sign in to track and view your booking." });
-        }
+        // If not admin, check if this is a guest booking first
+        const guestUser = await getOrCreateUser("guest-user", "guest@assurx.com");
+        const isGuestBooking = b.userId === guestUser.id;
 
-        const token = authHeader.split("Bearer ")[1];
-        let decodedUser: any = null;
+        if (!isGuestBooking) {
+          // If not guest booking, standard users MUST be authenticated and must be the owner of the booking
+          const authHeader = req.headers.authorization;
+          if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "Unauthorized: Please sign in to track and view your booking." });
+          }
 
-        if (token === "DEMO_TOKEN_BYPASS") {
-          decodedUser = {
-            uid: "demo-user-123",
-            email: "demo@assurx.com"
-          };
-        } else {
+          const token = authHeader.split("Bearer ")[1];
+          let decodedUser: any = null;
+
           try {
             const { adminAuth } = await import("./src/lib/firebase-admin.ts");
             decodedUser = await adminAuth.verifyIdToken(token);
@@ -440,16 +450,16 @@ async function startServer() {
             console.error("Firebase ID token verification failed in tracker:", jwtErr);
             return res.status(401).json({ error: "Unauthorized: Invalid or expired session token." });
           }
-        }
 
-        if (!decodedUser || !decodedUser.uid) {
-          return res.status(401).json({ error: "Unauthorized: User session invalid." });
-        }
+          if (!decodedUser || !decodedUser.uid) {
+            return res.status(401).json({ error: "Unauthorized: User session invalid." });
+          }
 
-        // Get database user ID
-        const dbUser = await getOrCreateUser(decodedUser.uid, decodedUser.email || "");
-        if (b.userId !== dbUser.id) {
-          return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the booking person can view this order." });
+          // Get database user ID
+          const dbUser = await getOrCreateUser(decodedUser.uid, decodedUser.email || "");
+          if (b.userId !== dbUser.id) {
+            return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the booking person can view this order." });
+          }
         }
       }
 
@@ -502,16 +512,8 @@ async function startServer() {
       if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.split("Bearer ")[1];
         try {
-          let decodedToken;
-          if (token === 'DEMO_TOKEN_BYPASS') {
-            decodedToken = {
-              uid: 'demo-user-123',
-              email: 'demo@assurx.com'
-            };
-          } else {
-            const { adminAuth } = await import("./src/lib/firebase-admin.ts");
-            decodedToken = await adminAuth.verifyIdToken(token);
-          }
+          const { adminAuth } = await import("./src/lib/firebase-admin.ts");
+          const decodedToken = await adminAuth.verifyIdToken(token);
           const email = decodedToken.email || "";
           const userObj = await getOrCreateUser(decodedToken.uid, email);
           dbUserId = userObj.id;
@@ -951,9 +953,9 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
 
-    // Self-pinging routine to keep the Render instance awake (since it sleeps after 15 mins of inactivity)
-    const APP_URL = process.env.APP_URL || "https://assurx-hopital.onrender.com";
-    if (APP_URL) {
+    // Self-pinging routine to keep the Render instance awake (only in production)
+    const APP_URL = process.env.APP_URL;
+    if (process.env.NODE_ENV === "production" && APP_URL) {
       console.log(`Initializing self-ping to ${APP_URL} every 5 minutes`);
       // Ping once shortly after boot (10 seconds delay)
       setTimeout(() => {

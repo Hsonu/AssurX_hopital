@@ -31,7 +31,7 @@ export default function Header({
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const { user, idToken, loginWithGoogle, loginWithDemo, logout } = useAuth();
+  const { user, idToken, loginWithGoogle, logout } = useAuth();
 
   useEffect(() => {
     if (!isLoginModalOpen) {
@@ -481,7 +481,7 @@ export default function Header({
                   <span>Google Sign-In Blocked/Failed</span>
                 </div>
                 <p className="text-[10.5px] text-red-650 leading-relaxed font-semibold">
-                  {loginError}. Browser security settings often block pop-up windows inside sandboxed iframes. We recommend using the <strong>Instant Demo Patient Bypass</strong> below to explore.
+                  {loginError}. Browser security settings often block pop-up windows inside sandboxed iframes. Please try again or close to explore.
                 </p>
               </div>
             )}
