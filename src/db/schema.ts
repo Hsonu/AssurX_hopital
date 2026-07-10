@@ -174,18 +174,25 @@ export const JobApplicationModel: Model<IJobApplication> =
 // ─── AUTO-INCREMENT COUNTER ───────────────────────────────────────────────────
 // Provides numeric IDs compatible with existing server.ts integer expectations
 
-const counterSchema = new Schema({
+interface ICounter {
+  _id: string;
+  seq: number;
+}
+
+const counterSchema = new Schema<ICounter>({
   _id: { type: String, required: true },
   seq: { type: Number, default: 0 },
 });
 
-const CounterModel = mongoose.models.Counter || mongoose.model('Counter', counterSchema);
+const CounterModel = (mongoose.models.Counter as mongoose.Model<ICounter>) || mongoose.model<ICounter>('Counter', counterSchema);
 
 export async function getNextId(name: string): Promise<number> {
   const counter = await CounterModel.findByIdAndUpdate(
     name,
     { $inc: { seq: 1 } },
-    { new: true, upsert: true }
+    { new: true, upsert: true, returnDocument: 'after' }
   );
+  if (!counter) throw new Error(`Counter ${name} could not be updated.`);
   return counter.seq;
 }
+
