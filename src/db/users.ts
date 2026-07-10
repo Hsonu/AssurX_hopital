@@ -26,3 +26,22 @@ export async function getOrCreateUser(uid: string, email: string) {
     throw new Error('Database query failed. Please try again later.', { cause: error });
   }
 }
+
+/**
+ * Update the active session ID for a user.
+ * Pass an empty string to invalidate (logout).
+ */
+export async function updateUserSession(uid: string, sessionId: string): Promise<void> {
+  await connectDB();
+  await UserModel.updateOne({ uid }, { $set: { activeSession: sessionId } });
+}
+
+/**
+ * Retrieve the current active session ID for a user.
+ * Returns '' if the user doesn't exist or has no session.
+ */
+export async function getUserActiveSession(uid: string): Promise<string> {
+  await connectDB();
+  const user = await UserModel.findOne({ uid }, { activeSession: 1 }).lean();
+  return (user as any)?.activeSession || '';
+}

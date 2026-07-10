@@ -8,6 +8,7 @@ export interface IUser extends Document {
   uid: string;          // Firebase Auth UID
   email: string;
   createdAt: Date;
+  activeSession?: string; // Latest valid session ID for single-device enforcement
 }
 
 const userSchema = new Schema<IUser>({
@@ -15,10 +16,32 @@ const userSchema = new Schema<IUser>({
   uid: { type: String, required: true, unique: true },
   email: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  activeSession: { type: String, default: '' },
 });
 
 export const UserModel: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>('User', userSchema);
+
+
+// ─── ADMIN SESSION ────────────────────────────────────────────────────────────
+// Singleton document — always _id: "admin" — stores the one active admin session
+
+export interface IAdminSession {
+  _id: string;
+  activeSession: string;
+  updatedAt: Date;
+}
+
+const adminSessionSchema = new Schema<IAdminSession>({
+  _id: { type: String },
+  activeSession: { type: String, required: true, default: '' },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+export const AdminSessionModel =
+  (mongoose.models.AdminSession as mongoose.Model<IAdminSession>) ||
+  mongoose.model<IAdminSession>('AdminSession', adminSessionSchema);
+
 
 
 // ─── BOOKING ──────────────────────────────────────────────────────────────────

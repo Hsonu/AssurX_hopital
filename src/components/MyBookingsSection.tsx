@@ -5,6 +5,7 @@ import {
   ArrowRight, Sparkles, Award, Star, Activity, HeartPulse, LogIn, ChevronRight, Lock
 } from 'lucide-react';
 import { useAuth } from '../lib/auth.ts';
+import { userFetch } from '../lib/sessionGuard.ts';
 import { Booking } from '../types';
 
 const cleanBookingId = (id: string) => id.split('-').slice(0, 2).join('-');
@@ -56,7 +57,7 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/bookings', {
+      const response = await userFetch('/api/bookings', {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }

@@ -4,6 +4,7 @@ import { Patient, CartItem, Booking } from '../types';
 import { auth, googleAuthProvider } from '../lib/firebase.ts';
 import { signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../lib/auth.ts';
+import { userFetch } from '../lib/sessionGuard.ts';
 
 
 interface CheckoutModalProps {
@@ -166,7 +167,7 @@ export default function CheckoutModal({
           }
           const token = await activeUser.getIdToken();
           
-          const response = await fetch('/api/bookings', {
+          const response = await userFetch('/api/bookings', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

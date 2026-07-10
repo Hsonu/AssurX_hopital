@@ -1,9 +1,11 @@
 import express from "express";
 import path from "path";
 import https from "https";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
-import { getOrCreateUser } from "./src/db/users.ts";
+import { getOrCreateUser, updateUserSession, getUserActiveSession } from "./src/db/users.ts";
+import { getAdminSession, setAdminSession, clearAdminSession } from "./src/db/adminSession.ts";
 
 function pingServer(url: string) {
   try {
@@ -562,27 +564,110 @@ async function startServer() {
   });
 
 
+  // --- USER SESSION MANAGEMENT ---
+
+  // Register / replace active user session (called immediately after login)
+  app.post("/api/users/session", requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const uid = req.user?.uid;
+      if (!uid) return res.status(400).json({ error: "Missing user UID" });
+      const { sessionId } = req.body;
+      if (typeof sessionId !== "string") {
+        return res.status(400).json({ error: "sessionId is required" });
+      }
+      await updateUserSession(uid, sessionId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error updating user session:", error);
+      res.status(500).json({ error: error.message || "Failed to update session" });
+    }
+  });
+
+
   // --- ADMIN OPERATIONS ---
 
-  // Secure admin authorization middleware verifying the security key (configured via environment variable or secure fallback)
-  const requireAdminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Admin Login — validates credentials server-side and issues a session ID.
+  // This is the ONLY way to create a valid admin session.
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password, key } = req.body;
+      const expectedEmail = "assurxdiagonistics@gmail.com";
+      const expectedPassword = "assurxlab2026";
+      const expectedKey = process.env.ADMIN_API_KEY || "assurx2026health";
+
+      if (
+        typeof email !== "string" || email.trim().toLowerCase() !== expectedEmail ||
+        typeof password !== "string" || password.trim() !== expectedPassword ||
+        typeof key !== "string" || key.trim() !== expectedKey
+      ) {
+        return res.status(401).json({ error: "Invalid administrator credentials or security key." });
+      }
+
+      // Generate a new session ID, replacing any previous admin session
+      const sessionId = crypto.randomUUID();
+      await setAdminSession(sessionId);
+
+      res.json({ success: true, sessionId });
+    } catch (error: any) {
+      console.error("Error during admin login:", error);
+      res.status(500).json({ error: error.message || "Admin login failed" });
+    }
+  });
+
+  // Admin Logout — invalidates the active session in the database.
+  app.post("/api/admin/logout", async (req, res) => {
+    try {
+      const incomingSession = req.headers["x-admin-session"] as string | undefined;
+      const storedSession = await getAdminSession();
+      // Only clear if the requesting device owns the current session
+      if (incomingSession && incomingSession === storedSession) {
+        await clearAdminSession();
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error during admin logout:", error);
+      res.status(500).json({ error: error.message || "Admin logout failed" });
+    }
+  });
+
+  // Secure admin authorization middleware: validates both admin key AND active session
+  const requireAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
     const expectedAdminKey = process.env.ADMIN_API_KEY || "assurx2026health";
 
     const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
     const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
-    if (
+    const keyValid = (
       cleanKey === cleanExpected || 
       adminKey === expectedAdminKey ||
       cleanKey === "assurx2026health" || 
       adminKey === "assurx2026health" ||
       cleanKey === "assurx2026healtj" ||
       adminKey === "assurx2026healtj"
-    ) {
-      return next();
+    );
+
+    if (!keyValid) {
+      return res.status(401).json({ error: "Unauthorized: Missing or invalid admin key" });
     }
-    return res.status(401).json({ error: "Unauthorized: Missing or invalid admin key" });
+
+    // ── Single-session enforcement for admin ────────────────────────────────
+    try {
+      const incomingSession = req.headers["x-admin-session"] as string | undefined;
+      const storedSession = await getAdminSession();
+
+      // Only enforce if a session has been established (non-empty stored session)
+      if (storedSession && incomingSession !== storedSession) {
+        return res.status(401).json({
+          error: "Your account has been logged in on another device. Please log in again."
+        });
+      }
+    } catch (sessionErr) {
+      // If DB is unavailable for session check, allow through (key still validated above)
+      console.warn("Admin session check skipped due to DB error:", sessionErr);
+    }
+
+    return next();
   };
 
   // Secure Reset Database API

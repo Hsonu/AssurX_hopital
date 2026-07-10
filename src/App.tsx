@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, MapPin, PhoneCall, ShoppingCart, User, Menu, X, 
   ShieldCheck, ClipboardCheck, Users, Calendar, ArrowRight, 
@@ -6,13 +6,15 @@ import {
   Info, Home, Building, QrCode, CreditCard, Laptop, Landmark, 
   CheckCircle2, Loader2, Printer, Clock, Download, Eye, 
   LogOut, ArrowLeft, Award, HeartPulse, Sparkles, Filter, 
-  Check, HelpCircle, Star, Sparkle
+  Check, HelpCircle, Star, Sparkle, AlertTriangle
 } from 'lucide-react';
 
 import { DiagnosticService, HealthPackage, CartItem, Patient } from './types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES, FREQUENT_QUESTIONS, CUSTOMER_TESTIMONIALS, ASSURX_CENTERS } from './data';
 import { auth } from './lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from './lib/auth.ts';
+import { onSessionKicked } from './lib/sessionGuard.ts';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import PrescriptionUpload from './components/PrescriptionUpload';
@@ -70,6 +72,38 @@ export default function App() {
   // Tab-specific filters
   const [selectedScanSub, setSelectedScanSub] = useState('All');
   const [selectedLabSub, setSelectedLabSub] = useState('All');
+
+  const { logout } = useAuth();
+
+  // ── Session-kicked state: set when the server rejects our session ────────────
+  // null = not kicked, 'user' = user session conflict, 'admin' = admin session conflict
+  const [sessionKickedType, setSessionKickedType] = useState<'user' | 'admin' | null>(null);
+
+  // Register global session-kick handlers once on mount
+  useEffect(() => {
+    const unsubUser = onSessionKicked('user', () => {
+      // Auto-logout the user
+      localStorage.removeItem('userSession');
+      localStorage.removeItem('assurx_demo_user');
+      logout().catch(() => {});
+      setCurrentTab('home');
+      setSessionKickedType('user');
+    });
+
+    const unsubAdmin = onSessionKicked('admin', () => {
+      // Auto-logout the admin
+      localStorage.removeItem('adminSession');
+      localStorage.removeItem('assurx_admin_auth');
+      sessionStorage.removeItem('assurx_admin_auth');
+      setCurrentTab('home');
+      setSessionKickedType('admin');
+    });
+
+    return () => {
+      unsubUser();
+      unsubAdmin();
+    };
+  }, [logout]);
 
   // Toggle feedback alert when item is added to cart
   const [addedItemFeedback, setAddedItemFeedback] = useState<string | null>(null);
@@ -175,14 +209,12 @@ export default function App() {
     setIsCheckoutOpen(true);
   };
 
-  // Payment simulated successfully -> clear cart, open admin
+  // Payment simulated successfully -> clear cart, stay on home page
   const handleCheckoutSuccess = () => {
     setCart([]);
     setIsCheckoutOpen(false);
-    localStorage.setItem('assurx_admin_auth', 'true');
-    sessionStorage.setItem('assurx_admin_auth', 'true');
-    setBookingRefreshKey(prev => prev + 1); // Signal AdminPanel to refresh immediately
-    setCurrentTab('admin');
+    setBookingRefreshKey(prev => prev + 1); // Keep AdminPanel data fresh for next admin visit
+    setCurrentTab('home');
   };
 
   // Filter scan subcategories
@@ -218,6 +250,29 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col font-sans" id="app-root-frame">
       
+      {/* ── Session Kicked Popup ─────────────────────────────────────────── */}
+      {sessionKickedType && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl border border-amber-100 p-6 space-y-4 text-center animate-scale-in">
+            <div className="w-14 h-14 rounded-full bg-amber-50 border-2 border-amber-200 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-7 h-7 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-serif">Session Ended</h3>
+              <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                You have been logged out because your {sessionKickedType === 'admin' ? 'admin account' : 'account'} was signed in on another device.
+              </p>
+            </div>
+            <button
+              onClick={() => setSessionKickedType(null)}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer"
+            >
+              OK, Got It
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toast Cart Added Alert Feedback */}
       {addedItemFeedback && (
         <div className="fixed top-24 right-4 z-50 bg-slate-900 border border-slate-800 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 max-w-xs md:max-w-md animate-slide-left">
@@ -1071,10 +1126,8 @@ export default function App() {
           selectedBranch={selectedBranch}
           onBookingSuccess={() => {
             setDirectBookingItem(null);
-            localStorage.setItem('assurx_admin_auth', 'true');
-            sessionStorage.setItem('assurx_admin_auth', 'true');
-            setBookingRefreshKey(prev => prev + 1); // Signal AdminPanel to refresh immediately
-            setCurrentTab('admin');
+            setBookingRefreshKey(prev => prev + 1); // Keep AdminPanel data fresh for next admin visit
+            setCurrentTab('home');
           }}
         />
       )}

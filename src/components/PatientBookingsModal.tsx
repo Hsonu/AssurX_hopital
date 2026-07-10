@@ -4,6 +4,7 @@ import {
   Loader2, Download, Printer, AlertCircle, ShoppingBag, Eye, ShieldCheck, Landmark
 } from 'lucide-react';
 import { Booking } from '../types';
+import { userFetch } from '../lib/sessionGuard.ts';
 
 const cleanBookingId = (id: string) => id.split('-').slice(0, 2).join('-');
 
@@ -54,7 +55,7 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/bookings', {
+      const response = await userFetch('/api/bookings', {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }

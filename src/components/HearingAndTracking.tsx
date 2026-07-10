@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { auth } from '../lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
+import { userFetch } from '../lib/sessionGuard.ts';
 
 // Defined list of hearing care diagnostic services
 export interface HearingService {
@@ -128,7 +129,7 @@ export function TrackOrderSection({ onGoToBooking, selectedBranch }: TrackOrderP
     try {
       setLoadingUserBookings(true);
       const token = await user.getIdToken();
-      const res = await fetch('/api/bookings', {
+      const res = await userFetch('/api/bookings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

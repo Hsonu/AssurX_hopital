@@ -8,6 +8,7 @@ import {
 import { Booking, Patient, DiagnosticService, HealthPackage, CartItem } from '../types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
 import { auth } from '../lib/firebase.ts';
+import { adminFetch } from '../lib/sessionGuard.ts';
 
 const cleanBookingId = (id: string) => id.split('-').slice(0, 2).join('-');
 
@@ -104,7 +105,17 @@ const DEFAULT_ADMIN_BOOKINGS: Booking[] = [
 
 export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKey = 0 }: AdminPanelProps) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    return localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
+    const hasFlag = localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
+    const hasSession = !!localStorage.getItem('adminSession');
+    // Both the auth flag AND a valid session ID must be present.
+    // If the flag exists but no session, it's stale (leftover from before
+    // the single-session system was introduced) — clear it and force re-login.
+    if (hasFlag && !hasSession) {
+      localStorage.removeItem('assurx_admin_auth');
+      sessionStorage.removeItem('assurx_admin_auth');
+      return false;
+    }
+    return hasFlag && hasSession;
   });
   const [adminEmailInput, setAdminEmailInput] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
@@ -150,7 +161,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
     }
   }, [lockUntil]);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (lockUntil > Date.now()) {
@@ -158,43 +169,49 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
       return;
     }
 
-    let isSuccess = false;
-
     const email = adminEmailInput.trim().toLowerCase();
     const password = adminPasswordInput.trim();
     const key = adminKeyInput.trim();
 
-    if (
-      email === 'assurxdiagonistics@gmail.com' &&
-      password === 'assurxlab2026' &&
-      key === 'assurx2026health'
-    ) {
-      isSuccess = true;
-    }
+    try {
+      // Validate credentials server-side — this also generates & stores a session ID
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, key }),
+      });
 
-    if (isSuccess) {
-      setIsAdminAuthenticated(true);
-      localStorage.setItem('assurx_admin_auth', 'true');
-      sessionStorage.setItem('assurx_admin_auth', 'true');
-      setAuthError('');
-      setAttempts(0);
-      setLockUntil(0);
-      localStorage.setItem('assurx_admin_attempts', '0');
-      localStorage.removeItem('assurx_admin_lock_until');
-    } else {
-      const nextAttempts = attempts + 1;
-      setAttempts(nextAttempts);
-      localStorage.setItem('assurx_admin_attempts', String(nextAttempts));
-
-      if (nextAttempts >= 3) {
-        const lockExpiration = Date.now() + 60 * 60 * 1000; // 1 hour
-        setLockUntil(lockExpiration);
-        localStorage.setItem('assurx_admin_lock_until', String(lockExpiration));
-        setAuthError('Too many failed login attempts. This terminal has been locked for 1 hour.');
+      if (res.ok) {
+        const data = await res.json();
+        // Persist the session ID (kicks any other device)
+        localStorage.setItem('adminSession', data.sessionId);
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('assurx_admin_auth', 'true');
+        sessionStorage.setItem('assurx_admin_auth', 'true');
+        setAuthError('');
+        setAttempts(0);
+        setLockUntil(0);
+        localStorage.setItem('assurx_admin_attempts', '0');
+        localStorage.removeItem('assurx_admin_lock_until');
       } else {
-        const attemptsLeft = 3 - nextAttempts;
-        setAuthError(`Invalid administrator credentials or security key. ${attemptsLeft} ${attemptsLeft === 1 ? 'attempt' : 'attempts'} remaining.`);
+        const errData = await res.json().catch(() => ({}));
+        const nextAttempts = attempts + 1;
+        setAttempts(nextAttempts);
+        localStorage.setItem('assurx_admin_attempts', String(nextAttempts));
+
+        if (nextAttempts >= 3) {
+          const lockExpiration = Date.now() + 60 * 60 * 1000; // 1 hour
+          setLockUntil(lockExpiration);
+          localStorage.setItem('assurx_admin_lock_until', String(lockExpiration));
+          setAuthError('Too many failed login attempts. This terminal has been locked for 1 hour.');
+        } else {
+          const attemptsLeft = 3 - nextAttempts;
+          setAuthError(`${errData.error || 'Invalid administrator credentials or security key.'} ${attemptsLeft} ${attemptsLeft === 1 ? 'attempt' : 'attempts'} remaining.`);
+        }
       }
+    } catch (err) {
+      console.error('Admin login network error:', err);
+      setAuthError('Network error. Please check your connection and try again.');
     }
   };
 
@@ -313,7 +330,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
   const fetchDatabaseData = async (silent = false) => {
     if (!silent) setIsSyncing(true);
     try {
-      const bookingsRes = await fetch('/api/admin/bookings', {
+      const bookingsRes = await adminFetch('/api/admin/bookings', {
         headers: { 'X-Admin-Key': 'assurx2026health' }
       });
       if (bookingsRes.ok) {
@@ -333,29 +350,32 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
 
         setBookings(mergedBookings);
         localStorage.setItem('assurx_bookings', JSON.stringify(mergedBookings));
+      } else if (bookingsRes.status === 401) {
+        // Session kicked — the sessionGuard will fire the kick handler; stop polling
+        return;
       } else {
         throw new Error(`Real-time bookings fetch returned status ${bookingsRes.status}`);
       }
 
-      const prescriptionsRes = await fetch('/api/admin/prescriptions', {
+      const prescriptionsRes = await adminFetch('/api/admin/prescriptions', {
         headers: { 'X-Admin-Key': 'assurx2026health' }
       });
       if (prescriptionsRes.ok) {
         const prescriptionsData = await prescriptionsRes.json();
         setPrescriptions(prescriptionsData);
         localStorage.setItem('assurx_prescriptions', JSON.stringify(prescriptionsData));
-      } else {
+      } else if (prescriptionsRes.status !== 401) {
         throw new Error(`Real-time prescriptions fetch returned status ${prescriptionsRes.status}`);
       }
 
-      const careersRes = await fetch('/api/admin/careers', {
+      const careersRes = await adminFetch('/api/admin/careers', {
         headers: { 'X-Admin-Key': 'assurx2026health' }
       });
       if (careersRes.ok) {
         const careersData = await careersRes.json();
         setApplications(careersData);
         localStorage.setItem('assurx_applications', JSON.stringify(careersData));
-      } else {
+      } else if (careersRes.status !== 401) {
         throw new Error(`Real-time careers fetch returned status ${careersRes.status}`);
       }
     } catch (error) {
@@ -397,7 +417,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
   const handleUpdateStatus = async (bookingId: string, newStatus: Booking['bookingStatus']) => {
     try {
       const paymentStatus = newStatus === 'report_ready' ? 'paid' : undefined;
-      const res = await fetch(`/api/admin/bookings/${bookingId}`, {
+      const res = await adminFetch(`/api/admin/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -447,7 +467,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
             return;
           }
 
-          const res = await fetch(`/api/admin/bookings/${idStr}`, { 
+          const res = await adminFetch(`/api/admin/bookings/${idStr}`, { 
             method: 'DELETE',
             headers: { 'X-Admin-Key': 'assurx2026health' }
           });
@@ -470,7 +490,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
   // Update prescription status
   const handleUpdatePrescriptionStatus = async (prescriptionId: number | string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/admin/prescriptions/${prescriptionId}`, {
+      const res = await adminFetch(`/api/admin/prescriptions/${prescriptionId}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -511,7 +531,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
             return;
           }
 
-          const res = await fetch(`/api/admin/prescriptions/${idStr}`, { 
+          const res = await adminFetch(`/api/admin/prescriptions/${idStr}`, { 
             method: 'DELETE',
             headers: { 'X-Admin-Key': 'assurx2026health' }
           });
@@ -577,7 +597,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
   const handleSavePatientDetails = async () => {
     if (!editingPatientBooking) return;
     try {
-      const res = await fetch(`/api/admin/bookings/${editingPatientBooking.id}`, {
+      const res = await adminFetch(`/api/admin/bookings/${editingPatientBooking.id}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -756,7 +776,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
         token = await auth.currentUser.getIdToken();
       }
 
-      const response = await fetch('/api/bookings', {
+      const response = await adminFetch('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1017,7 +1037,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                 'Wipe & Reset Live Data',
                 async () => {
                   try {
-                    const res = await fetch('/api/admin/reset', {
+                    const res = await adminFetch('/api/admin/reset', {
                       method: 'POST',
                       headers: { 'X-Admin-Key': 'assurx2026health' }
                     });
@@ -1052,9 +1072,18 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
           </button>
 
           <button
-            onClick={() => {
+            onClick={async () => {
+              // Invalidate the active session on the server
+              try {
+                await adminFetch('/api/admin/logout', {
+                  method: 'POST',
+                  headers: { 'X-Admin-Key': 'assurx2026health' }
+                });
+              } catch (_) { /* fire and forget */ }
+              // Clear local state
               setIsAdminAuthenticated(false);
               localStorage.removeItem('assurx_admin_auth');
+              localStorage.removeItem('adminSession');
               sessionStorage.removeItem('assurx_admin_auth');
               showToast('Logged out of Admin Console successfully.', 'info');
             }}
@@ -2052,7 +2081,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                                 <button
                                   onClick={async () => {
                                     try {
-                                      const res = await fetch(`/api/admin/careers/${appItem.id}/status`, {
+                                      const res = await adminFetch(`/api/admin/careers/${appItem.id}/status`, {
                                         method: 'PATCH',
                                         headers: {
                                           'Content-Type': 'application/json',
@@ -2079,7 +2108,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                                 <button
                                   onClick={async () => {
                                     try {
-                                      const res = await fetch(`/api/admin/careers/${appItem.id}/status`, {
+                                      const res = await adminFetch(`/api/admin/careers/${appItem.id}/status`, {
                                         method: 'PATCH',
                                         headers: {
                                           'Content-Type': 'application/json',
@@ -2110,7 +2139,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                                     'Delete Application',
                                     async () => {
                                       try {
-                                        const res = await fetch(`/api/admin/careers/${appItem.id}`, {
+                                        const res = await adminFetch(`/api/admin/careers/${appItem.id}`, {
                                           method: 'DELETE',
                                           headers: { 'X-Admin-Key': 'assurx2026health' }
                                         });
