@@ -9,7 +9,8 @@ import { getAdminSession, setAdminSession, clearAdminSession } from "./src/db/ad
 
 function pingServer(url: string) {
   try {
-    https.get(`${url}/api/health`, (res) => {
+    const formattedUrl = url.endsWith("/") ? `${url}api/health` : `${url}/api/health`;
+    https.get(formattedUrl, (res) => {
       console.log(`[Self-Ping] Status Code: ${res.statusCode} at ${new Date().toISOString()}`);
     }).on("error", (err) => {
       console.error("[Self-Ping] Error:", err.message);
@@ -141,7 +142,7 @@ async function startServer() {
     const ip = req.ip || req.socket.remoteAddress || "unknown-ip";
     const now = Date.now();
     let info = rateLimitMap.get(ip);
-    
+
     if (!info || now > info.resetTime) {
       info = { count: 1, resetTime: now + rateLimitWindowMs };
       rateLimitMap.set(ip, info);
@@ -236,9 +237,9 @@ async function startServer() {
     const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
     if (
-      cleanKey === cleanExpected || 
+      cleanKey === cleanExpected ||
       adminKey === expectedAdminKey ||
-      cleanKey === "assurx2026health" || 
+      cleanKey === "assurx2026health" ||
       adminKey === "assurx2026health" ||
       cleanKey === "assurx2026healtj" ||
       adminKey === "assurx2026healtj"
@@ -290,18 +291,18 @@ async function startServer() {
 
       // Basic presence checks
       if (
-        !bookingId || 
-        !patientName || 
-        isNaN(patientAge) || 
-        !patientGender || 
-        !patientRelationship || 
-        !appointmentDate || 
-        !appointmentTime || 
-        !collectionType || 
-        !paymentMethod || 
-        !paymentStatus || 
-        !bookingStatus || 
-        isNaN(totalAmount) || 
+        !bookingId ||
+        !patientName ||
+        isNaN(patientAge) ||
+        !patientGender ||
+        !patientRelationship ||
+        !appointmentDate ||
+        !appointmentTime ||
+        !collectionType ||
+        !paymentMethod ||
+        !paymentStatus ||
+        !bookingStatus ||
+        isNaN(totalAmount) ||
         !Array.isArray(items)
       ) {
         return res.status(400).json({ error: "Validation failed: Missing or malformed parameters." });
@@ -354,7 +355,7 @@ async function startServer() {
         return res.status(400).json({ error: "Unauthorized" });
       }
       const bookingsList = await getUserBookings(uid);
-      
+
       // Parse items back and nest patient details to match Booking interface exactly
       const parsedBookings = bookingsList.map((b) => {
         let itemsObj = [];
@@ -420,9 +421,9 @@ async function startServer() {
       const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
       const isAdmin = (
-        cleanKey === cleanExpected || 
+        cleanKey === cleanExpected ||
         adminKey === expectedAdminKey ||
-        cleanKey === "assurx2026health" || 
+        cleanKey === "assurx2026health" ||
         adminKey === "assurx2026health" ||
         cleanKey === "assurx2026healtj" ||
         adminKey === "assurx2026healtj"
@@ -641,9 +642,9 @@ async function startServer() {
     const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
     const keyValid = (
-      cleanKey === cleanExpected || 
+      cleanKey === cleanExpected ||
       adminKey === expectedAdminKey ||
-      cleanKey === "assurx2026health" || 
+      cleanKey === "assurx2026health" ||
       adminKey === "assurx2026health" ||
       cleanKey === "assurx2026healtj" ||
       adminKey === "assurx2026healtj"
@@ -741,11 +742,11 @@ async function startServer() {
         return res.status(400).json({ error: "Invalid booking ID" });
       }
       const updateData: any = {};
-      
+
       if (req.body.bookingStatus !== undefined) updateData.bookingStatus = sanitizeString(String(req.body.bookingStatus).trim()).substring(0, 50);
       if (req.body.paymentStatus !== undefined) updateData.paymentStatus = sanitizeString(String(req.body.paymentStatus).trim()).substring(0, 50);
       if (req.body.simulatedReportUrl !== undefined) updateData.simulatedReportUrl = sanitizeString(String(req.body.simulatedReportUrl).trim()).substring(0, 500);
-      
+
       // Patient and appointment details
       if (req.body.patientName !== undefined) updateData.patientName = sanitizeString(String(req.body.patientName).trim()).substring(0, 100);
       if (req.body.patientAge !== undefined) {
@@ -863,7 +864,7 @@ async function startServer() {
   app.post("/api/careers/apply", async (req, res) => {
     try {
       const { fullName, email, phone, position, experience, resumeLink, notes } = req.body;
-      
+
       if (!fullName || !email || !phone || !position || !experience) {
         return res.status(400).json({ error: "Missing required job application fields" });
       }
@@ -954,7 +955,7 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
 
     // Self-pinging routine to keep the Render instance awake (only in production)
-    const APP_URL = process.env.APP_URL;
+    const APP_URL = process.env.APP_URL || "https://assurx-hopital-g2wu.onrender.com/";
     if (process.env.NODE_ENV === "production" && APP_URL) {
       console.log(`Initializing self-ping to ${APP_URL} every 5 minutes`);
       // Ping once shortly after boot (10 seconds delay)
