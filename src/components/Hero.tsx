@@ -150,7 +150,7 @@ export default function Hero({
         <div className="lg:col-span-5 flex flex-col justify-center items-center w-full relative">
           
           {/* Base Layout with Portrait image of a male diagnostic professional */}
-          <div className="relative w-full max-w-[360px] aspect-[4/3] sm:aspect-square mb-6 lg:mb-10 rounded-[36px] md:rounded-[48px] overflow-hidden bg-transparent flex items-end justify-center group">
+          <div className="relative w-full max-w-[360px] aspect-[4/3] sm:aspect-square -mb-12 lg:mb-10 rounded-[36px] md:rounded-[48px] overflow-hidden bg-transparent flex items-end justify-center group">
             {/* Soft decorative golden circles in backdrop */}
             <div className="absolute top-10 right-4 w-40 h-40 rounded-full bg-amber-400/10 blur-2xl group-hover:scale-110 transition-transform"></div>
             
@@ -167,7 +167,7 @@ export default function Hero({
             
             <div className="space-y-4">
               {/* Box 1: Test / Scan input field */}
-              <div className="space-y-1 relative text-left" ref={suggestionRef}>
+              <div className="space-y-1 text-left" ref={suggestionRef}>
                 <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Test / Scan Name</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -187,29 +187,29 @@ export default function Hero({
                     onFocus={() => setShowSuggestions(true)}
                     className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-600 font-bold transition-all placeholder:text-slate-400 text-slate-800"
                   />
-                </div>
 
-                {/* Autocomplete Suggestions Panel */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-150 rounded-2xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-50 py-1">
-                    {suggestions.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleSelectSuggestion(item)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex justify-between items-center gap-2"
-                      >
-                        <div className="min-w-0">
-                          <span className="text-[8px] font-black uppercase tracking-wide bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded">
-                            {item.type === 'package' ? 'Package' : (item as any).category === 'scan' ? 'Scan' : 'Blood Test'}
-                          </span>
-                          <p className="text-xs font-bold text-slate-800 mt-1 truncate">{item.name}</p>
-                        </div>
-                        <span className="text-xs font-black text-emerald-700 flex-shrink-0 font-mono">₹{item.discountPrice || item.price}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  {/* Autocomplete Suggestions Panel - Positioned relative to the input box */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100 py-1">
+                      {suggestions.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleSelectSuggestion(item)}
+                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex justify-between items-center gap-2 border-0 bg-transparent outline-none focus:outline-none"
+                        >
+                          <div className="min-w-0">
+                            <span className="text-[8px] font-black uppercase tracking-wide bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded">
+                              {item.type === 'package' ? 'Package' : (item as any).category === 'scan' ? 'Scan' : 'Blood Test'}
+                            </span>
+                            <p className="text-xs font-bold text-slate-800 mt-1 truncate">{item.name}</p>
+                          </div>
+                          <span className="text-xs font-black text-emerald-700 flex-shrink-0 font-mono">₹{item.discountPrice || item.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Box 2: City Select Dropdown */}

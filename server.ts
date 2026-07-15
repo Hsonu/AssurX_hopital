@@ -95,7 +95,11 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
 ];
 
 async function startServer() {
-  await connectDB();
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error("⚠️ WARNING: MongoDB connection failed on startup. Starting server in offline mode. Database features will be unavailable.");
+  }
   const app = express();
   const PORT = 3000;
 

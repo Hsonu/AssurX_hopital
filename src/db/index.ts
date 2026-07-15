@@ -1,5 +1,18 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import dns from 'dns';
+
+// Fix for IPv6-only networks where IPv4 DNS is set but unreachable
+try {
+  dns.setServers([
+    '2001:4860:4860::8888', // Google IPv6
+    '2606:4700:4700::1111', // Cloudflare IPv6
+    '8.8.8.8',              // Google IPv4
+    '1.1.1.1'               // Cloudflare IPv4
+  ]);
+} catch (e) {
+  console.warn("⚠️ DNS configuration warning:", e);
+}
 
 // Load .env.local first, then .env as fallback
 dotenv.config({ path: '.env.local' });
