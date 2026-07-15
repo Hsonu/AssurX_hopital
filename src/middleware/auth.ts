@@ -19,6 +19,17 @@ export const requireAuth = async (
 
   const token = authHeader.split('Bearer ')[1];
 
+  // ── Pre-check for Firebase token format to prevent console error logging ────
+  try {
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.decode(token, { complete: true }) as any;
+    if (!decoded || !decoded.header || !decoded.header.kid) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token format' });
+    }
+  } catch (err) {
+    // fallback to firebase verification
+  }
+
   // ── Firebase token verification ─────────────────────────────────────────────
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);

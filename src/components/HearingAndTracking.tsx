@@ -128,8 +128,8 @@ export function TrackOrderSection({ onGoToBooking, selectedBranch }: TrackOrderP
     }
     try {
       setLoadingUserBookings(true);
-      const token = await user.getIdToken();
-      const res = await userFetch('/api/bookings', {
+      const token = localStorage.getItem('assurx_patient_jwt') || '';
+      const res = await userFetch('/api/patient/bookings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

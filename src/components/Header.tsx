@@ -146,14 +146,12 @@ export default function Header({
             >
               Packages
             </button>
-            {user && (
-              <button
-                onClick={() => handleTabClick('bookings')}
-                className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'bookings' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
-              >
-                My Bookings
-              </button>
-            )}
+            <button
+              onClick={() => handleTabClick('bookings')}
+              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'bookings' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+            >
+              My Bookings
+            </button>
             <button
               onClick={() => handleTabClick('hiring')}
               className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'hiring' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
@@ -199,7 +197,15 @@ export default function Header({
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
-          ) : null}
+          ) : (
+            <button
+              onClick={() => handleTabClick('bookings')}
+              className="flex items-center gap-1.5 px-4.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-full text-xs font-bold uppercase tracking-widest transition-all cursor-pointer shadow-xs"
+            >
+              <LogIn className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Sign In</span>
+            </button>
+          )}
 
           {/* Admin Panel Button */}
           <button
@@ -381,14 +387,12 @@ export default function Header({
           >
             Careers & Hiring
           </button>
-          {user && (
-            <button
-              onClick={() => handleTabClick('bookings')}
-              className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'bookings' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
-            >
-              My Bookings
-            </button>
-          )}
+          <button
+            onClick={() => handleTabClick('bookings')}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'bookings' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+          >
+            My Bookings
+          </button>
           <button
             onClick={() => handleTabClick('admin')}
             className={`py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 ${currentTab === 'admin' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-650'}`}
@@ -441,7 +445,17 @@ export default function Header({
                   <span>Sign Out</span>
                 </button>
               </div>
-            ) : null}
+            ) : (
+              <button
+                onClick={() => {
+                  handleTabClick('bookings');
+                }}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-150 text-slate-800 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-emerald-750" />
+                <span>Patient Login</span>
+              </button>
+            )}
           </div>
         </div>
       )}

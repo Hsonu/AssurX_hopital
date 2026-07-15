@@ -51,6 +51,24 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Dynamic diagnostic services catalog loaded from localStorage (synced with admin pricing manager)
+  const [services, setServices] = useState<DiagnosticService[]>(() => {
+    const cached = localStorage.getItem('assurx_services');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        // use default if parse failed
+      }
+    }
+    return DIAGNOSTIC_SERVICES;
+  });
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem('assurx_services', JSON.stringify(services));
+  }, [services]);
   const [isPrescriptionOpen, setIsPrescriptionOpen] = useState(false);
   
   // Checkout Modal State
@@ -66,6 +84,18 @@ export default function App() {
   // Direct Book Pay-at-lab State
   const [directBookingItem, setDirectBookingItem] = useState<DiagnosticService | HealthPackage | null>(null);
 
+  const handleDirectBook = (item: DiagnosticService | HealthPackage) => {
+    if (!user) {
+      localStorage.setItem('assurx_pending_direct_booking', JSON.stringify({
+        item,
+        branch: selectedBranch
+      }));
+      setCurrentTab('bookings');
+      return;
+    }
+    setDirectBookingItem(item);
+  };
+
   const [selectedBranch, setSelectedBranch] = useState('Malad');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -73,7 +103,7 @@ export default function App() {
   const [selectedScanSub, setSelectedScanSub] = useState('All');
   const [selectedLabSub, setSelectedLabSub] = useState('All');
 
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   // ── Session-kicked state: set when the server rejects our session ────────────
   // null = not kicked, 'user' = user session conflict, 'admin' = admin session conflict
@@ -123,43 +153,43 @@ export default function App() {
 
   // Restore pending direct bookings or checkouts from localStorage upon successful sign-in / state change
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // 1. Check for pending direct booking
-        const pendingDirectStr = localStorage.getItem('assurx_pending_direct_booking');
-        if (pendingDirectStr) {
-          try {
-            const saved = JSON.parse(pendingDirectStr);
-            if (saved.item) {
-              setDirectBookingItem(saved.item);
-              if (saved.branch) {
-                setSelectedBranch(saved.branch);
-              }
+    if (user) {
+      // 1. Check for pending direct booking
+      const pendingDirectStr = localStorage.getItem('assurx_pending_direct_booking');
+      if (pendingDirectStr) {
+        try {
+          const saved = JSON.parse(pendingDirectStr);
+          if (saved.item) {
+            setDirectBookingItem(saved.item);
+            if (saved.branch) {
+              setSelectedBranch(saved.branch);
             }
-          } catch (e) {
-            console.error("Failed to parse pending direct booking on reload", e);
+            setCurrentTab('home');
+            localStorage.removeItem('assurx_pending_direct_booking');
           }
-        }
-
-        // 2. Check for pending checkout booking
-        const pendingCheckoutStr = localStorage.getItem('assurx_pending_checkout_booking');
-        if (pendingCheckoutStr) {
-          try {
-            const saved = JSON.parse(pendingCheckoutStr);
-            if (saved.cart && saved.bookingDetails) {
-              setCart(saved.cart);
-              setCheckoutBookingDetails(saved.bookingDetails);
-              setIsCheckoutOpen(true);
-            }
-          } catch (e) {
-            console.error("Failed to parse pending checkout booking on reload", e);
-          }
+        } catch (e) {
+          console.error("Failed to parse pending direct booking on reload", e);
         }
       }
-    });
 
-    return () => unsubscribe();
-  }, [selectedBranch]);
+      // 2. Check for pending checkout booking
+      const pendingCheckoutStr = localStorage.getItem('assurx_pending_checkout_booking');
+      if (pendingCheckoutStr) {
+        try {
+          const saved = JSON.parse(pendingCheckoutStr);
+          if (saved.cart && saved.bookingDetails) {
+            setCart(saved.cart);
+            setCheckoutBookingDetails(saved.bookingDetails);
+            setIsCheckoutOpen(true);
+            setCurrentTab('home');
+            localStorage.removeItem('assurx_pending_checkout_booking');
+          }
+        } catch (e) {
+          console.error("Failed to parse pending checkout booking on reload", e);
+        }
+      }
+    }
+  }, [user, selectedBranch]);
 
   // Handle adding a single service or package to cart
   const handleAddToCart = (item: DiagnosticService | HealthPackage, type: 'service' | 'package') => {
@@ -212,6 +242,15 @@ export default function App() {
 
   // Initiated from Cart Drawer "Proceed to Checkout"
   const handleCartProceed = (details: typeof checkoutBookingDetails) => {
+    if (!user) {
+      localStorage.setItem('assurx_pending_checkout_booking', JSON.stringify({
+        cart,
+        bookingDetails: details
+      }));
+      setIsCartOpen(false);
+      setCurrentTab('bookings');
+      return;
+    }
     setCheckoutBookingDetails(details);
     setIsCartOpen(false);
     setIsCheckoutOpen(true);
@@ -227,7 +266,7 @@ export default function App() {
 
   // Filter scan subcategories
   const scanSubCategories = ['All', 'MRI Scans', 'CT Scans', 'Ultrasound Scans', 'Digital X-Rays', 'Cardiology Tests', 'Bone Density'];
-  const filteredScans = DIAGNOSTIC_SERVICES.filter(s => {
+  const filteredScans = services.filter(s => {
     if (s.category !== 'scan') return false;
     const matchesSub = selectedScanSub === 'All' || s.subCategory === selectedScanSub;
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -237,7 +276,7 @@ export default function App() {
 
   // Filter lab subcategories
   const labSubCategories = ['All', 'General Blood Tests', 'Hormone Assays', 'Diabetic Profiles', 'Cardiac Markers', 'Organ Screeners', 'Vitamins & Minerals'];
-  const filteredLabs = DIAGNOSTIC_SERVICES.filter(s => {
+  const filteredLabs = services.filter(s => {
     if (s.category !== 'lab') return false;
     const matchesSub = selectedLabSub === 'All' || s.subCategory === selectedLabSub;
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -251,7 +290,7 @@ export default function App() {
   };
 
   const globalSearchMatches = searchQuery.trim() ? [
-    ...DIAGNOSTIC_SERVICES.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    ...services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
     ...HEALTH_PACKAGES.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
   ] : [];
 
@@ -368,7 +407,8 @@ export default function App() {
               selectedBranch={selectedBranch}
               setSelectedBranch={setSelectedBranch}
               onAddToCart={handleAddToCart}
-              onDirectBook={(item) => setDirectBookingItem(item)}
+              onDirectBook={handleDirectBook}
+              services={services}
             />
 
             {/* SEGMENTED TEST CATALOG EXPLORER */}
@@ -395,7 +435,7 @@ export default function App() {
                       onClick={() => setCurrentTab('scans')}
                       className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
                     >
-                      <span>View All ({DIAGNOSTIC_SERVICES.filter(s=>s.category==='scan').length})</span>
+                      <span>View All ({services.filter(s=>s.category==='scan').length})</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -417,7 +457,7 @@ export default function App() {
  
                   {/* Scans list */}
                   <div className="space-y-3.5">
-                    {DIAGNOSTIC_SERVICES.filter(s => s.category === 'scan' && s.popular).slice(0, 4).map((scan) => {
+                    {services.filter(s => s.category === 'scan' && s.popular).slice(0, 4).map((scan) => {
                       const inCart = cart.some(ci => ci.itemId === scan.id);
                       return (
                         <div key={scan.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -435,7 +475,7 @@ export default function App() {
                             </div>
                             <div className="flex gap-1.5">
                               <button
-                                onClick={() => setDirectBookingItem(scan)}
+                                onClick={() => handleDirectBook(scan)}
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
                               >
                                 Book Now
@@ -472,7 +512,7 @@ export default function App() {
                       onClick={() => setCurrentTab('labs')}
                       className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
                     >
-                      <span>View All ({DIAGNOSTIC_SERVICES.filter(s=>s.category==='lab').length})</span>
+                      <span>View All ({services.filter(s=>s.category==='lab').length})</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -493,7 +533,7 @@ export default function App() {
  
                   {/* Lab tests list */}
                   <div className="space-y-3.5">
-                    {DIAGNOSTIC_SERVICES.filter(s => s.category === 'lab' && s.popular).slice(0, 4).map((lab) => {
+                    {services.filter(s => s.category === 'lab' && s.popular).slice(0, 4).map((lab) => {
                       const inCart = cart.some(ci => ci.itemId === lab.id);
                       return (
                         <div key={lab.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -518,7 +558,7 @@ export default function App() {
                             </div>
                             <div className="flex gap-1.5">
                               <button
-                                onClick={() => setDirectBookingItem(lab)}
+                                onClick={() => handleDirectBook(lab)}
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
                               >
                                 Book Now
@@ -622,7 +662,7 @@ export default function App() {
  
                             <div className="flex gap-2">
                               <button
-                                onClick={() => setDirectBookingItem(pkg)}
+                                onClick={() => handleDirectBook(pkg)}
                                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
                               >
                                 Book Now (Pay at Lab)
@@ -824,7 +864,7 @@ export default function App() {
                         </div>
                         <div className="flex gap-1.5">
                           <button
-                            onClick={() => setDirectBookingItem(scan)}
+                            onClick={() => handleDirectBook(scan)}
                             className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase tracking-widest font-bold rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-100 cursor-pointer"
                           >
                             Book Now
@@ -929,7 +969,7 @@ export default function App() {
                         </div>
                         <div className="flex gap-1.5">
                           <button
-                            onClick={() => setDirectBookingItem(lab)}
+                            onClick={() => handleDirectBook(lab)}
                             className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase tracking-widest font-bold rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-100 cursor-pointer"
                           >
                             Book Now
@@ -1036,7 +1076,7 @@ export default function App() {
                       </div>
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => setDirectBookingItem(pkg)}
+                          onClick={() => handleDirectBook(pkg)}
                           className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase tracking-widest font-bold rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-100 cursor-pointer"
                         >
                           Book Now
@@ -1081,6 +1121,8 @@ export default function App() {
             currentTab={currentTab} 
             setCurrentTab={setCurrentTab}
             bookingRefreshKey={bookingRefreshKey}
+            services={services}
+            onUpdateServices={setServices}
           />
         )}
 
@@ -1095,6 +1137,7 @@ export default function App() {
           <PrescriptionUpload
             onAddItemsToCart={handleAddMultipleToCart}
             onClose={() => setIsPrescriptionOpen(false)}
+            services={services}
           />
         </div>
       )}

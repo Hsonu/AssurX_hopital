@@ -57,7 +57,7 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
     setLoading(true);
     setError('');
     try {
-      const response = await userFetch('/api/bookings', {
+      const response = await userFetch('/api/patient/bookings', {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }

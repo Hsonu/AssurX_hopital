@@ -30,7 +30,7 @@ export default function CheckoutModal({
   grandTotal,
   onBookingSuccess,
 }: CheckoutModalProps) {
-  const { user } = useAuth();
+  const { user, idToken } = useAuth();
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'netbanking' | 'cash_at_center'>('upi');
   const [isPaying, setIsPaying] = useState(false);
   const [payStep, setPayStep] = useState('');
@@ -114,11 +114,9 @@ export default function CheckoutModal({
         try {
           const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
           
-          // Use the live auth.currentUser to avoid stale closures
-          const activeUser = auth.currentUser || user;
-          const token = activeUser ? await activeUser.getIdToken() : '';
+          const token = idToken || '';
           
-          const response = await userFetch('/api/bookings', {
+          const response = await userFetch('/api/booking', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

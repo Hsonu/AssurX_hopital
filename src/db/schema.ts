@@ -51,6 +51,7 @@ export interface IBooking extends Document {
   id: number;                   // surrogate numeric ID
   bookingId: string;            // ASX-XXXXXX
   userId: number;               // references User.id
+  patientId?: mongoose.Types.ObjectId; // references Patient (optional for pre-existing seed data)
   userEmail?: string;           // denormalized for admin view
   patientName: string;
   patientAge: number;
@@ -70,12 +71,20 @@ export interface IBooking extends Document {
   simulatedReportUrl?: string;
   items: string;    // JSON string of CartItem[]
   timestamp: string;
+  doctor?: string;
+  department?: string;
+  bookingDate?: Date;
 }
 
 const bookingSchema = new Schema<IBooking>({
   id: { type: Number, unique: true },
   bookingId: { type: String, required: true, unique: true },
   userId: { type: Number, required: true },
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Patient",
+    required: true
+  },
   userEmail: { type: String },
   patientName: { type: String, required: true },
   patientAge: { type: Number, required: true },
@@ -95,6 +104,9 @@ const bookingSchema = new Schema<IBooking>({
   simulatedReportUrl: { type: String },
   items: { type: String, required: true },
   timestamp: { type: String, required: true },
+  doctor: { type: String, default: '' },
+  department: { type: String, default: '' },
+  bookingDate: { type: Date, default: Date.now }
 });
 
 export const BookingModel: Model<IBooking> =

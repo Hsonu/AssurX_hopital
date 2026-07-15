@@ -6,6 +6,7 @@ import { DIAGNOSTIC_SERVICES } from '../data';
 interface PrescriptionUploadProps {
   onAddItemsToCart: (items: CartItem[]) => void;
   onClose: () => void;
+  services: DiagnosticService[];
 }
 
 const PRESCRIPTION_TEMPLATES = [
@@ -32,7 +33,7 @@ const PRESCRIPTION_TEMPLATES = [
   }
 ];
 
-export default function PrescriptionUpload({ onAddItemsToCart, onClose }: PrescriptionUploadProps) {
+export default function PrescriptionUpload({ onAddItemsToCart, onClose, services }: PrescriptionUploadProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -215,9 +216,9 @@ export default function PrescriptionUpload({ onAddItemsToCart, onClose }: Prescr
         } else {
           clearInterval(interval);
           // Map service IDs to actual DiagnosticService items
-          const services = DIAGNOSTIC_SERVICES.filter(s => serviceIds.includes(s.id));
-          setExtractedServices(services);
-          setSelectedServices(services.map(s => s.id));
+          const matched = services.filter(s => serviceIds.includes(s.id));
+          setExtractedServices(matched);
+          setSelectedServices(matched.map(s => s.id));
           setIsProcessing(false);
           setIsCompleted(true);
         }

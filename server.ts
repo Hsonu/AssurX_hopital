@@ -6,6 +6,9 @@ import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser, updateUserSession, getUserActiveSession } from "./src/db/users.ts";
 import { getAdminSession, setAdminSession, clearAdminSession } from "./src/db/adminSession.ts";
+import authRoutes from "./src/routes/authRoutes.ts";
+import patientRoutes from "./src/routes/patientRoutes.ts";
+import { connectDB } from "./src/db/index.ts";
 
 function pingServer(url: string) {
   try {
@@ -92,6 +95,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
 ];
 
 async function startServer() {
+  await connectDB();
   const app = express();
   const PORT = 3000;
 
@@ -107,12 +111,12 @@ async function startServer() {
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com data:; " +
       "img-src 'self' data: https://*.google.com https://*.googleusercontent.com https://*.unsplash.com; " +
-      "connect-src 'self' https://*.google.com https://*.googleapis.com; " +
-      "frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app; " +
+      "connect-src 'self' https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com; " +
+      "frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app https://*.firebaseapp.com; " +
       "frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://*.ai.studio;"
     );
     // Prevent MIME-sniffing
@@ -174,6 +178,12 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
+
+  // Mount Patient authentication and functional routers
+  app.use("/api/auth", authRoutes);
+  app.use("/auth", authRoutes);
+  app.use("/api", patientRoutes);
+  app.use("/", patientRoutes);
 
   // 1. Sync User / Get Surrogate DB ID
   app.post("/api/users/sync", requireAuth, async (req: AuthRequest, res) => {
@@ -251,14 +261,10 @@ async function startServer() {
       };
       return next();
     }
-    // Allow guest bookings if no token is provided
+    // Reject guest bookings
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ") || authHeader.split("Bearer ")[1] === "undefined" || authHeader.split("Bearer ")[1] === "") {
-      (req as any).user = {
-        uid: "guest-user",
-        email: "guest@assurx.com"
-      };
-      return next();
+      return res.status(401).json({ error: "Unauthorized: Patient login required to book." });
     }
 
     // Otherwise require normal auth
@@ -443,23 +449,43 @@ async function startServer() {
 
           const token = authHeader.split("Bearer ")[1];
           let decodedUser: any = null;
+          let isCustomJwt = false;
+          let patientIdStr = "";
 
+          // Try custom JWT verification first
           try {
-            const { adminAuth } = await import("./src/lib/firebase-admin.ts");
-            decodedUser = await adminAuth.verifyIdToken(token);
+            const { verifyToken } = await import("./src/utils/jwt.ts");
+            const decoded = verifyToken(token);
+            if (decoded && decoded.role === 'Patient') {
+              isCustomJwt = true;
+              patientIdStr = decoded.patientId;
+            }
           } catch (jwtErr) {
-            console.error("Firebase ID token verification failed in tracker:", jwtErr);
-            return res.status(401).json({ error: "Unauthorized: Invalid or expired session token." });
+            // Fall back to Firebase verification
           }
 
-          if (!decodedUser || !decodedUser.uid) {
-            return res.status(401).json({ error: "Unauthorized: User session invalid." });
-          }
+          if (isCustomJwt) {
+            if (b.patientId && String(b.patientId) !== patientIdStr) {
+              return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the owner can view this." });
+            }
+          } else {
+            try {
+              const { adminAuth } = await import("./src/lib/firebase-admin.ts");
+              decodedUser = await adminAuth.verifyIdToken(token);
+            } catch (jwtErr) {
+              console.error("Firebase ID token verification failed in tracker:", jwtErr);
+              return res.status(401).json({ error: "Unauthorized: Invalid or expired session token." });
+            }
 
-          // Get database user ID
-          const dbUser = await getOrCreateUser(decodedUser.uid, decodedUser.email || "");
-          if (b.userId !== dbUser.id) {
-            return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the booking person can view this order." });
+            if (!decodedUser || !decodedUser.uid) {
+              return res.status(401).json({ error: "Unauthorized: User session invalid." });
+            }
+
+            // Get database user ID
+            const dbUser = await getOrCreateUser(decodedUser.uid, decodedUser.email || "");
+            if (b.userId !== dbUser.id) {
+              return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the booking person can view this order." });
+            }
           }
         }
       }
@@ -594,7 +620,7 @@ async function startServer() {
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password, key } = req.body;
-      const expectedEmail = "assurxdiagonistics@gmail.com";
+      const expectedEmail = "sonusonuraj415@gmail.com";
       const expectedPassword = "assurxlab2026";
       const expectedKey = process.env.ADMIN_API_KEY || "assurx2026health";
 

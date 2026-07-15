@@ -22,7 +22,7 @@ export default function DirectBookModal({
   selectedBranch,
   onBookingSuccess,
 }: DirectBookModalProps) {
-  const { user } = useAuth();
+  const { user, idToken } = useAuth();
 
   // Helper to safely get pending booking details from localStorage
   const getPendingBooking = () => {
@@ -167,11 +167,9 @@ export default function DirectBookModal({
 
           const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
           
-          // Use the live auth.currentUser to avoid any stale closures
-          const activeUser = auth.currentUser || user;
-          const token = activeUser ? await activeUser.getIdToken() : '';
+          const token = idToken || '';
 
-          const response = await userFetch('/api/bookings', {
+          const response = await userFetch('/api/booking', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

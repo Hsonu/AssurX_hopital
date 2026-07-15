@@ -55,7 +55,7 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
     setLoading(true);
     setError('');
     try {
-      const response = await userFetch('/api/bookings', {
+      const response = await userFetch('/api/patient/bookings', {
         headers: {
           'Authorization': `Bearer ${idToken}`
         }

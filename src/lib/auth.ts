@@ -18,39 +18,39 @@ export interface AuthState {
 
 /** Read user session ID from localStorage (injected into all user API calls). */
 function loadSessionId(): string | null {
-  return localStorage.getItem('userSession');
+  return localStorage.getItem('assurx_patient_session_id');
 }
 
-/** Generate and persist a fresh session ID. */
+/** Store user session ID in localStorage. */
+function saveSessionId(id: string) {
+  localStorage.setItem('assurx_patient_session_id', id);
+}
+
+/** Create a unique session ID. */
 function createSessionId(): string {
-  const id = crypto.randomUUID();
-  localStorage.setItem('userSession', id);
+  const id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  saveSessionId(id);
   return id;
 }
 
 /** Clear the persisted user session. */
 function clearSessionId(): void {
-  localStorage.removeItem('userSession');
+  localStorage.removeItem('assurx_patient_session_id');
 }
 
-/**
- * Register the session with the server so it becomes the ONLY valid session
- * for this account. Any other device using a different sessionId will be
- * kicked on their next API call.
- */
-async function registerSessionOnServer(token: string, sessionId: string): Promise<void> {
+/** Register current session ID on Express backend. */
+async function registerSessionOnServer(jwtToken: string, sessionId: string) {
   try {
     await fetch('/api/users/session', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-User-Session': sessionId,
+        'Authorization': `Bearer ${jwtToken}`,
       },
       body: JSON.stringify({ sessionId }),
     });
-  } catch (err) {
-    console.warn('Could not register session on server:', err);
+  } catch (error) {
+    console.error('Failed to register session on server:', error);
   }
 }
 
@@ -60,7 +60,7 @@ export function useAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
     idToken: null,
-    sessionId: loadSessionId(),
+    sessionId: null,
     loading: true,
   });
 
@@ -72,22 +72,33 @@ export function useAuth() {
           const existingSession = loadSessionId();
           const sessionId = existingSession || createSessionId();
 
-          // Sync DB user row
-          await fetch('/api/users/sync', {
+          // Sync and sign in with custom backend to get custom JWT
+          const syncRes = await fetch('/api/auth/google', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'X-User-Session': sessionId,
-            }
+            },
+            body: JSON.stringify({ idToken: token }),
           });
 
-          setState({ user, idToken: token, sessionId, loading: false });
-        } catch (error) {
+          if (!syncRes.ok) {
+            throw new Error('Backend authentication sync failed');
+          }
+
+          const { jwtToken } = await syncRes.json();
+          localStorage.setItem('assurx_patient_jwt', jwtToken);
+
+          // Register session
+          await registerSessionOnServer(jwtToken, sessionId);
+
+          setState({ user, idToken: jwtToken, sessionId, loading: false });
+        } catch (error: any) {
           console.error('Failed to sync user on auth state change:', error);
-          setState({ user, idToken: null, sessionId: loadSessionId(), loading: false });
+          const fallbackToken = localStorage.getItem('assurx_patient_jwt');
+          setState({ user, idToken: fallbackToken, sessionId: loadSessionId(), loading: false });
         }
       } else {
+        localStorage.removeItem('assurx_patient_jwt');
         setState({ user: null, idToken: null, sessionId: null, loading: false });
       }
     });
@@ -102,26 +113,35 @@ export function useAuth() {
       const result = await signInWithPopup(auth, googleAuthProvider);
       const token = await result.user.getIdToken();
 
+      // Sync and sign in with custom backend to get custom JWT
+      const syncRes = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken: token }),
+      });
+
+      if (!syncRes.ok) {
+        throw new Error('Backend authentication failed');
+      }
+
+      const { jwtToken } = await syncRes.json();
+      localStorage.setItem('assurx_patient_jwt', jwtToken);
+
       // Create a fresh session ID — this invalidates any other device
       const sessionId = createSessionId();
 
       // Register on server (replaces any previous session in DB)
-      await registerSessionOnServer(token, sessionId);
+      await registerSessionOnServer(jwtToken, sessionId);
 
-      // Sync user row with new session header
-      await fetch('/api/users/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-User-Session': sessionId,
-        }
-      });
-
-      setState(prev => ({ ...prev, idToken: token, sessionId, user: result.user }));
+      setState(prev => ({ ...prev, idToken: jwtToken, sessionId, user: result.user }));
       return result.user;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google:', error);
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        alert('Google Sign-In Error: ' + (error.message || error));
+      }
       throw error;
     }
   };
@@ -130,24 +150,23 @@ export function useAuth() {
   const logout = async () => {
     try {
       // Invalidate session on server
-      const token = state.idToken;
+      const token = state.idToken || localStorage.getItem('assurx_patient_jwt');
       const sessionId = loadSessionId();
       if (token && sessionId) {
         try {
-          await fetch('/api/users/session', {
+          await fetch('/api/auth/logout', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
-              'X-User-Session': sessionId,
             },
-            body: JSON.stringify({ sessionId: '' }),
           });
         } catch (_) { /* fire and forget */ }
       }
     } finally {
       clearSessionId();
       localStorage.removeItem('assurx_demo_user');
+      localStorage.removeItem('assurx_patient_jwt');
       setState({ user: null, idToken: null, sessionId: null, loading: false });
       await signOut(auth).catch(() => {});
     }

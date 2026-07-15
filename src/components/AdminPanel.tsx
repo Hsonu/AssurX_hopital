@@ -16,6 +16,8 @@ interface AdminPanelProps {
   currentTab: string;
   setCurrentTab: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'admin') => void;
   bookingRefreshKey?: number; // Incremented when a new booking is made to trigger immediate refresh
+  services: DiagnosticService[];
+  onUpdateServices: (services: DiagnosticService[]) => void;
 }
 
 // Default pre-seeded clinical data for our laboratory reports
@@ -103,7 +105,13 @@ const DEFAULT_ADMIN_BOOKINGS: Booking[] = [
   }
 ];
 
-export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKey = 0 }: AdminPanelProps) {
+export default function AdminPanel({ 
+  currentTab, 
+  setCurrentTab, 
+  bookingRefreshKey = 0,
+  services,
+  onUpdateServices
+}: AdminPanelProps) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     const hasFlag = localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
     const hasSession = !!localStorage.getItem('adminSession');
@@ -307,11 +315,65 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
   const [editedPincode, setEditedPincode] = useState('');
 
   // Catalog Pricing edits
-  const [services, setServices] = useState<DiagnosticService[]>(DIAGNOSTIC_SERVICES);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingDiscountPrice, setEditingDiscountPrice] = useState<number>(0);
+
+  // Add service modal state
+  const [isAddingService, setIsAddingService] = useState(false);
+  const [newServiceName, setNewServiceName] = useState('');
+  const [newServiceCategory, setNewServiceCategory] = useState<'scan' | 'lab'>('lab');
+  const [newServiceSubCategory, setNewServiceSubCategory] = useState('');
+  const [newServicePrice, setNewServicePrice] = useState(1000);
+  const [newServiceDiscountPrice, setNewServiceDiscountPrice] = useState(500);
+  const [newServiceDescription, setNewServiceDescription] = useState('');
+  const [newServicePreparation, setNewServicePreparation] = useState('');
+  const [newServiceDuration, setNewServiceDuration] = useState('15 mins');
+  const [newServiceReportDelivery, setNewServiceReportDelivery] = useState('Same Day');
+  const [newServicePopular, setNewServicePopular] = useState(false);
+
+  const handleAddServiceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newServiceName.trim()) {
+      showToast('Please enter a service name.', 'error');
+      return;
+    }
+    
+    // Generate unique ID
+    const generatedId = `${newServiceCategory}-${newServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
+    
+    const newService: DiagnosticService = {
+      id: generatedId,
+      name: newServiceName.trim(),
+      category: newServiceCategory,
+      subCategory: newServiceSubCategory.trim() || (newServiceCategory === 'scan' ? 'MRI Scans' : 'General Blood Tests'),
+      price: Number(newServicePrice) || 0,
+      discountPrice: newServiceDiscountPrice ? Number(newServiceDiscountPrice) : undefined,
+      description: newServiceDescription.trim() || `${newServiceName.trim()} diagnostics test.`,
+      preparation: newServicePreparation.trim() || 'No specific preparation required.',
+      duration: newServiceDuration.trim() || '15 mins',
+      reportDelivery: newServiceReportDelivery.trim() || 'Same Day',
+      popular: newServicePopular
+    };
+    
+    const updated = [...services, newService];
+    onUpdateServices(updated);
+    
+    // Reset form
+    setNewServiceName('');
+    setNewServiceSubCategory('');
+    setNewServicePrice(1000);
+    setNewServiceDiscountPrice(500);
+    setNewServiceDescription('');
+    setNewServicePreparation('');
+    setNewServiceDuration('15 mins');
+    setNewServiceReportDelivery('Same Day');
+    setNewServicePopular(false);
+    setIsAddingService(false);
+    
+    showToast('New diagnostic service added to catalog successfully!', 'success');
+  };
 
   // Manual Walk-in Booking state
   const [manualPatientName, setManualPatientName] = useState('');
@@ -718,7 +780,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
       }
       return s;
     });
-    setServices(updated);
+    onUpdateServices(updated);
     setEditingServiceId(null);
     showToast('Catalog service pricing adjusted successfully!', 'success');
   };
@@ -740,7 +802,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
     let priceSum = 0;
 
     manualSelectedItems.forEach(itemId => {
-      const matchS = DIAGNOSTIC_SERVICES.find(s => s.id === itemId);
+      const matchS = services.find(s => s.id === itemId);
       if (matchS) {
         selectedCartItems.push({
           itemId: matchS.id,
@@ -1046,8 +1108,10 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                     if (res.ok) {
                       localStorage.removeItem('assurx_bookings');
                       localStorage.removeItem('assurx_prescriptions');
+                      localStorage.removeItem('assurx_services');
                       setBookings([]);
                       setPrescriptions([]);
+                      onUpdateServices(DIAGNOSTIC_SERVICES);
                       showToast('All patient data and prescriptions have been securely wiped and reset in the live database!', 'success');
                     } else {
                       showToast('Failed to securely clear the database on the server.', 'error');
@@ -1604,7 +1668,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                   ))}
 
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider pt-2 border-t border-slate-200/60 mt-1">Diagnostic Services (MRI, Blood Tests)</div>
-                  {DIAGNOSTIC_SERVICES.map(srv => (
+                  {services.map(srv => (
                     <label key={srv.id} className="flex items-center gap-2.5 py-1 text-xs cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -1643,17 +1707,189 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                 <h3 className="font-bold text-slate-800 text-sm">Services Catalog Rate-Card</h3>
                 <p className="text-[11px] text-slate-400">Toggle active test directories and manage special subsidy prices instantly.</p>
               </div>
-              <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search catalog items..."
-                  value={catalogSearch}
-                  onChange={(e) => setCatalogSearch(e.target.value)}
-                  className="w-full pl-8.5 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-emerald-600"
-                />
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => setIsAddingService(true)}
+                  className="px-3.5 py-1.5 bg-emerald-650 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add New Service</span>
+                </button>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search catalog items..."
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    className="w-full pl-8.5 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
               </div>
             </div>
+
+            {/* Add New Service Form Section */}
+            {isAddingService && (
+              <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 md:p-6 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <h4 className="font-bold text-slate-850 text-xs md:text-sm flex items-center gap-1.5">
+                    <Plus className="w-4 h-4 text-emerald-600" />
+                    <span>Create New Diagnostic Service</span>
+                  </h4>
+                  <button
+                    onClick={() => setIsAddingService(false)}
+                    className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleAddServiceSubmit} className="space-y-4 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Name */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Service Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. MRI Brain With Contrast, Lipid Profile"
+                        value={newServiceName}
+                        onChange={(e) => setNewServiceName(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* Category */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Category (Department)</label>
+                      <select
+                        value={newServiceCategory}
+                        onChange={(e) => {
+                          setNewServiceCategory(e.target.value as 'scan' | 'lab');
+                          setNewServiceSubCategory(''); // reset
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold cursor-pointer"
+                      >
+                        <option value="scan">Imaging (Radiology / Scans)</option>
+                        <option value="lab">Pathology (Blood / Urine Tests)</option>
+                      </select>
+                    </div>
+                    {/* Sub Category */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Sub Category</label>
+                      <input
+                        type="text"
+                        placeholder={newServiceCategory === 'scan' ? 'e.g. MRI Scans, CT Scans, Ultrasound' : 'e.g. Thyroid, Diabetic Profiles, Vitamins'}
+                        value={newServiceSubCategory}
+                        onChange={(e) => setNewServiceSubCategory(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* Standard Price */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Standard Price (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={newServicePrice}
+                        onChange={(e) => setNewServicePrice(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* Special Discount Price */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Discount Price (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        required
+                        value={newServiceDiscountPrice}
+                        onChange={(e) => setNewServiceDiscountPrice(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* Duration */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Scan/Test Duration</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 20-30 mins, 5 mins"
+                        value={newServiceDuration}
+                        onChange={(e) => setNewServiceDuration(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* Report Delivery */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Report Delivery Time</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Same Day, Within 2 Hours, 24 Hours"
+                        value={newServiceReportDelivery}
+                        onChange={(e) => setNewServiceReportDelivery(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Description */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Clinical Description</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Detail the clinical significance and use of this scan or blood test..."
+                        value={newServiceDescription}
+                        onChange={(e) => setNewServiceDescription(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold resize-none"
+                      />
+                    </div>
+                    {/* Preparation */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Preparation Instructions</label>
+                      <textarea
+                        rows={2}
+                        placeholder="e.g. 10-12 hours fasting mandatory, avoid metallic jewelry..."
+                        value={newServicePreparation}
+                        onChange={(e) => setNewServicePreparation(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={newServicePopular}
+                        onChange={(e) => setNewServicePopular(e.target.checked)}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span>Mark as Popular / Feature on Homepage</span>
+                    </label>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingService(false)}
+                        className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
+                      >
+                        Create & Add Service
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* List Table of Catalog */}
             <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-xs">
@@ -1922,7 +2158,7 @@ export default function AdminPanel({ currentTab, setCurrentTab, bookingRefreshKe
                             {prx.extractedServiceIds && prx.extractedServiceIds.length > 0 ? (
                               <div className="space-y-0.5">
                                 {prx.extractedServiceIds.map((srvId: string, idx: number) => {
-                                  const matchService = DIAGNOSTIC_SERVICES.find(s => s.id === srvId);
+                                  const matchService = services.find(s => s.id === srvId);
                                   return (
                                     <div key={idx} className="text-[10.5px] text-slate-700 truncate block font-bold">
                                       • {matchService ? matchService.name : srvId}

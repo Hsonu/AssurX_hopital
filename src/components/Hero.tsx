@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Check, Sparkles, ChevronDown, CheckCircle2 } from 'lucide-react';
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
+import { HEALTH_PACKAGES } from '../data';
+import { DiagnosticService } from '../types';
+import smilingSpecialist from '@/assets/smiling_specialist.png';
 
 interface HeroProps {
   onNavigate: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'admin') => void;
@@ -9,6 +11,7 @@ interface HeroProps {
   setSelectedBranch: (branch: string) => void;
   onAddToCart: (item: any, type: 'service' | 'package') => void;
   onDirectBook: (item: any) => void;
+  services: DiagnosticService[];
 }
 
 export default function Hero({ 
@@ -17,7 +20,8 @@ export default function Hero({
   selectedBranch, 
   setSelectedBranch, 
   onAddToCart,
-  onDirectBook
+  onDirectBook,
+  services
 }: HeroProps) {
   const [testSearch, setTestSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -39,13 +43,13 @@ export default function Hero({
   const suggestions = (() => {
     if (!testSearch.trim()) {
       // Show popular items by default when search is empty
-      const popularServices = DIAGNOSTIC_SERVICES.filter(s => s.popular).map(s => ({ ...s, type: 'service' as const }));
+      const popularServices = services.filter(s => s.popular).map(s => ({ ...s, type: 'service' as const }));
       const popularPackages = HEALTH_PACKAGES.filter(p => p.id === 'pkg-assurx-essential').map(p => ({ ...p, type: 'package' as const }));
       return [...popularServices, ...popularPackages].slice(0, 5);
     }
     const query = testSearch.toLowerCase();
     
-    const matchedServices = DIAGNOSTIC_SERVICES.filter(s => 
+    const matchedServices = services.filter(s => 
       s.name.toLowerCase().includes(query) || 
       (s.subCategory && s.subCategory.toLowerCase().includes(query))
     ).map(s => ({ ...s, type: 'service' as const }));
@@ -70,7 +74,7 @@ export default function Hero({
       setSelectedItem(null);
     } else if (testSearch.trim()) {
       // Fallback search trigger
-      const exactMatch = [...DIAGNOSTIC_SERVICES, ...HEALTH_PACKAGES].find(
+      const exactMatch = [...services, ...HEALTH_PACKAGES].find(
         item => item.name.toLowerCase().includes(testSearch.toLowerCase())
       );
       if (exactMatch) {
@@ -82,7 +86,7 @@ export default function Hero({
       }
     } else {
       // Open booking with the most popular test as default instead of an annoying alert
-      const defaultService = DIAGNOSTIC_SERVICES.find(s => s.id === 'lab-cbc') || DIAGNOSTIC_SERVICES[0];
+      const defaultService = services.find(s => s.id === 'lab-cbc') || services[0];
       onDirectBook(defaultService);
     }
   };
@@ -93,10 +97,13 @@ export default function Hero({
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-teal-50/80 via-white to-amber-50/40 py-10 md:py-16 px-4 md:px-6 border-b border-slate-100" id="hero-section">
-      {/* Background radial soft decorative elements */}
-      <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-teal-100/30 blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-amber-100/30 blur-3xl pointer-events-none"></div>
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#d4f3f6]/90 via-[#f0fcfd]/80 to-[#fdfde2]/40 py-10 md:py-16 px-4 md:px-6" id="hero-section">
+      {/* Background yellow circles to match the exact look in the screenshot */}
+      <div className="absolute right-0 top-0 bottom-0 w-full lg:w-1/2 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-yellow-300/30"></div>
+        <div className="absolute top-1/4 right-8 w-44 h-44 rounded-full bg-yellow-350/40"></div>
+        <div className="absolute bottom-12 right-24 w-60 h-60 rounded-full bg-yellow-300/30"></div>
+      </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
         
@@ -148,7 +155,7 @@ export default function Hero({
             <div className="absolute top-10 right-4 w-40 h-40 rounded-full bg-amber-400/10 blur-2xl group-hover:scale-110 transition-transform"></div>
             
             <img 
-              src="https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?q=80&w=600&auto=format&fit=crop" 
+              src={smilingSpecialist} 
               alt="Smiling Diagnostic Specialist / Radiologist" 
               className="w-full h-full object-cover object-top select-none transition-transform duration-500 hover:scale-102 mix-blend-multiply"
               referrerPolicy="no-referrer"
