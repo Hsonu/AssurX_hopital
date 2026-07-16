@@ -3,6 +3,7 @@ import { PatientAuthRequest } from '../middleware/jwtAuth.ts';
 import PatientModel from '../models/Patient.ts';
 import { BookingModel, getNextId } from '../db/schema.ts';
 import mongoose from 'mongoose';
+import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data.ts';
 
 // GET /patient/profile
 export const getProfile = async (req: PatientAuthRequest, res: Response) => {
@@ -182,6 +183,30 @@ export const createBooking = async (req: PatientAuthRequest, res: Response) => {
     }
     if (totalAmount < 0) {
       return res.status(400).json({ error: "Validation failed: Invalid total amount." });
+    }
+
+    // Server-side price calculation & validation (Check 4)
+    try {
+      let itemsTotal = 0;
+      for (const item of items) {
+        const matchedService = DIAGNOSTIC_SERVICES.find(s => s.id === item.itemId);
+        const matchedPackage = HEALTH_PACKAGES.find(p => p.id === item.itemId);
+        const catalogItem = matchedService || matchedPackage;
+        if (!catalogItem) {
+          throw new Error(`Item ${item.itemId} not found in catalog.`);
+        }
+        const price = catalogItem.discountPrice !== undefined ? catalogItem.discountPrice : catalogItem.price;
+        itemsTotal += price;
+      }
+      const collectionCharge = collectionType === 'home' ? 150 : 0;
+      const surcharge = Math.round(itemsTotal * 0.05);
+      const expectedTotal = itemsTotal + collectionCharge + surcharge;
+
+      if (totalAmount !== expectedTotal) {
+        return res.status(400).json({ error: `Validation failed: Price mismatch. Expected ₹${expectedTotal}, but received ₹${totalAmount}.` });
+      }
+    } catch (err: any) {
+      return res.status(400).json({ error: `Validation failed: ${err.message}` });
     }
 
     const surrogateId = await getNextId('booking');

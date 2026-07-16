@@ -9,6 +9,7 @@ import { getAdminSession, setAdminSession, clearAdminSession } from "./src/db/ad
 import authRoutes from "./src/routes/authRoutes.ts";
 import patientRoutes from "./src/routes/patientRoutes.ts";
 import { connectDB } from "./src/db/index.ts";
+import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from "./src/data.ts";
 
 function pingServer(url: string) {
   try {
@@ -94,7 +95,16 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
   }
 ];
 
+let dynamicAdminKey = "";
+
 async function startServer() {
+  if (!process.env.ADMIN_API_KEY) {
+    dynamicAdminKey = crypto.randomUUID();
+    console.warn(`⚠️ SECURITY WARNING: ADMIN_API_KEY environment variable is NOT set! A dynamic fallback key has been generated for this session: ${dynamicAdminKey}`);
+  } else {
+    dynamicAdminKey = process.env.ADMIN_API_KEY;
+  }
+
   try {
     await connectDB();
   } catch (error) {
@@ -125,6 +135,8 @@ async function startServer() {
     );
     // Prevent MIME-sniffing
     res.setHeader("X-Content-Type-Options", "nosniff");
+    // Prevent Clickjacking (Check 3 requirement)
+    res.setHeader("X-Frame-Options", "DENY");
     // Control referrer info
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     // Enable browser XSS filtering
@@ -139,6 +151,24 @@ async function startServer() {
   // Helper function for XSS sanitization (removing HTML brackets to prevent tag injection)
   const sanitizeString = (str: string): string => {
     return str.replace(/[<>]/g, "");
+  };
+
+  // Server-side price calculation & verification helper (Check 4)
+  const calculateTotalAmount = (items: any[], collectionType: string): number => {
+    let itemsTotal = 0;
+    for (const item of items) {
+      const matchedService = DIAGNOSTIC_SERVICES.find(s => s.id === item.itemId);
+      const matchedPackage = HEALTH_PACKAGES.find(p => p.id === item.itemId);
+      const catalogItem = matchedService || matchedPackage;
+      if (!catalogItem) {
+        throw new Error(`Item ${item.itemId} not found in catalog.`);
+      }
+      const price = catalogItem.discountPrice !== undefined ? catalogItem.discountPrice : catalogItem.price;
+      itemsTotal += price;
+    }
+    const collectionCharge = collectionType === 'home' ? 150 : 0;
+    const surcharge = Math.round(itemsTotal * 0.05);
+    return itemsTotal + collectionCharge + surcharge;
   };
 
   // 2. Memory-Based API Rate Limiting Middleware
@@ -176,6 +206,32 @@ async function startServer() {
     rateLimiter(req, res, next);
   });
 
+  // Stricter rate limiting for authentication routes (5 attempts per minute max - Check 3 & Check 5)
+  const authRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+  const authRateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || "unknown-ip";
+    const now = Date.now();
+    let info = authRateLimitMap.get(ip);
+    const windowMs = 60 * 1000; // 1 minute
+    const maxRequests = 5;
+
+    if (!info || now > info.resetTime) {
+      info = { count: 1, resetTime: now + windowMs };
+      authRateLimitMap.set(ip, info);
+    } else {
+      info.count++;
+    }
+
+    if (info.count > maxRequests) {
+      return res.status(429).json({ error: "Too many authentication attempts. Please try again after 1 minute." });
+    }
+    next();
+  };
+
+  app.use("/api/admin/login", authRateLimiter);
+  app.use("/api/auth/google", authRateLimiter);
+  app.use("/auth/google", authRateLimiter);
+
   // --- API ROUTES ---
 
   // Health check endpoint
@@ -202,7 +258,8 @@ async function startServer() {
       // Check if this user already has any bookings in the database
       const userBookings = await getUserBookings(uid);
       if (userBookings.length === 0) {
-        console.log(`Pre-seeding clinical records for newly synced user ID: ${user.id} (${email})`);
+        const maskedEmail = email.replace(/(..)(.*)(@.*)/, "$1***$3");
+        console.log(`Pre-seeding clinical records for newly synced user ID: ${user.id} (${maskedEmail})`);
         for (const seed of DEFAULT_ADMIN_BOOKINGS_SEED) {
           try {
             // Append user ID suffix to ensure uniqueness across different users in the database
@@ -245,18 +302,14 @@ async function startServer() {
   app.post("/api/bookings", async (req, res, next) => {
     // Check if authorized via Admin Key first!
     const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
-    const expectedAdminKey = process.env.ADMIN_API_KEY || "assurx2026health";
+    const expectedAdminKey = dynamicAdminKey;
 
     const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
     const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
     if (
-      cleanKey === cleanExpected ||
-      adminKey === expectedAdminKey ||
-      cleanKey === "assurx2026health" ||
-      adminKey === "assurx2026health" ||
-      cleanKey === "assurx2026healtj" ||
-      adminKey === "assurx2026healtj"
+      (cleanKey !== "" && cleanKey === cleanExpected) ||
+      (adminKey !== null && adminKey === expectedAdminKey)
     ) {
       // Authenticated as Admin! Assign a surrogate admin user context
       (req as any).user = {
@@ -324,6 +377,16 @@ async function startServer() {
       }
       if (totalAmount < 0) {
         return res.status(400).json({ error: "Validation failed: Invalid total amount." });
+      }
+
+      // Server-side price calculation & validation (Check 4)
+      try {
+        const expectedTotal = calculateTotalAmount(items, collectionType);
+        if (totalAmount !== expectedTotal) {
+          return res.status(400).json({ error: `Validation failed: Price mismatch. Expected ₹${expectedTotal}, but received ₹${totalAmount}.` });
+        }
+      } catch (err: any) {
+        return res.status(400).json({ error: `Validation failed: ${err.message}` });
       }
 
       const bookingData = {
@@ -425,18 +488,14 @@ async function startServer() {
 
       // Check if it's an admin requesting (via header)
       const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
-      const expectedAdminKey = process.env.ADMIN_API_KEY || "assurx2026health";
+      const expectedAdminKey = dynamicAdminKey;
 
       const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
       const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
       const isAdmin = (
-        cleanKey === cleanExpected ||
-        adminKey === expectedAdminKey ||
-        cleanKey === "assurx2026health" ||
-        adminKey === "assurx2026health" ||
-        cleanKey === "assurx2026healtj" ||
-        adminKey === "assurx2026healtj"
+        (cleanKey !== "" && cleanKey === cleanExpected) ||
+        (adminKey !== null && adminKey === expectedAdminKey)
       );
 
       if (!isAdmin) {
@@ -455,6 +514,8 @@ async function startServer() {
           let decodedUser: any = null;
           let isCustomJwt = false;
           let patientIdStr = "";
+          let googleUidStr = "";
+          let emailStr = "";
 
           // Try custom JWT verification first
           try {
@@ -463,14 +524,24 @@ async function startServer() {
             if (decoded && decoded.role === 'Patient') {
               isCustomJwt = true;
               patientIdStr = decoded.patientId;
+              googleUidStr = decoded.googleUid;
+              emailStr = decoded.email;
             }
           } catch (jwtErr) {
             // Fall back to Firebase verification
           }
 
           if (isCustomJwt) {
-            if (b.patientId && String(b.patientId) !== patientIdStr) {
-              return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the owner can view this." });
+            if (b.patientId) {
+              if (String(b.patientId) !== patientIdStr) {
+                return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the owner can view this." });
+              }
+            } else {
+              // Legacy/seeded booking: verify the user's DB ID matches the booking's userId (Check 5 IDOR Fix)
+              const dbUser = await getOrCreateUser(googleUidStr, emailStr);
+              if (b.userId !== dbUser.id) {
+                return res.status(403).json({ error: "Forbidden: You are not authorized to view this booking. Only the owner can view this." });
+              }
             }
           } else {
             try {
@@ -624,9 +695,9 @@ async function startServer() {
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password, key } = req.body;
-      const expectedEmail = "sonusonuraj415@gmail.com";
-      const expectedPassword = "assurxlab2026";
-      const expectedKey = process.env.ADMIN_API_KEY || "assurx2026health";
+      const expectedEmail = process.env.ADMIN_EMAIL || "sonusonuraj415@gmail.com";
+      const expectedPassword = process.env.ADMIN_PASSWORD || "assurxlab2026";
+      const expectedKey = dynamicAdminKey;
 
       if (
         typeof email !== "string" || email.trim().toLowerCase() !== expectedEmail ||
@@ -666,18 +737,14 @@ async function startServer() {
   // Secure admin authorization middleware: validates both admin key AND active session
   const requireAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
-    const expectedAdminKey = process.env.ADMIN_API_KEY || "assurx2026health";
+    const expectedAdminKey = dynamicAdminKey;
 
     const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
     const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
 
     const keyValid = (
-      cleanKey === cleanExpected ||
-      adminKey === expectedAdminKey ||
-      cleanKey === "assurx2026health" ||
-      adminKey === "assurx2026health" ||
-      cleanKey === "assurx2026healtj" ||
-      adminKey === "assurx2026healtj"
+      (cleanKey !== "" && cleanKey === cleanExpected) ||
+      (adminKey !== null && adminKey === expectedAdminKey)
     );
 
     if (!keyValid) {

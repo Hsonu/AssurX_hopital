@@ -83,7 +83,7 @@ const bookingSchema = new Schema<IBooking>({
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patient",
-    required: true
+    required: false
   },
   userEmail: { type: String },
   patientName: { type: String, required: true },

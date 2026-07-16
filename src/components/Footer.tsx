@@ -3,7 +3,7 @@ import { ShieldAlert, Award, ShieldCheck, HeartPulse, Sparkles, MapPin, PhoneCal
 import { ASSURX_CENTERS } from '../data';
 
 interface FooterProps {
-  onNavigate: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings') => void;
+  onNavigate: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us') => void;
   centers?: Array<{ city: string; address: string; phone: string }>;
 }
 
@@ -115,10 +115,13 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
       <div className="bg-slate-950 text-slate-550 border-t border-slate-900 py-6 px-4 md:px-6 text-[10px] md:text-xs">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <p>© 2026 AssurX Scans & Laboratories Pvt. Ltd. All medical rights reserved.</p>
-          <div className="flex gap-4">
-            <a href="#" className="hover:text-slate-300 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-slate-300 transition-colors font-semibold">Terms of Use</a>
-            <a href="#" className="hover:text-slate-300 transition-colors">HIPAA Compliance</a>
+          <div className="flex flex-wrap justify-center sm:justify-end gap-x-6 gap-y-2">
+            <button onClick={() => onNavigate('about-us')} className="hover:text-slate-300 transition-colors cursor-pointer">About Us</button>
+            <button onClick={() => onNavigate('contact-us')} className="hover:text-slate-300 transition-colors cursor-pointer">Contact Us</button>
+            <button onClick={() => onNavigate('privacy-policy')} className="hover:text-slate-300 transition-colors cursor-pointer">Privacy Policy</button>
+            <button onClick={() => onNavigate('terms-of-use')} className="hover:text-slate-300 transition-colors cursor-pointer font-semibold">Terms of Use</button>
+            <button onClick={() => onNavigate('refund-policy')} className="hover:text-slate-300 transition-colors cursor-pointer">Cancellation & Refund</button>
+            <button onClick={() => onNavigate('shipping-policy')} className="hover:text-slate-300 transition-colors cursor-pointer">Service Delivery</button>
           </div>
         </div>
       </div>

@@ -28,6 +28,7 @@ import DirectBookModal from './components/DirectBookModal';
 import { TrackOrderSection, HiringCareersSection } from './components/HearingAndTracking';
 import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
+import LegalPages from './components/LegalPages';
 
 const getPackageImage = (id: string) => {
   switch (id) {
@@ -52,7 +53,7 @@ const resolveBannerImage = (img: string) => {
 };
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us'>('home');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -1145,6 +1146,13 @@ export default function App() {
             onUpdateSections={setSections}
             centers={centers}
             onUpdateCenters={setCenters}
+          />
+        )}
+        {/* TAB 6: LEGAL & COMPLIANCE PAGES (Razorpay Requirements) */}
+        {['privacy-policy', 'terms-of-use', 'refund-policy', 'shipping-policy', 'about-us', 'contact-us'].includes(currentTab) && (
+          <LegalPages 
+            activeSection={currentTab as any}
+            onSectionChange={(section) => setCurrentTab(section)}
           />
         )}
 

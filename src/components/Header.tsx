@@ -5,8 +5,8 @@ import { useAuth } from '../lib/auth.ts';
 import PatientBookingsModal from './PatientBookingsModal.tsx';
 
 interface HeaderProps {
-  currentTab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings';
-  setCurrentTab: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings') => void;
+  currentTab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us';
+  setCurrentTab: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us') => void;
   cart: CartItem[];
   openCart: () => void;
   selectedBranch: string;
@@ -42,7 +42,7 @@ export default function Header({
   }, [isLoginModalOpen]);
   const branches = centers.length > 0 ? centers.map(c => c.city) : ['Malad', 'Goregaon'];
 
-  const handleTabClick = (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings') => {
+  const handleTabClick = (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us') => {
     setCurrentTab(tab);
     setMobileMenuOpen(false);
   };

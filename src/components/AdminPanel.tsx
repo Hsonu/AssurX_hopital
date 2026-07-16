@@ -5,7 +5,7 @@ import {
   DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw,
   FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown
 } from 'lucide-react';
-import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection } from '../types';
+import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter } from '../types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
 import { auth } from '../lib/firebase.ts';
 import { adminFetch } from '../lib/sessionGuard.ts';
