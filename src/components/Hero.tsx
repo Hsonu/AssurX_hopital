@@ -135,15 +135,6 @@ export default function Hero({
             </li>
           </ul>
 
-          {/* Quick Upload Rx trigger */}
-          <div className="pt-2">
-            <button
-              onClick={onOpenPrescription}
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
-            >
-              <span>Have a Prescription? Upload Here</span>
-            </button>
-          </div>
         </div>
 
         {/* Right Column: Dynamic Portrait + Floating Interactive Card Form */}

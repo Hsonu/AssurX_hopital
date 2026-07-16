@@ -3,9 +3,9 @@ import {
   Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock, 
   ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp, 
   DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw,
-  FileText, Briefcase
+  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown
 } from 'lucide-react';
-import { Booking, Patient, DiagnosticService, HealthPackage, CartItem } from '../types';
+import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection } from '../types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
 import { auth } from '../lib/firebase.ts';
 import { adminFetch } from '../lib/sessionGuard.ts';
@@ -18,6 +18,10 @@ interface AdminPanelProps {
   bookingRefreshKey?: number; // Incremented when a new booking is made to trigger immediate refresh
   services: DiagnosticService[];
   onUpdateServices: (services: DiagnosticService[]) => void;
+  sections?: HomepageSection[];
+  onUpdateSections?: (sections: HomepageSection[]) => void;
+  centers?: ClinicCenter[];
+  onUpdateCenters?: (centers: ClinicCenter[]) => void;
 }
 
 // Default pre-seeded clinical data for our laboratory reports
@@ -110,7 +114,11 @@ export default function AdminPanel({
   setCurrentTab, 
   bookingRefreshKey = 0,
   services,
-  onUpdateServices
+  onUpdateServices,
+  sections = [],
+  onUpdateSections = () => {},
+  centers = [],
+  onUpdateCenters = () => {}
 }: AdminPanelProps) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     const hasFlag = localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
@@ -224,8 +232,221 @@ export default function AdminPanel({
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers'>('dispatcher');
+  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches'>('dispatcher');
   const [applications, setApplications] = useState<any[]>([]);
+
+  // Sections Manager State
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [isAddingSection, setIsAddingSection] = useState(false);
+  const [secTitle, setSecTitle] = useState('');
+  const [secSubtitle, setSecSubtitle] = useState('');
+  const [secCategory, setSecCategory] = useState<'scan' | 'lab' | 'all'>('all');
+  const [secViewAllTab, setSecViewAllTab] = useState<'scans' | 'labs'>('scans');
+  const [secBannerImage, setSecBannerImage] = useState('');
+  const [secBannerTag, setSecBannerTag] = useState('');
+  const [secBannerTitle, setSecBannerTitle] = useState('');
+  const [secServiceIds, setSecServiceIds] = useState<string[]>([]);
+
+  const resetSectionForm = () => {
+    setSecTitle('');
+    setSecSubtitle('');
+    setSecCategory('all');
+    setSecViewAllTab('scans');
+    setSecBannerImage('');
+    setSecBannerTag('');
+    setSecBannerTitle('');
+    setSecServiceIds([]);
+    setEditingSectionId(null);
+    setIsAddingSection(false);
+  };
+
+  const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Image size should be less than 2MB.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result === 'string') {
+          setSecBannerImage(result);
+          showToast('Image uploaded successfully!', 'success');
+        }
+      };
+      reader.onerror = () => {
+        showToast('Failed to read image file.', 'error');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Clinic branch management states
+  const [editingCenterCity, setEditingCenterCity] = useState<string | null>(null);
+  const [editCenterAddress, setEditCenterAddress] = useState('');
+  const [editCenterPhone, setEditCenterPhone] = useState('');
+  
+  const [isAddingCenter, setIsAddingCenter] = useState(false);
+  const [newCenterCity, setNewCenterCity] = useState('');
+  const [newCenterAddress, setNewCenterAddress] = useState('');
+  const [newCenterPhone, setNewCenterPhone] = useState('');
+
+  const handleStartEditCenter = (center: ClinicCenter) => {
+    setEditingCenterCity(center.city);
+    setEditCenterAddress(center.address);
+    setEditCenterPhone(center.phone);
+  };
+
+  const handleSaveCenter = (city: string) => {
+    if (!editCenterAddress.trim() || !editCenterPhone.trim()) {
+      showToast('Please enter both address and phone number.', 'error');
+      return;
+    }
+    const updated = centers.map(c => {
+      if (c.city === city) {
+        return { ...c, address: editCenterAddress.trim(), phone: editCenterPhone.trim() };
+      }
+      return c;
+    });
+    onUpdateCenters(updated);
+    setEditingCenterCity(null);
+    showToast(`${city} branch details updated successfully!`, 'success');
+  };
+
+  const handleAddCenterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCenterCity.trim() || !newCenterAddress.trim() || !newCenterPhone.trim()) {
+      showToast('Please fill out all branch fields.', 'error');
+      return;
+    }
+    if (centers.some(c => c.city.toLowerCase() === newCenterCity.trim().toLowerCase())) {
+      showToast(`A branch with the name "${newCenterCity.trim()}" already exists.`, 'error');
+      return;
+    }
+    const newCenter: ClinicCenter = {
+      city: newCenterCity.trim(),
+      address: newCenterAddress.trim(),
+      phone: newCenterPhone.trim()
+    };
+    const updated = [...centers, newCenter];
+    onUpdateCenters(updated);
+    
+    setNewCenterCity('');
+    setNewCenterAddress('');
+    setNewCenterPhone('');
+    setIsAddingCenter(false);
+    showToast(`New branch ${newCenter.city} registered successfully!`, 'success');
+  };
+
+  const handleDeleteCenter = (city: string) => {
+    if (centers.length <= 1) {
+      showToast('Cannot delete the last remaining clinic branch center.', 'error');
+      return;
+    }
+    const confirmDelete = window.confirm(`Are you sure you want to delete the ${city} branch from the directory?`);
+    if (confirmDelete) {
+      const updated = centers.filter(c => c.city !== city);
+      onUpdateCenters(updated);
+      showToast(`${city} branch deleted successfully.`, 'success');
+    }
+  };
+
+  const handleAddSectionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secTitle.trim()) {
+      showToast('Please enter a section title.', 'error');
+      return;
+    }
+    const newSection: HomepageSection = {
+      id: `section-${Date.now()}`,
+      title: secTitle.trim(),
+      subtitle: secSubtitle.trim() || 'Custom Offerings Panel',
+      category: secCategory,
+      viewAllTab: secViewAllTab,
+      bannerImage: secBannerImage.trim() || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200&auto=format&fit=crop',
+      bannerTag: secBannerTag.trim() || 'Clinic Showcase',
+      bannerTitle: secBannerTitle.trim() || 'State-of-the-Art Diagnostics',
+      serviceIds: secServiceIds
+    };
+    const updated = [...sections, newSection];
+    onUpdateSections(updated);
+    resetSectionForm();
+    showToast('New homepage section created successfully!', 'success');
+  };
+
+  const handleEditSectionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secTitle.trim()) {
+      showToast('Please enter a section title.', 'error');
+      return;
+    }
+    const updated = sections.map(s => {
+      if (s.id === editingSectionId) {
+        return {
+          ...s,
+          title: secTitle.trim(),
+          subtitle: secSubtitle.trim() || 'Custom Offerings Panel',
+          category: secCategory,
+          viewAllTab: secViewAllTab,
+          bannerImage: secBannerImage.trim() || s.bannerImage,
+          bannerTag: secBannerTag.trim() || 'Clinic Showcase',
+          bannerTitle: secBannerTitle.trim() || 'State-of-the-Art Diagnostics',
+          serviceIds: secServiceIds
+        };
+      }
+      return s;
+    });
+    onUpdateSections(updated);
+    resetSectionForm();
+    showToast('Homepage section updated successfully!', 'success');
+  };
+
+  const handleOpenEditSection = (section: HomepageSection) => {
+    setEditingSectionId(section.id);
+    setSecTitle(section.title);
+    setSecSubtitle(section.subtitle);
+    setSecCategory(section.category);
+    setSecViewAllTab(section.viewAllTab);
+    setSecBannerImage(section.bannerImage);
+    setSecBannerTag(section.bannerTag);
+    setSecBannerTitle(section.bannerTitle);
+    setSecServiceIds(section.serviceIds || []);
+    setIsAddingSection(true);
+  };
+
+  const handleDeleteSection = (id: string) => {
+    triggerConfirm(
+      'Delete Homepage Section',
+      'Are you sure you want to permanently delete this homepage offering section? This will immediately remove it from the public homepage.',
+      'Delete Section',
+      () => {
+        const updated = sections.filter(s => s.id !== id);
+        onUpdateSections(updated);
+        showToast('Homepage section deleted successfully!', 'success');
+      }
+    );
+  };
+
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    const updated = [...sections];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex >= 0 && targetIndex < updated.length) {
+      const temp = updated[index];
+      updated[index] = updated[targetIndex];
+      updated[targetIndex] = temp;
+      onUpdateSections(updated);
+      showToast('Homepage section layout reordered!', 'success');
+    }
+  };
+
+  const toggleSectionServiceSelection = (id: string) => {
+    if (secServiceIds.includes(id)) {
+      setSecServiceIds(secServiceIds.filter(x => x !== id));
+    } else {
+      setSecServiceIds([...secServiceIds, id]);
+    }
+  };
   
   // Custom Toast state
   const [toast, setToast] = useState<{
@@ -785,6 +1006,29 @@ export default function AdminPanel({
     showToast('Catalog service pricing adjusted successfully!', 'success');
   };
 
+  const handleDeleteService = (serviceId: string) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this service from the catalog? This will also remove it from any configured homepage offering sections.");
+    if (confirmDelete) {
+      const updatedServices = services.filter(s => s.id !== serviceId);
+      onUpdateServices(updatedServices);
+      
+      if (sections && onUpdateSections) {
+        const updatedSections = sections.map(section => {
+          if (section.serviceIds && section.serviceIds.includes(serviceId)) {
+            return {
+              ...section,
+              serviceIds: section.serviceIds.filter(id => id !== serviceId)
+            };
+          }
+          return section;
+        });
+        onUpdateSections(updatedSections);
+      }
+      
+      showToast('Service deleted from catalog rate-card successfully!', 'success');
+    }
+  };
+
   // Handle Manual Walk-in form submit
   const handleManualBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1281,6 +1525,28 @@ export default function AdminPanel({
           <span>Job Applications ({applications.length})</span>
           {activeTab === 'careers' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-700 rounded-full"></span>}
         </button>
+
+        <button
+          onClick={() => setActiveTab('sections')}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
+            activeTab === 'sections' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4 text-emerald-650" />
+          <span>Homepage Sections ({sections.length})</span>
+          {activeTab === 'sections' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full"></span>}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('branches')}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
+            activeTab === 'branches' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+          }`}
+        >
+          <Building className="w-4 h-4 text-emerald-655" />
+          <span>Branches Settings ({centers.length})</span>
+          {activeTab === 'branches' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full"></span>}
+        </button>
       </div>
 
       {/* Main Panel Content Render Area */}
@@ -1710,7 +1976,7 @@ export default function AdminPanel({
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setIsAddingService(true)}
-                  className="px-3.5 py-1.5 bg-emerald-650 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add New Service</span>
@@ -1963,13 +2229,23 @@ export default function AdminPanel({
                               </button>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => handleStartEditPrice(srv)}
-                              className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
-                            >
-                              <Edit2 className="w-3 h-3 text-slate-500" />
-                              <span>Edit Rates</span>
-                            </button>
+                            <div className="flex gap-1.5 justify-end">
+                              <button
+                                onClick={() => handleStartEditPrice(srv)}
+                                className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <Edit2 className="w-3 h-3 text-slate-500" />
+                                <span>Edit Rates</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteService(srv.id)}
+                                className="px-2.5 py-1.5 border border-slate-200 hover:border-rose-350 hover:bg-rose-50 hover:text-rose-700 text-slate-550 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                                title="Delete Service"
+                              >
+                                <Trash2 className="w-3 h-3 text-slate-400" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
                           )}
                         </td>
 
@@ -2409,6 +2685,525 @@ export default function AdminPanel({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab 7: Homepage Sections Manager */}
+        {activeTab === 'sections' && (
+          <div className="space-y-6 animate-fade-in text-left">
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] bg-emerald-50 text-emerald-800 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">Design & Layout Division</span>
+                <h3 className="text-xl font-serif font-bold text-slate-900 font-light">Homepage Core Offerings Sections</h3>
+                <p className="text-xs text-slate-500 font-medium">Add, customize, reorder, or remove offering grids on the homepage (like Popular Scans & Labs).</p>
+              </div>
+              <button
+                onClick={() => {
+                  resetSectionForm();
+                  setIsAddingSection(true);
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Create Section</span>
+              </button>
+            </div>
+
+            {sections.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-3xl p-12 text-center space-y-3">
+                <LayoutGrid className="w-10 h-10 text-slate-300 mx-auto" />
+                <h4 className="font-bold text-slate-800 text-sm">No Homepage Sections Defined</h4>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto font-medium">Create a dynamic diagnostic offerings card to show test panels on the public website homepage.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {sections.map((section, idx) => (
+                  <div key={section.id} className="bg-white border border-slate-200 rounded-[28px] overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative aspect-[21/9] bg-slate-100 overflow-hidden">
+                      <img 
+                        src={section.bannerImage === 'bloodTestingBanner' ? 'https://images.unsplash.com/photo-1579154204601-01588f351167?q=80&w=1200&auto=format&fit=crop' : section.bannerImage} 
+                        alt={section.title} 
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent"></div>
+                      <div className="absolute bottom-3 left-3 right-3 text-left">
+                        <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded inline-block">{section.bannerTag}</span>
+                        <p className="text-white text-[11px] font-bold leading-tight mt-0.5">{section.bannerTitle}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[9px] uppercase tracking-wide font-extrabold rounded-md">
+                              Category: {section.category.toUpperCase()}
+                            </span>
+                            <h4 className="font-serif font-bold text-slate-900 text-base mt-1.5">{section.title}</h4>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              disabled={idx === 0}
+                              onClick={() => handleMoveSection(idx, 'up')}
+                              className="p-1 hover:bg-slate-100 text-slate-500 rounded disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                              title="Move Up"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              disabled={idx === sections.length - 1}
+                              onClick={() => handleMoveSection(idx, 'down')}
+                              className="p-1 hover:bg-slate-100 text-slate-500 rounded disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                              title="Move Down"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-semibold">{section.subtitle}</p>
+                        
+                        <div className="pt-2 border-t border-slate-100 space-y-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Service Offerings Filter:</span>
+                          {section.serviceIds && section.serviceIds.length > 0 ? (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {section.serviceIds.map(id => {
+                                const svc = services.find(s => s.id === id);
+                                return (
+                                  <span key={id} className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200/60 rounded text-[9.5px] font-bold text-slate-600">
+                                    {svc ? svc.name.split(' (')[0] : id}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-slate-650 font-bold">Auto-displays popular {section.category === 'all' ? 'scans & lab tests' : `${section.category}s`} from catalog.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button
+                          onClick={() => handleOpenEditSection(section)}
+                          className="px-3 py-1.5 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 text-slate-500 rounded-lg text-[10px] font-bold transition-all cursor-pointer bg-white flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit Card</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSection(section.id)}
+                          className="px-3 py-1.5 border border-slate-200 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 text-slate-500 rounded-lg text-[10px] font-bold transition-all cursor-pointer bg-white flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Custom Modal overlay for adding / editing a section */}
+            {isAddingSection && (
+              <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+                <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
+                  
+                  {/* Modal Title */}
+                  <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <div>
+                      <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">Public layout builder</span>
+                      <h3 className="text-lg font-serif font-bold text-slate-900">
+                        {editingSectionId ? 'Update Section' : 'Create Custom Offering Section'}
+                      </h3>
+                    </div>
+                    <button
+                      onClick={resetSectionForm}
+                      className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Modal Scrollable Body */}
+                  <form onSubmit={editingSectionId ? handleEditSectionSubmit : handleAddSectionSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs font-semibold text-slate-700">
+                    
+                    {/* Section Title */}
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Section Title</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="E.g. Popular Cardiac Tests"
+                        value={secTitle}
+                        onChange={(e) => setSecTitle(e.target.value)}
+                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-slate-50/50 focus:bg-white font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    {/* Section Subtitle */}
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Section Subtitle / Badges</label>
+                      <input
+                        type="text"
+                        placeholder="E.g. Verified Cardiac Panels • 12 Hour Reports"
+                        value={secSubtitle}
+                        onChange={(e) => setSecSubtitle(e.target.value)}
+                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-slate-50/50 focus:bg-white font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Department filter Category */}
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Catalog Category Filter</label>
+                        <select
+                          value={secCategory}
+                          onChange={(e) => setSecCategory(e.target.value as any)}
+                          className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+                        >
+                          <option value="scan">Scans (Imaging / Radiology)</option>
+                          <option value="lab">Lab Tests (Pathology)</option>
+                          <option value="all">All Catalog Items</option>
+                        </select>
+                      </div>
+
+                      {/* View All redirect tab */}
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">"View All" Redirect Link Tab</label>
+                        <select
+                          value={secViewAllTab}
+                          onChange={(e) => setSecViewAllTab(e.target.value as any)}
+                          className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+                        >
+                          <option value="scans">Scans & Diagnostic Imaging Page</option>
+                          <option value="labs">Pathology & Blood Labs Page</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Banner Image URL and Presets */}
+                    <div className="space-y-2.5 bg-slate-50 p-4 border border-slate-150 rounded-2xl">
+                      <div className="flex flex-col sm:flex-row gap-3 items-end">
+                        <div className="space-y-1 flex-1">
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Banner Image URL</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Paste Unsplash stock URL or custom graphic link"
+                            value={secBannerImage}
+                            onChange={(e) => setSecBannerImage(e.target.value)}
+                            className="w-full px-3 py-1.5 border border-slate-250 rounded-lg text-[10.5px] bg-white focus:outline-none font-mono text-slate-700"
+                          />
+                        </div>
+                        <div className="space-y-1 flex-shrink-0">
+                          <span className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1">Or Upload Image</span>
+                          <label className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-250 hover:bg-slate-50 text-slate-650 hover:text-slate-800 rounded-lg text-[10.5px] cursor-pointer font-bold shadow-xs">
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Choose File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleBannerImageUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      
+                      {/* Presets Selection */}
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-bold text-slate-450 uppercase block">Or Choose a Premium Clinic Banner Preset:</span>
+                        <div className="flex flex-wrap gap-2 pt-1 select-none">
+                          <button
+                            type="button"
+                            onClick={() => setSecBannerImage('https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop')}
+                            className="px-2.5 py-1 border border-slate-200 hover:bg-slate-100 rounded text-[9px] bg-white text-slate-650 cursor-pointer"
+                          >
+                            🔬 Scanning Room
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSecBannerImage('https://images.unsplash.com/photo-1579154204601-01588f351167?q=80&w=1200&auto=format&fit=crop')}
+                            className="px-2.5 py-1 border border-slate-200 hover:bg-slate-100 rounded text-[9px] bg-white text-slate-650 cursor-pointer"
+                          >
+                            🧪 Pathology Labs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSecBannerImage('https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1200&auto=format&fit=crop')}
+                            className="px-2.5 py-1 border border-slate-200 hover:bg-slate-100 rounded text-[9px] bg-white text-slate-650 cursor-pointer"
+                          >
+                            🏥 Medical Tech
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSecBannerImage('https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?q=80&w=1200&auto=format&fit=crop')}
+                            className="px-2.5 py-1 border border-slate-200 hover:bg-slate-100 rounded text-[9px] bg-white text-slate-650 cursor-pointer"
+                          >
+                            ❤️ Heart Cardiology
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Banner tag badge */}
+                      <div className="space-y-1 sm:col-span-1">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Banner Badge Tag</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="E.g. Advanced Clinic"
+                          value={secBannerTag}
+                          onChange={(e) => setSecBannerTag(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none bg-slate-50/50 focus:bg-white text-slate-800"
+                        />
+                      </div>
+                      {/* Banner description title */}
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Banner Description Title</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="E.g. Premium Echocardiography & ECG acquisition center"
+                          value={secBannerTitle}
+                          onChange={(e) => setSecBannerTitle(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none bg-slate-50/50 focus:bg-white text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Services Selection checkbox board */}
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Service Showcase Selection</label>
+                        <p className="text-[10px] text-slate-400 font-semibold leading-normal">Choose manually which diagnostic tests display in this section. Leave unchecked to auto-display popular tests from the selected category.</p>
+                      </div>
+                      <div className="border border-slate-200 rounded-2xl max-h-40 overflow-y-auto p-4 space-y-2 bg-slate-50/50">
+                        {services
+                          .filter(srv => secCategory === 'all' || srv.category === secCategory)
+                          .map(srv => (
+                            <label key={srv.id} className="flex items-center gap-2.5 py-1 text-xs cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={secServiceIds.includes(srv.id)}
+                                onChange={() => toggleSectionServiceSelection(srv.id)}
+                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                              />
+                              <span className="font-semibold text-slate-850">[{srv.category.toUpperCase()}] {srv.name}</span>
+                              <span className="text-slate-450 text-[10px]">• ₹{srv.discountPrice || srv.price}</span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Form actions footer */}
+                    <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={resetSectionForm}
+                        className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold transition-all hover:bg-slate-100 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
+                      >
+                        {editingSectionId ? 'Save & Update Section' : 'Create Section'}
+                      </button>
+                    </div>
+
+                  </form>
+
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 8: Clinic Branches Directory */}
+        {activeTab === 'branches' && (
+          <div className="space-y-6 animate-fade-in">
+            
+            {/* Header controls row */}
+            <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm">Clinic Branches Directory</h3>
+                <p className="text-[11px] text-slate-400">Manage address, contact numbers, and location details shown in footers, search, and checkout forms.</p>
+              </div>
+              <button
+                onClick={() => setIsAddingCenter(true)}
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add New Branch</span>
+              </button>
+            </div>
+
+            {/* Add New Branch Form Card */}
+            {isAddingCenter && (
+              <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 md:p-6 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <h4 className="font-bold text-slate-850 text-xs md:text-sm flex items-center gap-1.5">
+                    <Building className="w-4 h-4 text-emerald-600" />
+                    <span>Register New Clinic Branch</span>
+                  </h4>
+                  <button
+                    onClick={() => setIsAddingCenter(false)}
+                    className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleAddCenterSubmit} className="space-y-4 text-left font-semibold text-xs text-slate-700">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Branch Name / City */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">Branch Name / City Code</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Andheri, Bandra, Thane"
+                        value={newCenterCity}
+                        onChange={(e) => setNewCenterCity(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* Phone Contact */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">Branch Contact Number</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 022-50117703, +91 9876543210"
+                        value={newCenterPhone}
+                        onChange={(e) => setNewCenterPhone(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* Full Address */}
+                    <div className="space-y-1 md:col-span-3">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">Branch Full Address</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Shop 5, Ground Floor, Lokhandwala Complex, Andheri West, Mumbai - 400053"
+                        value={newCenterAddress}
+                        onChange={(e) => setNewCenterAddress(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCenter(false)}
+                      className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
+                    >
+                      Register Branch
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* List Table of Branches */}
+            <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-gray-200 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                      <th className="py-4 px-5 w-40">Branch Name</th>
+                      <th className="py-4 px-4">Clinic Address</th>
+                      <th className="py-4 px-4 w-52">Phone Contact</th>
+                      <th className="py-4 px-5 text-right w-56">Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-150 text-slate-700 font-semibold text-left">
+                    {centers.map((center) => (
+                      <tr key={center.city} className="hover:bg-slate-50/40">
+                        <td className="py-4 px-5">
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 w-fit">
+                            <Building className="w-3.5 h-3.5 text-emerald-600" />
+                            {center.city}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          {editingCenterCity === center.city ? (
+                            <input
+                              type="text"
+                              value={editCenterAddress}
+                              onChange={(e) => setEditCenterAddress(e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-350 rounded-xl text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                            />
+                          ) : (
+                            <span className="text-slate-700 text-[12.5px]">{center.address}</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4">
+                          {editingCenterCity === center.city ? (
+                            <input
+                              type="text"
+                              value={editCenterPhone}
+                              onChange={(e) => setEditCenterPhone(e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-350 rounded-xl text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                            />
+                          ) : (
+                            <span className="text-emerald-700 font-bold font-mono text-[12.5px]">{center.phone}</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-5 text-right">
+                          {editingCenterCity === center.city ? (
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => handleSaveCenter(center.city)}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingCenterCity(null)}
+                                className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1.5 justify-end">
+                              <button
+                                onClick={() => handleStartEditCenter(center)}
+                                className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-655 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <Edit2 className="w-3 h-3 text-slate-500" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCenter(center.city)}
+                                className="px-2.5 py-1.5 border border-slate-200 hover:border-rose-355 hover:bg-rose-50 hover:text-rose-700 text-slate-550 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                                title="Remove Branch"
+                              >
+                                <Trash2 className="w-3 h-3 text-slate-400" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         )}
 

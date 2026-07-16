@@ -75,3 +75,23 @@ export interface Testimonial {
   location: string;
   date: string;
 }
+
+export interface HomepageSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: 'scan' | 'lab' | 'all';
+  viewAllTab: 'scans' | 'labs';
+  bannerImage: string;
+  bannerTag: string;
+  bannerTitle: string;
+  serviceIds: string[]; // Manual service selection overrides. If empty, auto-filters popular items of the category.
+}
+
+export interface ClinicCenter {
+  city: string;
+  address: string;
+  phone: string;
+}
+
+

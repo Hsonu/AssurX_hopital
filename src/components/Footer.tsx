@@ -4,9 +4,11 @@ import { ASSURX_CENTERS } from '../data';
 
 interface FooterProps {
   onNavigate: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings') => void;
+  centers?: Array<{ city: string; address: string; phone: string }>;
 }
 
-export default function Footer({ onNavigate }: FooterProps) {
+export default function Footer({ onNavigate, centers = [] }: FooterProps) {
+  const displayCenters = centers.length > 0 ? centers : ASSURX_CENTERS;
   return (
     <footer className="bg-slate-900 text-slate-400 text-xs md:text-sm border-t border-slate-800" id="main-footer">
       
@@ -97,7 +99,7 @@ export default function Footer({ onNavigate }: FooterProps) {
         <div className="md:col-span-3 space-y-3">
           <h4 className="font-bold text-white text-xs uppercase tracking-wider">Top Mumbai Branches</h4>
           <div className="space-y-2 text-[11px] max-h-48 overflow-y-auto pr-1 text-slate-400">
-            {ASSURX_CENTERS.map((center, idx) => (
+            {displayCenters.map((center, idx) => (
               <div key={idx} className="border-b border-slate-800/60 pb-1.5 last:border-b-0 last:pb-0">
                 <span className="font-bold text-slate-300 block">{center.city} Branch</span>
                 <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{center.address}</p>

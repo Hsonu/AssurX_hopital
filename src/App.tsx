@@ -9,7 +9,7 @@ import {
   Check, HelpCircle, Star, Sparkle, AlertTriangle
 } from 'lucide-react';
 
-import { DiagnosticService, HealthPackage, CartItem, Patient } from './types';
+import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter } from './types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES, FREQUENT_QUESTIONS, CUSTOMER_TESTIMONIALS, ASSURX_CENTERS } from './data';
 import { auth } from './lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -46,11 +46,57 @@ const getPackageImage = (id: string) => {
   }
 };
 
+const resolveBannerImage = (img: string) => {
+  if (img === 'bloodTestingBanner') return bloodTestingBanner;
+  return img;
+};
+
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings'>('home');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Dynamic homepage offerings sections
+  const [sections, setSections] = useState<HomepageSection[]>(() => {
+    const cached = localStorage.getItem('assurx_sections');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        // use default if parse failed
+      }
+    }
+    return [
+      {
+        id: 'section-scans',
+        title: 'Popular Scans & Imaging',
+        subtitle: 'Read by MD Radiologists • Same Day Reports',
+        category: 'scan',
+        viewAllTab: 'scans',
+        bannerImage: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop',
+        bannerTag: 'Advanced Imaging Center',
+        bannerTitle: '3D High-Field MRI & Low-Dose Multi-Slice CT Scanner',
+        serviceIds: []
+      },
+      {
+        id: 'section-labs',
+        title: 'Popular Blood & Lab Tests',
+        subtitle: 'Sterile Home Collection • Certified Phlebotomists',
+        category: 'lab',
+        viewAllTab: 'labs',
+        bannerImage: 'bloodTestingBanner',
+        bannerTag: 'NABL Standard Labs',
+        bannerTitle: 'Sterile 1-Click Home Blood Collection with Barcoded Vials',
+        serviceIds: []
+      }
+    ];
+  });
+
+  // Sync sections to localStorage
+  useEffect(() => {
+    localStorage.setItem('assurx_sections', JSON.stringify(sections));
+  }, [sections]);
 
   // Dynamic diagnostic services catalog loaded from localStorage (synced with admin pricing manager)
   const [services, setServices] = useState<DiagnosticService[]>(() => {
@@ -69,7 +115,27 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('assurx_services', JSON.stringify(services));
   }, [services]);
+
+  // Dynamic clinic centers loaded from localStorage (synced with admin branch manager)
+  const [centers, setCenters] = useState<ClinicCenter[]>(() => {
+    const cached = localStorage.getItem('assurx_centers');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        // use default if parse failed
+      }
+    }
+    return ASSURX_CENTERS;
+  });
+
+  // Sync centers to localStorage
+  useEffect(() => {
+    localStorage.setItem('assurx_centers', JSON.stringify(centers));
+  }, [centers]);
+
   const [isPrescriptionOpen, setIsPrescriptionOpen] = useState(false);
+
   
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -339,6 +405,7 @@ export default function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onSearchFocus={handleGlobalSearchFocus}
+        centers={centers}
       />
 
       {/* VIEWPORT CONTROLLER */}
@@ -418,169 +485,120 @@ export default function App() {
                 <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
               </div>
  
-              {/* Flex grids of popular scans and lab tests side-by-side */}
+              {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                
-                {/* Popular Scans Panel */}
-                <div className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                    <div>
-                      <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-emerald-600" />
-                        Popular Scans & Imaging
-                      </h3>
-                      <span className="text-[10px] text-slate-400">Read by MD Radiologists • Same Day Reports</span>
-                    </div>
-                    <button 
-                      onClick={() => setCurrentTab('scans')}
-                      className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
-                    >
-                      <span>View All ({services.filter(s=>s.category==='scan').length})</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                {sections.map((section) => {
+                  // Determine tests to display
+                  let displayServices: DiagnosticService[] = [];
+                  if (section.serviceIds && section.serviceIds.length > 0) {
+                    displayServices = section.serviceIds
+                      .map(id => services.find(s => s.id === id))
+                      .filter((s): s is DiagnosticService => !!s);
+                  } else {
+                    displayServices = services
+                      .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
+                      .slice(0, 4);
+                  }
 
-                  {/* Radiology Banners */}
-                  <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
-                    <img 
-                      src="https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop" 
-                      alt="High Precision Radiology Scans"
-                      className="w-full h-full object-cover select-none"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-                    <div className="absolute bottom-3 left-3 right-3 text-left">
-                      <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">Advanced Imaging Center</span>
-                      <p className="text-white text-[10.5px] font-bold leading-tight">3D High-Field MRI & Low-Dose Multi-Slice CT Scanner</p>
-                    </div>
-                  </div>
- 
-                  {/* Scans list */}
-                  <div className="space-y-3.5">
-                    {services.filter(s => s.category === 'scan' && s.popular).slice(0, 4).map((scan) => {
-                      const inCart = cart.some(ci => ci.itemId === scan.id);
-                      return (
-                        <div key={scan.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-1 text-left flex-1 min-w-0">
-                            <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{scan.name}</h4>
-                            <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{scan.description}</p>
-                            <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
-                              Prep: {scan.preparation.split('.')[0]}
-                            </span>
-                          </div>
-                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
-                            <div className="text-left sm:text-right">
-                              <span className="text-sm font-black text-slate-800">₹{scan.discountPrice || scan.price}</span>
-                              {scan.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{scan.price}</p>}
-                            </div>
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => handleDirectBook(scan)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
-                              >
-                                Book Now
-                              </button>
-                              <button
-                                onClick={() => handleAddToCart(scan, 'service')}
-                                className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${
-                                  inCart 
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                    : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
-                                }`}
-                              >
-                                {inCart ? 'Added' : '+ Cart'}
-                              </button>
-                            </div>
-                          </div>
+                  const totalCount = section.serviceIds && section.serviceIds.length > 0
+                    ? section.serviceIds.length
+                    : services.filter(s => section.category === 'all' || s.category === section.category).length;
+
+                  return (
+                    <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <div>
+                          <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
+                            {section.category === 'scan' ? (
+                              <Activity className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+                            )}
+                            {section.title}
+                          </h3>
+                          <span className="text-[10px] text-slate-400">{section.subtitle}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
- 
-                {/* Popular Pathology Lab Tests Panel */}
-                <div className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                    <div>
-                      <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
-                        <ClipboardCheck className="w-4 h-4 text-emerald-600" />
-                        Popular Blood & Lab Tests
-                      </h3>
-                      <span className="text-[10px] text-slate-400">Sterile Home Collection • Certified Phlebotomists</span>
-                    </div>
-                    <button 
-                      onClick={() => setCurrentTab('labs')}
-                      className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
-                    >
-                      <span>View All ({services.filter(s=>s.category==='lab').length})</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                        <button 
+                          onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
+                          className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <span>View All ({totalCount})</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
-                  <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
-                    <img 
-                      src={bloodTestingBanner} 
-                      alt="State-of-the-art blood testing and pathology"
-                      className="w-full h-full object-cover select-none"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-                    <div className="absolute bottom-3 left-3 right-3 text-left">
-                      <span className="bg-teal-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">NABL Standard Labs</span>
-                      <p className="text-white text-[10.5px] font-bold leading-tight">Sterile 1-Click Home Blood Collection with Barcoded Vials</p>
-                    </div>
-                  </div>
- 
-                  {/* Lab tests list */}
-                  <div className="space-y-3.5">
-                    {services.filter(s => s.category === 'lab' && s.popular).slice(0, 4).map((lab) => {
-                      const inCart = cart.some(ci => ci.itemId === lab.id);
-                      return (
-                        <div key={lab.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-1 text-left flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{lab.name}</h4>
-                              {lab.parametersCount && (
-                                <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
-                                  {lab.parametersCount} params
+                      {/* Section banner */}
+                      <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
+                        <img 
+                          src={resolveBannerImage(section.bannerImage)} 
+                          alt={section.title} 
+                          className="w-full h-full object-cover select-none"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                        <div className="absolute bottom-3 left-3 right-3 text-left">
+                          <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
+                            {section.bannerTag}
+                          </span>
+                          <p className="text-white text-[10.5px] font-bold leading-tight">
+                            {section.bannerTitle}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Services list inside this panel */}
+                      <div className="space-y-3.5">
+                        {displayServices.map((service) => {
+                          const inCart = cart.some(ci => ci.itemId === service.id);
+                          return (
+                            <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="space-y-1 text-left flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
+                                  {service.parametersCount && (
+                                    <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
+                                      {service.parametersCount} params
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
+                                <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
+                                  {service.category === 'scan' 
+                                    ? `Prep: ${service.preparation.split('.')[0]}` 
+                                    : `Turnaround: ${service.reportDelivery}`}
                                 </span>
-                              )}
+                              </div>
+                              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
+                                <div className="text-left sm:text-right">
+                                  <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
+                                  {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <button
+                                    onClick={() => handleDirectBook(service)}
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
+                                  >
+                                    Book Now
+                                  </button>
+                                  <button
+                                    onClick={() => handleAddToCart(service, 'service')}
+                                    className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${
+                                      inCart 
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                        : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
+                                    }`}
+                                  >
+                                    {inCart ? 'Added' : '+ Cart'}
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{lab.description}</p>
-                            <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
-                              Turnaround: {lab.reportDelivery}
-                            </span>
-                          </div>
-                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
-                            <div className="text-left sm:text-right">
-                              <span className="text-sm font-black text-slate-800">₹{lab.discountPrice || lab.price}</span>
-                              {lab.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{lab.price}</p>}
-                            </div>
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => handleDirectBook(lab)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
-                              >
-                                Book Now
-                              </button>
-                              <button
-                                onClick={() => handleAddToCart(lab, 'service')}
-                                className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${
-                                  inCart 
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                    : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
-                                }`}
-                              >
-                                {inCart ? 'Added' : '+ Cart'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
- 
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -1123,13 +1141,17 @@ export default function App() {
             bookingRefreshKey={bookingRefreshKey}
             services={services}
             onUpdateServices={setServices}
+            sections={sections}
+            onUpdateSections={setSections}
+            centers={centers}
+            onUpdateCenters={setCenters}
           />
         )}
 
       </main>
 
       {/* Footer element */}
-      <Footer onNavigate={setCurrentTab} />
+      <Footer onNavigate={setCurrentTab} centers={centers} />
 
       {/* --- FLOATING PRESCRIPTION DIALOG / PORTAL OVERLAY --- */}
       {isPrescriptionOpen && (
@@ -1150,6 +1172,7 @@ export default function App() {
         onRemoveFromCart={handleRemoveFromCart}
         onClearCart={handleClearCart}
         onProceedToCheckout={handleCartProceed}
+        centers={centers}
       />
 
       {/* --- checkout billing payment success modal overlays --- */}

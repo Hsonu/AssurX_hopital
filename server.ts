@@ -115,12 +115,12 @@ async function startServer() {
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://checkout.razorpay.com https://*.razorpay.com https://cdnjs.cloudflare.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com data:; " +
-      "img-src 'self' data: https://*.google.com https://*.googleusercontent.com https://*.unsplash.com; " +
-      "connect-src 'self' https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com; " +
-      "frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app https://*.firebaseapp.com; " +
+      "img-src 'self' data: https://*.google.com https://*.googleusercontent.com https://*.unsplash.com https://*.razorpay.com; " +
+      "connect-src 'self' https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com https://api.razorpay.com https://*.razorpay.com; " +
+      "frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app https://*.firebaseapp.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com; " +
       "frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://*.ai.studio;"
     );
     // Prevent MIME-sniffing

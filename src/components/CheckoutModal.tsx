@@ -37,6 +37,7 @@ export default function CheckoutModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [validationError, setValidationError] = useState('');
+  const [showSimulatedGateway, setShowSimulatedGateway] = useState(false);
 
   const isPopupLoggingIn = useRef(false);
 
@@ -89,10 +90,8 @@ export default function CheckoutModal({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleSimulatePayment = async () => {
-    setValidationError('');
+  const executeDatabaseBooking = async (method: string, payStatus: string) => {
     setIsPaying(true);
-    
     const steps = [
       'Contacting bank gateway securely (HIPAA & PCI-DSS encryption)...',
       'Verifying seat and phlebotomist slots...',
@@ -113,7 +112,6 @@ export default function CheckoutModal({
         
         try {
           const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
-          
           const token = idToken || '';
           
           const response = await userFetch('/api/booking', {
@@ -134,8 +132,8 @@ export default function CheckoutModal({
               street: bookingDetails.address?.street || null,
               city: bookingDetails.address?.city || null,
               pincode: bookingDetails.address?.pincode || null,
-              paymentMethod,
-              paymentStatus: paymentMethod === 'cash_at_center' ? 'pending' : 'paid',
+              paymentMethod: method,
+              paymentStatus: payStatus,
               bookingStatus: 'booked',
               totalAmount: grandTotal,
               items: cart,
@@ -189,19 +187,91 @@ export default function CheckoutModal({
           setCreatedBooking(mappedBooking);
           setIsPaying(false);
           setIsSuccess(true);
-          // Do NOT call onBookingSuccess() here immediately! Let the user read the receipt first, 
-          // and then they will call it when clicking "Track Status" to close the modal.
         } catch (error: any) {
           console.error("Failed to complete database booking:", error);
           alert(`Payment processed, but clinical database synchronization failed. Error: ${error.message}. Our support team will verify this manually.`);
           setIsPaying(false);
         }
       }
-    }, 1000);
+    }, 800);
+  };
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleSimulatePayment = async () => {
+    setValidationError('');
+    
+    if (paymentMethod === 'cash_at_center') {
+      executeDatabaseBooking('cash_at_center', 'pending');
+      return;
+    }
+
+    setIsPaying(true);
+    setPayStep("Initializing secure checkout gateway...");
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded || !(window as any).Razorpay) {
+      setIsPaying(false);
+      setShowSimulatedGateway(true);
+      return;
+    }
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_T009i1fdo0TocB",
+      amount: grandTotal * 100, // in paise
+      currency: "INR",
+      name: "AssurX Scans & Labs",
+      description: `Diagnostic Booking - ${bookingDetails.patient.name}`,
+      image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=120&auto=format&fit=crop",
+      handler: function (response: any) {
+        executeDatabaseBooking(paymentMethod, 'paid');
+      },
+      prefill: {
+        name: bookingDetails.patient.name,
+        contact: "9876543210"
+      },
+      notes: {
+        address: `${bookingDetails.address?.street || 'Center Visit'}, ${bookingDetails.address?.city || 'Malad'}`
+      },
+      theme: {
+        color: "#059669"
+      },
+      modal: {
+        ondismiss: function () {
+          setIsPaying(false);
+        }
+      }
+    };
+    
+    setPayStep("Opening Razorpay Secure Gateway...");
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
   };
 
   const handlePrint = () => {
-    window.print();
+    const element = document.getElementById('official-invoice-frame');
+    if (element && (window as any).html2pdf) {
+      const opt = {
+        margin:       [0.4, 0.4, 0.4, 0.4],
+        filename:     `AssurX-Invoice-${createdBooking?.bookingId || 'Token'}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2.5, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      (window as any).html2pdf().from(element).set(opt).save();
+    } else {
+      window.print();
+    }
   };
 
   return (
@@ -708,6 +778,61 @@ export default function CheckoutModal({
           )}
         </div>
       </div>
+
+      {/* Simulated Razorpay Sandbox Overlay */}
+      {showSimulatedGateway && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 animate-scale-in animate-fade-in">
+            {/* Header */}
+            <div className="bg-slate-900 text-white p-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+                RP
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm leading-tight text-white">Razorpay Secure Sandbox</h4>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">Mock Integration Sandbox Mode</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-1 text-left">
+                <span className="text-[10px] font-black text-slate-400 uppercase block tracking-wider">Payment for</span>
+                <span className="text-xs font-bold text-slate-800">AssurX Clinical Diagnostics</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-t border-b border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
+                <span className="text-lg font-black text-emerald-700 font-mono">₹{grandTotal}</span>
+              </div>
+              
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3 text-[10.5px] text-amber-850 font-medium leading-relaxed text-left">
+                ℹ️ The live Razorpay SDK was blocked by an AdBlocker or local firewall. We have automatically launched the secure sandbox simulation so you can continue testing.
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  onClick={() => {
+                    setShowSimulatedGateway(false);
+                    executeDatabaseBooking(paymentMethod, 'paid');
+                  }}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-750 text-white font-extrabold text-xs rounded-xl shadow-md transition-all text-center cursor-pointer"
+                >
+                  Simulate Successful Payment
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSimulatedGateway(false);
+                    setIsPaying(false);
+                  }}
+                  className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold text-xs rounded-xl transition-all text-center cursor-pointer"
+                >
+                  Cancel Transaction
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

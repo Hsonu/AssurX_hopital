@@ -16,6 +16,7 @@ interface CartDrawerProps {
     appointmentTime: string;
     address?: { street: string; city: string; pincode: string };
   }) => void;
+  centers?: Array<{ city: string; address: string; phone: string }>;
 }
 
 export default function CartDrawer({
@@ -25,6 +26,7 @@ export default function CartDrawer({
   onRemoveFromCart,
   onClearCart,
   onProceedToCheckout,
+  centers = [],
 }: CartDrawerProps) {
   const [collectionType, setCollectionType] = useState<'home' | 'center'>('center');
   const [appointmentDate, setAppointmentDate] = useState('');
@@ -409,10 +411,11 @@ export default function CartDrawer({
                         <select
                           value={address.city}
                           onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                          className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer"
                         >
-                          <option value="Malad">Malad Branch</option>
-                          <option value="Goregaon">Goregaon Branch</option>
+                          {(centers.length > 0 ? centers : ASSURX_CENTERS).map((c) => (
+                            <option key={c.city} value={c.city}>{c.city} Branch</option>
+                          ))}
                         </select>
                         <input
                           type="text"

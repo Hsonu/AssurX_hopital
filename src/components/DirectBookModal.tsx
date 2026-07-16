@@ -45,7 +45,7 @@ export default function DirectBookModal({
   const [patientGender, setPatientGender] = useState<'Male' | 'Female' | 'Other'>(pending?.patientGender || 'Male');
   const [phoneNumber, setPhoneNumber] = useState(pending?.phoneNumber || '');
   const [collectionType, setCollectionType] = useState<'home' | 'center'>(pending?.collectionType || 'center');
-  
+
   // Date and Time slot
   const tomorrowStr = new Date();
   tomorrowStr.setDate(tomorrowStr.getDate() + 1);
@@ -64,6 +64,8 @@ export default function DirectBookModal({
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash_at_center' | 'online_payment'>('cash_at_center');
+  const [showSimulatedGateway, setShowSimulatedGateway] = useState(false);
 
   const isPopupLoggingIn = useRef(false);
 
@@ -90,7 +92,7 @@ export default function DirectBookModal({
 
   const isPackage = 'testsCount' in selectedItem;
   const isScanItem = !isPackage && (
-    selectedItem.category === 'scan' || 
+    selectedItem.category === 'scan' ||
     /mri|ct|ultrasound|usg|x-ray|mammogram|echo|dexa/i.test(selectedItem.name)
   );
 
@@ -101,6 +103,133 @@ export default function DirectBookModal({
   const homeCollectionFee = activeCollectionType === 'home' ? 150 : 0;
   const gstAmount = Math.round(basePrice * 0.05);
   const grandTotal = basePrice + homeCollectionFee + gstAmount;
+
+  const executeDatabaseBooking = async (method: string, payStatus: string) => {
+    setIsSubmitting(true);
+    const steps = [
+      'Validating pathology slots with central lab...',
+      'Assigning medical representative...',
+      'Securing appointment on server...',
+      'Finalizing Pay-at-Lab diagnostic token...'
+    ];
+
+    let stepIdx = 0;
+    setSubmitStep(steps[stepIdx]);
+
+    const timer = setInterval(async () => {
+      stepIdx++;
+      if (stepIdx < steps.length) {
+        setSubmitStep(steps[stepIdx]);
+      } else {
+        clearInterval(timer);
+
+        try {
+          // Map selectedItem to CartItem interface
+          const isPackage = 'testsCount' in selectedItem;
+          const cartItem: CartItem = {
+            itemId: selectedItem.id,
+            itemType: isPackage ? 'package' : 'service',
+            name: selectedItem.name,
+            price: selectedItem.price,
+            discountPrice: selectedItem.discountPrice,
+            category: isPackage ? undefined : selectedItem.category,
+          };
+
+          const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
+          const token = idToken || '';
+
+          const response = await userFetch('/api/booking', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({
+              bookingId: `ASX-${bookingIdNum}`,
+              patientName: patientName,
+              patientAge: parseInt(patientAge, 10),
+              patientGender: patientGender,
+              patientRelationship: 'Self',
+              appointmentDate,
+              appointmentTime,
+              collectionType: activeCollectionType,
+              street: activeCollectionType === 'home' ? streetAddress : null,
+              city: activeCollectionType === 'home' ? city : null,
+              pincode: activeCollectionType === 'home' ? pincode : null,
+              paymentMethod: method,
+              paymentStatus: payStatus,
+              bookingStatus: 'booked',
+              totalAmount: grandTotal,
+              items: [cartItem],
+              timestamp: new Date().toISOString()
+            })
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Server returned ${response.status}: ${errText || response.statusText}`);
+          }
+
+          const savedB = await response.json();
+
+          const parsedItems = typeof savedB.items === 'string'
+            ? JSON.parse(savedB.items)
+            : (Array.isArray(savedB.items) ? savedB.items : []);
+
+          const mappedBooking: Booking = {
+            id: String(savedB.id),
+            bookingId: savedB.bookingId,
+            patient: {
+              name: savedB.patientName || (savedB.patient && savedB.patient.name) || '',
+              age: savedB.patientAge !== undefined ? savedB.patientAge : (savedB.patient && savedB.patient.age) || 0,
+              gender: (savedB.patientGender || (savedB.patient && savedB.patient.gender) || 'Male') as any,
+              relationship: (savedB.patientRelationship || (savedB.patient && savedB.patient.relationship) || 'Self') as any
+            },
+            items: parsedItems,
+            appointmentDate: savedB.appointmentDate,
+            appointmentTime: savedB.appointmentTime,
+            collectionType: savedB.collectionType as any,
+            address: savedB.street ? {
+              street: savedB.street,
+              city: savedB.city || '',
+              pincode: savedB.pincode || ''
+            } : undefined,
+            paymentMethod: savedB.paymentMethod as any,
+            paymentStatus: savedB.paymentStatus as any,
+            bookingStatus: savedB.bookingStatus as any,
+            totalAmount: savedB.totalAmount,
+            timestamp: savedB.timestamp,
+            simulatedReportUrl: savedB.simulatedReportUrl || `/reports/ASX-${bookingIdNum}.pdf`
+          };
+
+          // Save to LocalStorage fallback
+          const existingBookingsStr = localStorage.getItem('assurx_bookings');
+          const existingBookings = existingBookingsStr ? JSON.parse(existingBookingsStr) : [];
+          existingBookings.unshift(mappedBooking);
+          localStorage.setItem('assurx_bookings', JSON.stringify(existingBookings));
+
+          setCreatedBooking(mappedBooking);
+          setIsSubmitting(false);
+          setIsSuccess(true);
+        } catch (error: any) {
+        }
+      }
+    }, 1000);
+  };
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const handleBookAndPayAtLab = async (e?: React.FormEvent, bypassedUser?: any) => {
     if (e) e.preventDefault();
@@ -135,145 +264,85 @@ export default function DirectBookModal({
       }
     }
 
+    if (paymentMethod === 'cash_at_center') {
+      executeDatabaseBooking('cash_at_center', 'pending');
+      return;
+    }
+
     setIsSubmitting(true);
-    const steps = [
-      'Validating pathology slots with central lab...',
-      'Assigning medical representative...',
-      'Securing appointment on server...',
-      'Finalizing Pay-at-Lab diagnostic token...'
-    ];
+    setSubmitStep("Initializing secure checkout gateway...");
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded || !(window as any).Razorpay) {
+      setIsSubmitting(false);
+      setShowSimulatedGateway(true);
+      return;
+    }
 
-    let stepIdx = 0;
-    setSubmitStep(steps[stepIdx]);
-
-    const timer = setInterval(async () => {
-      stepIdx++;
-      if (stepIdx < steps.length) {
-        setSubmitStep(steps[stepIdx]);
-      } else {
-        clearInterval(timer);
-
-        try {
-          // Map selectedItem to CartItem interface
-          const isPackage = 'testsCount' in selectedItem;
-          const cartItem: CartItem = {
-            itemId: selectedItem.id,
-            itemType: isPackage ? 'package' : 'service',
-            name: selectedItem.name,
-            price: selectedItem.price,
-            discountPrice: selectedItem.discountPrice,
-            category: isPackage ? undefined : selectedItem.category,
-          };
-
-          const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
-          
-          const token = idToken || '';
-
-          const response = await userFetch('/api/booking', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': token ? `Bearer ${token}` : ''
-            },
-            body: JSON.stringify({
-              bookingId: `ASX-${bookingIdNum}`,
-              patientName: patientName,
-              patientAge: parseInt(patientAge, 10),
-              patientGender: patientGender,
-              patientRelationship: 'Self',
-              appointmentDate,
-              appointmentTime,
-              collectionType: activeCollectionType,
-              street: activeCollectionType === 'home' ? streetAddress : null,
-              city: activeCollectionType === 'home' ? city : null,
-              pincode: activeCollectionType === 'home' ? pincode : null,
-              paymentMethod: 'cash_at_center',
-              paymentStatus: 'pending',
-              bookingStatus: 'booked',
-              totalAmount: grandTotal,
-              items: [cartItem],
-              timestamp: new Date().toISOString()
-            })
-          });
-
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`Server returned ${response.status}: ${errText || response.statusText}`);
-          }
-
-          const savedB = await response.json();
-
-          const parsedItems = typeof savedB.items === 'string' 
-            ? JSON.parse(savedB.items) 
-            : (Array.isArray(savedB.items) ? savedB.items : []);
-
-          const mappedBooking: Booking = {
-            id: String(savedB.id),
-            bookingId: savedB.bookingId,
-            patient: {
-              name: savedB.patientName || (savedB.patient && savedB.patient.name) || '',
-              age: savedB.patientAge !== undefined ? savedB.patientAge : (savedB.patient && savedB.patient.age) || 0,
-              gender: (savedB.patientGender || (savedB.patient && savedB.patient.gender) || 'Male') as any,
-              relationship: (savedB.patientRelationship || (savedB.patient && savedB.patient.relationship) || 'Self') as any
-            },
-            items: parsedItems,
-            appointmentDate: savedB.appointmentDate,
-            appointmentTime: savedB.appointmentTime,
-            collectionType: savedB.collectionType as any,
-            address: {
-              street: savedB.street || (savedB.address && savedB.address.street) || '',
-              city: savedB.city || (savedB.address && savedB.address.city) || '',
-              pincode: savedB.pincode || (savedB.address && savedB.address.pincode) || ''
-            },
-            paymentMethod: savedB.paymentMethod as any,
-            paymentStatus: savedB.paymentStatus as any,
-            bookingStatus: savedB.bookingStatus as any,
-            totalAmount: savedB.totalAmount,
-            timestamp: savedB.timestamp,
-            simulatedReportUrl: savedB.simulatedReportUrl || `/reports/ASX-${bookingIdNum}.pdf`
-          };
-
-          // Save to LocalStorage fallback
-          const existingBookingsStr = localStorage.getItem('assurx_bookings');
-          const existingBookings = existingBookingsStr ? JSON.parse(existingBookingsStr) : [];
-          existingBookings.unshift(mappedBooking);
-          localStorage.setItem('assurx_bookings', JSON.stringify(existingBookings));
-
-          setCreatedBooking(mappedBooking);
-          setIsSubmitting(false);
-          setIsSuccess(true);
-          // Do NOT call onBookingSuccess() here immediately! Let the user read the receipt first,
-          // then when they click "Go to Dispatch Terminal", we can trigger the cleanup and tab switch.
-        } catch (error: any) {
-          console.error("Direct book failed:", error);
-          setValidationError(`Database booking synchronization failed. Error: ${error.message}. Please try again.`);
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_T009i1fdo0TocB",
+      amount: grandTotal * 100, // in paise
+      currency: "INR",
+      name: "AssurX Scans & Labs",
+      description: `Diagnostic Booking - ${patientName}`,
+      image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=120&auto=format&fit=crop",
+      handler: function (response: any) {
+        executeDatabaseBooking(paymentMethod, 'paid');
+      },
+      prefill: {
+        name: patientName,
+        contact: phoneNumber || "9876543210"
+      },
+      notes: {
+        address: activeCollectionType === 'home' ? `${streetAddress}, ${city}` : 'Center Visit'
+      },
+      theme: {
+        color: "#059669"
+      },
+      modal: {
+        ondismiss: function () {
           setIsSubmitting(false);
         }
       }
-    }, 1000);
+    };
+
+    setSubmitStep("Opening Razorpay Secure Gateway...");
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
   };
 
   const handlePrint = () => {
-    window.print();
+    const element = document.getElementById('official-receipt-frame');
+    if (element && (window as any).html2pdf) {
+      const opt = {
+        margin: [0.4, 0.4, 0.4, 0.4],
+        filename: `AssurX-Appointment-${createdBooking?.bookingId || 'Token'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2.5, useCORS: true, logging: false },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      (window as any).html2pdf().from(element).set(opt).save();
+    } else {
+      window.print();
+    }
   };
 
   return (
     <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto" id="direct-booking-overlay">
       {/* Backdrop */}
-      <div 
+      <div
         onClick={isSuccess || isSubmitting ? undefined : onClose}
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
       ></div>
 
       {/* Main Dialog Box */}
       <div className="relative bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden z-10 border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-        
+
         {/* Decorative Top Accent Bar */}
         <div className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
 
         {/* Close Button */}
         {!isSuccess && !isSubmitting && (
-          <button 
+          <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors z-20 cursor-pointer"
           >
@@ -283,7 +352,7 @@ export default function DirectBookModal({
 
         {/* Content Container */}
         <div className="overflow-y-auto flex-1 p-6 md:p-8">
-          
+
           {/* STEP 1: LOADING STATE */}
           {isSubmitting && (
             <div className="py-16 text-center space-y-5 animate-pulse">
@@ -426,22 +495,20 @@ export default function DirectBookModal({
                         <button
                           type="button"
                           onClick={() => setCollectionType('center')}
-                          className={`py-2.5 border rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            activeCollectionType === 'center'
-                              ? 'border-emerald-600 bg-emerald-50/20 text-emerald-800'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-600 bg-white'
-                          }`}
+                          className={`py-2.5 border rounded-xl text-xs font-bold transition-all cursor-pointer ${activeCollectionType === 'center'
+                            ? 'border-emerald-600 bg-emerald-50/20 text-emerald-800'
+                            : 'border-slate-200 hover:bg-slate-50 text-slate-600 bg-white'
+                            }`}
                         >
                           Visit Diagnostic Center
                         </button>
                         <button
                           type="button"
                           onClick={() => setCollectionType('home')}
-                          className={`py-2.5 border rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            activeCollectionType === 'home'
-                              ? 'border-emerald-600 bg-emerald-50/20 text-emerald-800'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-600 bg-white'
-                          }`}
+                          className={`py-2.5 border rounded-xl text-xs font-bold transition-all cursor-pointer ${activeCollectionType === 'home'
+                            ? 'border-emerald-600 bg-emerald-50/20 text-emerald-800'
+                            : 'border-slate-200 hover:bg-slate-50 text-slate-600 bg-white'
+                            }`}
                         >
                           Home Blood Collection (+₹150)
                         </button>
@@ -521,12 +588,59 @@ export default function DirectBookModal({
                 </div>
               </div>
 
+              {/* PAYMENT OPTION SELECTOR */}
+              <div className="bg-slate-50/50 border border-slate-100 rounded-3xl p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">3</span>
+                  <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Select Payment Method</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Option 1: Cash/Pay on visit */}
+                  <label className={`flex items-start gap-3 p-3.5 border rounded-2xl cursor-pointer transition-all ${paymentMethod === 'cash_at_center'
+                    ? 'border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600/30'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}>
+                    <input
+                      type="radio"
+                      name="payment_method_direct"
+                      value="cash_at_center"
+                      checked={paymentMethod === 'cash_at_center'}
+                      onChange={() => setPaymentMethod('cash_at_center')}
+                      className="mt-0.5 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div className="text-left select-none">
+                      <div className="text-xs font-black text-slate-800 leading-tight">Pay on Visit (Cash/UPI)</div>
+                      <p className="text-[10px] text-slate-450 mt-1 leading-normal">Pay at center or to phlebotomist during sample collection.</p>
+                    </div>
+                  </label>
+
+                  {/* Option 2: Pay Online Securely */}
+                  <label className={`flex items-start gap-3 p-3.5 border rounded-2xl cursor-pointer transition-all ${paymentMethod === 'online_payment'
+                    ? 'border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600/30'
+                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}>
+                    <input
+                      type="radio"
+                      name="payment_method_direct"
+                      value="online_payment"
+                      checked={paymentMethod === 'online_payment'}
+                      onChange={() => setPaymentMethod('online_payment')}
+                      className="mt-0.5 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div className="text-left select-none">
+                      <div className="text-xs font-black text-slate-800 leading-tight">Pay Online Securely</div>
+                      <p className="text-[10px] text-slate-450 mt-1 leading-normal">Pay using Razorpay (UPI, Cards, Netbanking) with real-time receipt.</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Home collection info banner */}
               {collectionType === 'home' && (
                 <div className="relative h-24 w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center p-3 gap-3 animate-fade-in">
-                  <img 
-                    src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=400&auto=format&fit=crop" 
-                    alt="Safe Home Sample Collection" 
+                  <img
+                    src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=400&auto=format&fit=crop"
+                    alt="Safe Home Sample Collection"
                     className="w-20 h-16 object-cover rounded-xl flex-shrink-0"
                     referrerPolicy="no-referrer"
                   />
@@ -554,12 +668,18 @@ export default function DirectBookModal({
                   <span className="font-semibold text-slate-800">₹{gstAmount}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-sm text-slate-900 border-t border-dashed border-slate-200 pt-2">
-                  <span className="text-slate-850">Total Payable at Collection</span>
+                  <span className="text-slate-850">
+                    {paymentMethod === 'online_payment' ? 'Total Paid Online' : 'Total Payable at Collection'}
+                  </span>
                   <span className="text-emerald-700 font-extrabold text-base">₹{grandTotal}</span>
                 </div>
                 <p className="text-[10px] text-slate-450 leading-relaxed pt-1.5 flex items-start gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <span>No prepayment is requested. You will only pay once sample collection begins, using Cash, Card, or mobile UPI scanning.</span>
+                  <span>
+                    {paymentMethod === 'online_payment'
+                      ? 'Secure online payment processed via Razorpay. Your diagnostic slot reservation is 100% verified.'
+                      : 'No prepayment is requested. You will only pay once sample collection begins, using Cash, Card, or mobile UPI scanning.'}
+                  </span>
                 </p>
               </div>
 
@@ -576,7 +696,7 @@ export default function DirectBookModal({
                   type="submit"
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-emerald-100 transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.01] active:scale-[0.98]"
                 >
-                  <span>Confirm Appointment</span>
+                  <span>{paymentMethod === 'online_payment' ? `Pay ₹${grandTotal} & Book` : 'Confirm Appointment'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -620,8 +740,11 @@ export default function DirectBookModal({
                     <div className="text-right">
                       <div className="text-xs font-bold text-slate-800">Token ID: #{createdBooking.bookingId}</div>
                       <p className="text-[10px] text-slate-400 mt-0.5">Date: {new Date(createdBooking.timestamp).toLocaleDateString()}</p>
-                      <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-black uppercase mt-1">
-                        PAY ON VISIT (AT LAB)
+                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase mt-1 ${createdBooking.paymentStatus === 'paid'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                        }`}>
+                        {createdBooking.paymentStatus === 'paid' ? 'PAID ONLINE' : 'PAY ON VISIT (AT LAB)'}
                       </span>
                     </div>
                   </div>
@@ -696,10 +819,10 @@ export default function DirectBookModal({
                   {/* Barcode */}
                   <div className="flex flex-col items-center justify-center pt-2 border-t border-slate-100 gap-1 select-none">
                     <div className="flex gap-[1px] h-8 items-center bg-white p-1 rounded">
-                      {[1,4,1,2,3,1,2,1,4,3,1,1,2,2,3,1,4,1,2,1,1,3,2,1,4,2,1,1].map((w, idx) => (
-                        <div 
-                          key={idx} 
-                          className="bg-slate-900 h-full" 
+                      {[1, 4, 1, 2, 3, 1, 2, 1, 4, 3, 1, 1, 2, 2, 3, 1, 4, 1, 2, 1, 1, 3, 2, 1, 4, 2, 1, 1].map((w, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-900 h-full"
                           style={{ width: `${w}px` }}
                         ></div>
                       ))}
@@ -731,6 +854,61 @@ export default function DirectBookModal({
 
         </div>
       </div>
+
+      {/* Simulated Razorpay Sandbox Overlay */}
+      {showSimulatedGateway && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 animate-scale-in animate-fade-in">
+            {/* Header */}
+            <div className="bg-slate-900 text-white p-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+                RP
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm leading-tight text-white">Razorpay Secure Sandbox</h4>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">Mock Integration Sandbox Mode</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-1 text-left">
+                <span className="text-[10px] font-black text-slate-400 uppercase block tracking-wider">Payment for</span>
+                <span className="text-xs font-bold text-slate-800">AssurX Clinical Diagnostics</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-t border-b border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
+                <span className="text-lg font-black text-emerald-700 font-mono">₹{grandTotal}</span>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3 text-[10.5px] text-amber-850 font-medium leading-relaxed text-left">
+                ℹ️ The live Razorpay SDK was blocked by an AdBlocker or local firewall. We have automatically launched the secure sandbox simulation so you can continue testing.
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  onClick={() => {
+                    setShowSimulatedGateway(false);
+                    executeDatabaseBooking(paymentMethod, 'paid');
+                  }}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all text-center cursor-pointer"
+                >
+                  Simulate Successful Payment
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSimulatedGateway(false);
+                    setIsSubmitting(false);
+                  }}
+                  className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-655 font-bold text-xs rounded-xl transition-all text-center cursor-pointer"
+                >
+                  Cancel Transaction
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

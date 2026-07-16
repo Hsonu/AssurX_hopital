@@ -14,6 +14,7 @@ interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSearchFocus: () => void;
+  centers?: Array<{ city: string; address: string; phone: string }>;
 }
 
 export default function Header({
@@ -26,6 +27,7 @@ export default function Header({
   searchQuery,
   setSearchQuery,
   onSearchFocus,
+  centers = []
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
@@ -38,7 +40,7 @@ export default function Header({
       setLoginError('');
     }
   }, [isLoginModalOpen]);
-  const branches = ['Malad', 'Goregaon'];
+  const branches = centers.length > 0 ? centers.map(c => c.city) : ['Malad', 'Goregaon'];
 
   const handleTabClick = (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings') => {
     setCurrentTab(tab);

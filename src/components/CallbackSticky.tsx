@@ -64,7 +64,7 @@ export default function CallbackSticky() {
   if (isDismissed) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-50 animate-bounce-in font-sans">
+    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[420px] z-50 animate-bounce-in font-sans" id="callback-sticky-widget">
       
       {/* SUCCESS POPUP STATE */}
       {isSuccess ? (

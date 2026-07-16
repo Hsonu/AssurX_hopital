@@ -8,7 +8,28 @@
 }
 
 @media print {
-  /* Hide every single element on the page */
+  /* Hides default page backgrounds, overlays, and centered positioning */
+  html, body, #root {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  /* Completely hide main document containers that consume space to prevent blank pages */
+  header, main, footer, 
+  #callback-sticky-widget, 
+  #cart-drawer-container,
+  .no-print {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+  }
+
+  /* Hide every element on the page */
   body * {
     visibility: hidden;
   }
@@ -17,22 +38,36 @@
   #printable-receipt-panel, #printable-receipt-panel *,
   #printable-receipt-panel-direct, #printable-receipt-panel-direct *,
   #printable-report-area, #printable-report-area * {
-    visibility: visible;
+    visibility: visible !important;
   }
   
+  /* Reset all modal containers/dialog wrappers to print in standard page flow */
+  div[class*="fixed"], 
+  div[class*="relative"],
+  div[class*="max-h-"],
+  div[class*="overflow-"] {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
   /* Reset layout of the printed block to use the full page paper canvas nicely */
   #printable-receipt-panel, #printable-receipt-panel-direct, #printable-report-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    max-width: 100% !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 20px !important;
-    margin: 0 !important;
+    display: block !important;
+    visibility: visible !important;
     background: white !important;
     color: black !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
 
