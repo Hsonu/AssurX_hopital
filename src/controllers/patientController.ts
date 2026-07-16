@@ -313,3 +313,44 @@ export const getBookingById = async (req: PatientAuthRequest, res: Response) => 
     res.status(500).json({ error: error.message || 'Failed to fetch booking details' });
   }
 };
+
+// POST /booking/:id/cancel
+export const cancelBooking = async (req: PatientAuthRequest, res: Response) => {
+  try {
+    const patientId = req.patient?.patientId;
+    const { id } = req.params;
+
+    if (!patientId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let booking;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      booking = await BookingModel.findOne({ _id: id, patientId });
+    } else if (/^\d+$/.test(id)) {
+      booking = await BookingModel.findOne({ id: parseInt(id, 10), patientId });
+    } else {
+      booking = await BookingModel.findOne({ bookingId: id, patientId });
+    }
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found or access denied' });
+    }
+
+    if (booking.bookingStatus === 'cancelled') {
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+
+    if (booking.bookingStatus === 'report_ready') {
+      return res.status(400).json({ error: 'Cannot cancel booking after report has been released' });
+    }
+
+    booking.bookingStatus = 'cancelled';
+    await booking.save();
+
+    res.json({ success: true, bookingStatus: 'cancelled' });
+  } catch (error: any) {
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({ error: error.message || 'Failed to cancel booking' });
+  }
+};

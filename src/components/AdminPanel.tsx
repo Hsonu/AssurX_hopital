@@ -1716,6 +1716,7 @@ export default function AdminPanel({
                                   booking.bookingStatus === 'booked' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                   booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                   booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                  booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 font-extrabold' :
                                   'bg-emerald-50 text-emerald-800 border-emerald-200'
                                 }`}
                               >
@@ -1723,6 +1724,7 @@ export default function AdminPanel({
                                 <option value="sample_collected">Sample Collected</option>
                                 <option value="processing">In Lab Processing</option>
                                 <option value="report_ready">Report Released</option>
+                                <option value="cancelled">Cancelled</option>
                               </select>
                             </td>
 

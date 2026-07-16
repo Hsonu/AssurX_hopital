@@ -49,6 +49,36 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
   const [reportData, setReportData] = useState<any[]>([]);
   const [scanFindings, setScanFindings] = useState('');
   const [scanImpression, setScanImpression] = useState('');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) {
+      return;
+    }
+    
+    setCancellingId(bookingId);
+    try {
+      const response = await userFetch(`/api/booking/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        await fetchUserBookings();
+        alert("Booking cancelled successfully.");
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        alert(errData.error || "Failed to cancel booking.");
+      }
+    } catch (err) {
+      console.error("Error cancelling booking:", err);
+      alert("Failed to connect to the server.");
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const fetchUserBookings = async () => {
     if (!idToken) return;
@@ -481,11 +511,13 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
                                 booking.bookingStatus === 'booked' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                                 booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse' :
                                 booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border border-purple-200 animate-pulse' :
+                                booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200' :
                                 'bg-emerald-600 text-white shadow-md shadow-emerald-50'
                               }`}>
                                 {booking.bookingStatus === 'booked' ? '● Confirmed' :
                                  booking.bookingStatus === 'sample_collected' ? '● Sample Collected' :
                                  booking.bookingStatus === 'processing' ? '● In Lab Processing' :
+                                 booking.bookingStatus === 'cancelled' ? '● Cancelled' :
                                  '✔ Report Released'}
                               </span>
                             </div>
@@ -503,7 +535,7 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
                           </div>
 
                           {/* Action Button */}
-                          <div className="w-full">
+                          <div className="w-full space-y-2">
                             {isReportReady ? (
                               <button
                                 onClick={() => handleOpenReport(booking)}
@@ -512,11 +544,29 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
                                 <Eye className="w-3.5 h-3.5" />
                                 <span>View Diagnostic Report</span>
                               </button>
-                            ) : (
-                              <div className="w-full py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-center text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5">
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
-                                <span>Awaiting Lab Release</span>
+                            ) : booking.bookingStatus === 'cancelled' ? (
+                              <div className="w-full py-2 bg-red-50 border border-red-150 rounded-xl text-center text-red-700 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <span>Booking Cancelled</span>
                               </div>
+                            ) : (
+                              <>
+                                <div className="w-full py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-center text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5">
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300" />
+                                  <span>Awaiting Lab Release</span>
+                                </div>
+                                <button
+                                  onClick={() => handleCancelBooking(booking.id)}
+                                  disabled={cancellingId === booking.id}
+                                  className="w-full py-2 hover:bg-red-50 text-red-700 text-xs border border-red-100 hover:border-red-200 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                  {cancellingId === booking.id ? (
+                                    <Loader2 className="w-3 animate-spin" />
+                                  ) : (
+                                    <X className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Cancel Booking</span>
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>

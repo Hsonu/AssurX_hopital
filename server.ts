@@ -97,13 +97,56 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
 
 let dynamicAdminKey = "";
 
+interface AdminInfo {
+  email: string;
+  password: string;
+  key: string;
+}
+
+let adminList: AdminInfo[] = [];
+
+function isValidAdminKey(key: any): boolean {
+  if (typeof key !== "string" || !key) return false;
+  const cleanIncoming = key.trim().replace(/^\((.*)\)$/, "$1");
+  return adminList.some(admin => {
+    const cleanAdminKey = admin.key.trim().replace(/^\((.*)\)$/, "$1");
+    return cleanIncoming === cleanAdminKey || key === admin.key;
+  });
+}
+
 async function startServer() {
+  const defaultEmail = process.env.ADMIN_EMAIL || "sonusonuraj415@gmail.com";
+  const defaultPassword = process.env.ADMIN_PASSWORD || "assurxlab2026";
+
   if (!process.env.ADMIN_API_KEY) {
     dynamicAdminKey = crypto.randomUUID();
     console.warn(`⚠️ SECURITY WARNING: ADMIN_API_KEY environment variable is NOT set! A dynamic fallback key has been generated for this session: ${dynamicAdminKey}`);
   } else {
     dynamicAdminKey = process.env.ADMIN_API_KEY;
   }
+
+  adminList = [
+    {
+      email: defaultEmail.trim().toLowerCase(),
+      password: defaultPassword.trim(),
+      key: dynamicAdminKey.trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_1 || "admin1@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_1 || "assurx_adm1_7f8d9b").trim(),
+      key: (process.env.ADMIN_KEY_1 || "key_adm1_9f8e7d").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_2 || "admin2@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_2 || "assurx_adm2_4c3b2a").trim(),
+      key: (process.env.ADMIN_KEY_2 || "key_adm2_8a7b6c").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_3 || "admin3@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_3 || "assurx_adm3_1e2f3g").trim(),
+      key: (process.env.ADMIN_KEY_3 || "key_adm3_5d4e3f").trim()
+    }
+  ];
 
   try {
     await connectDB();
@@ -302,15 +345,8 @@ async function startServer() {
   app.post("/api/bookings", async (req, res, next) => {
     // Check if authorized via Admin Key first!
     const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
-    const expectedAdminKey = dynamicAdminKey;
 
-    const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
-    const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
-
-    if (
-      (cleanKey !== "" && cleanKey === cleanExpected) ||
-      (adminKey !== null && adminKey === expectedAdminKey)
-    ) {
+    if (isValidAdminKey(adminKey)) {
       // Authenticated as Admin! Assign a surrogate admin user context
       (req as any).user = {
         uid: "admin-walk-in",
@@ -488,15 +524,8 @@ async function startServer() {
 
       // Check if it's an admin requesting (via header)
       const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
-      const expectedAdminKey = dynamicAdminKey;
 
-      const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
-      const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
-
-      const isAdmin = (
-        (cleanKey !== "" && cleanKey === cleanExpected) ||
-        (adminKey !== null && adminKey === expectedAdminKey)
-      );
+      const isAdmin = isValidAdminKey(adminKey);
 
       if (!isAdmin) {
         // If not admin, check if this is a guest booking first
@@ -695,15 +724,23 @@ async function startServer() {
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password, key } = req.body;
-      const expectedEmail = process.env.ADMIN_EMAIL || "sonusonuraj415@gmail.com";
-      const expectedPassword = process.env.ADMIN_PASSWORD || "assurxlab2026";
-      const expectedKey = dynamicAdminKey;
 
       if (
-        typeof email !== "string" || email.trim().toLowerCase() !== expectedEmail ||
-        typeof password !== "string" || password.trim() !== expectedPassword ||
-        typeof key !== "string" || key.trim() !== expectedKey
+        typeof email !== "string" ||
+        typeof password !== "string" ||
+        typeof key !== "string"
       ) {
+        return res.status(401).json({ error: "Invalid administrator credentials or security key." });
+      }
+
+      const matchedAdmin = adminList.find(
+        (a) =>
+          a.email === email.trim().toLowerCase() &&
+          a.password === password.trim() &&
+          a.key === key.trim()
+      );
+
+      if (!matchedAdmin) {
         return res.status(401).json({ error: "Invalid administrator credentials or security key." });
       }
 
@@ -737,17 +774,8 @@ async function startServer() {
   // Secure admin authorization middleware: validates both admin key AND active session
   const requireAdminAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const adminKey = req.headers["x-admin-key"] || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split("Bearer ")[1] : null);
-    const expectedAdminKey = dynamicAdminKey;
 
-    const cleanKey = typeof adminKey === "string" ? adminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
-    const cleanExpected = typeof expectedAdminKey === "string" ? expectedAdminKey.trim().replace(/^\((.*)\)$/, "$1") : "";
-
-    const keyValid = (
-      (cleanKey !== "" && cleanKey === cleanExpected) ||
-      (adminKey !== null && adminKey === expectedAdminKey)
-    );
-
-    if (!keyValid) {
+    if (!isValidAdminKey(adminKey)) {
       return res.status(401).json({ error: "Unauthorized: Missing or invalid admin key" });
     }
 

@@ -22,7 +22,7 @@ export async function setAdminSession(sessionId: string): Promise<void> {
   await AdminSessionModel.findByIdAndUpdate(
     ADMIN_DOC_ID,
     { activeSession: sessionId, updatedAt: new Date() },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
 }
 

@@ -60,7 +60,7 @@ export interface Booking {
   };
   paymentMethod: 'upi' | 'card' | 'netbanking' | 'cash_at_center';
   paymentStatus: 'pending' | 'paid';
-  bookingStatus: 'booked' | 'sample_collected' | 'processing' | 'report_ready';
+  bookingStatus: 'booked' | 'sample_collected' | 'processing' | 'report_ready' | 'cancelled';
   totalAmount: number;
   timestamp: string;
   prescriptionName?: string;

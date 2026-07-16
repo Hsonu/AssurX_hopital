@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Calendar, Clock, MapPin, User, FileText, CheckCircle2, 
   Loader2, Download, Printer, AlertCircle, Eye, ShieldCheck, Landmark, 
-  ArrowRight, Sparkles, Award, Star, Activity, HeartPulse, LogIn, ChevronRight, Lock
+  ArrowRight, Sparkles, Award, Star, Activity, HeartPulse, LogIn, ChevronRight, Lock, X
 } from 'lucide-react';
 import { useAuth } from '../lib/auth.ts';
 import { userFetch } from '../lib/sessionGuard.ts';
@@ -51,6 +51,52 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
   const [reportData, setReportData] = useState<any[]>([]);
   const [scanFindings, setScanFindings] = useState('');
   const [scanImpression, setScanImpression] = useState('');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) {
+      return;
+    }
+    
+    setCancellingId(bookingId);
+    try {
+      const response = await userFetch(`/api/booking/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (response.ok) {
+        // Refresh local bookings list
+        const refreshedResponse = await userFetch('/api/patient/bookings', {
+          headers: {
+            'Authorization': `Bearer ${idToken}`
+          }
+        });
+        if (refreshedResponse.ok) {
+          const data = await refreshedResponse.json();
+          const sorted = data.sort((a: Booking, b: Booking) => {
+            return new Date(b.timestamp || '').getTime() - new Date(a.timestamp || '').getTime();
+          });
+          setBookings(sorted);
+          const match = sorted.find((b: Booking) => b.id === bookingId);
+          if (match) setSelectedBooking(match);
+        } else {
+          await fetchUserBookings();
+        }
+        alert("Booking cancelled successfully.");
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        alert(errData.error || "Failed to cancel booking.");
+      }
+    } catch (err) {
+      console.error("Error cancelling booking:", err);
+      alert("Failed to connect to the server.");
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const fetchUserBookings = async () => {
     if (!idToken) return;
@@ -399,6 +445,7 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
                         booking.bookingStatus === 'report_ready' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                         booking.bookingStatus === 'processing' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
                         booking.bookingStatus === 'sample_collected' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                        booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-150' :
                         'bg-slate-50 text-slate-500 border-slate-200'
                       }`}>
                         {booking.bookingStatus === 'report_ready' ? 'Report Ready' : booking.bookingStatus.replace('_', ' ')}
@@ -436,7 +483,21 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
                   <p className="font-bold text-slate-800 mt-0.5">Booking reference: <span className="font-mono text-emerald-800">{cleanBookingId(selectedBooking.bookingId)}</span></p>
                 </div>
 
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                  {selectedBooking.bookingStatus !== 'cancelled' && selectedBooking.bookingStatus !== 'report_ready' && (
+                    <button
+                      onClick={() => handleCancelBooking(selectedBooking.id)}
+                      disabled={cancellingId === selectedBooking.id}
+                      className="px-4 py-2 border border-red-200 hover:bg-red-50 text-red-700 font-extrabold text-[10.5px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {cancellingId === selectedBooking.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-red-500" />
+                      )}
+                      <span>Cancel Booking</span>
+                    </button>
+                  )}
                   <button 
                     onClick={() => window.print()}
                     className="flex-1 sm:flex-none px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-[10.5px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
@@ -454,67 +515,79 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
                 </div>
               </div>
 
-              {/* Progress Tracker Horizontal Steps */}
-              <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-2.5 text-xs">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biometric Pipeline Monitor</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="font-bold text-slate-300">Live Lab Connection</span>
+              {selectedBooking.bookingStatus === 'cancelled' ? (
+                <div className="bg-red-50 border border-red-150 p-5 rounded-2xl flex items-center gap-3.5 text-red-800 animate-fade-in">
+                  <AlertCircle className="w-8 h-8 text-red-650 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-serif font-bold text-sm">This booking has been cancelled</h4>
+                    <p className="text-xs text-red-700 leading-relaxed font-semibold mt-0.5">
+                      Your appointment slot has been released. If a refund is due according to our Cancellation Policy, it will be credited back to your original payment method within 3-5 business days.
+                    </p>
                   </div>
                 </div>
-
-                <div className="relative pt-1">
-                  <div className="absolute top-4 left-4 right-4 h-0.5 bg-slate-800 z-0 hidden sm:block"></div>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10 text-xs">
-                    
-                    {/* Step 1: Booked */}
-                    <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'booked')}`}>
-                        1
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-200 leading-none">Appointment</p>
-                        <span className="text-[9px] text-slate-500 block mt-0.5">Confirmed</span>
-                      </div>
+              ) : (
+                /* Progress Tracker Horizontal Steps */
+                <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2.5 text-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Biometric Pipeline Monitor</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="font-bold text-slate-300">Live Lab Connection</span>
                     </div>
+                  </div>
 
-                    {/* Step 2: Collected */}
-                    <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'sample_collected')}`}>
-                        2
+                  <div className="relative pt-1">
+                    <div className="absolute top-4 left-4 right-4 h-0.5 bg-slate-800 z-0 hidden sm:block"></div>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10 text-xs">
+                      
+                      {/* Step 1: Booked */}
+                      <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'booked')}`}>
+                          1
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-200 leading-none">Appointment</p>
+                          <span className="text-[9px] text-slate-500 block mt-0.5">Confirmed</span>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-200 leading-none">Biometrics</p>
-                        <span className="text-[9px] text-slate-500 block mt-0.5">Sample Collected</span>
+
+                      {/* Step 2: Collected */}
+                      <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'sample_collected')}`}>
+                          2
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-200 leading-none">Biometrics</p>
+                          <span className="text-[9px] text-slate-500 block mt-0.5">Sample Collected</span>
+                        </div>
                       </div>
+
+                      {/* Step 3: Processing */}
+                      <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'processing')}`}>
+                          3
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-200 leading-none">Laboratory</p>
+                          <span className="text-[9px] text-slate-500 block mt-0.5">Analyses Running</span>
+                        </div>
+                      </div>
+
+                      {/* Step 4: Published */}
+                      <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'report_ready')}`}>
+                          ✓
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-200 leading-none">EHR Record</p>
+                          <span className="text-[9px] text-slate-500 block mt-0.5">Report Ready</span>
+                        </div>
+                      </div>
+
                     </div>
-
-                    {/* Step 3: Processing */}
-                    <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'processing')}`}>
-                        3
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-200 leading-none">Laboratory</p>
-                        <span className="text-[9px] text-slate-500 block mt-0.5">Analyses Running</span>
-                      </div>
-                    </div>
-
-                    {/* Step 4: Published */}
-                    <div className="flex items-center sm:flex-col gap-3 sm:gap-2 text-left sm:text-center flex-1 w-full">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-black ${getStatusStepClass(selectedBooking.bookingStatus, 'report_ready')}`}>
-                        ✓
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-200 leading-none">EHR Record</p>
-                        <span className="text-[9px] text-slate-500 block mt-0.5">Report Ready</span>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Printable Medical Document Header */}
               <div id="printable-report-area" className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 space-y-6 shadow-xs text-left">

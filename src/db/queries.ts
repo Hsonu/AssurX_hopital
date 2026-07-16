@@ -100,7 +100,7 @@ export async function updateBooking(id: number, data: Record<string, unknown>) {
     const booking = await BookingModel.findOneAndUpdate(
       { id },
       { $set: data },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!booking) throw new Error(`Booking with id ${id} not found`);
     return mongoDocToPlain(booking);
@@ -166,7 +166,7 @@ export async function updatePrescription(id: number, data: Record<string, unknow
     const prescription = await PrescriptionModel.findOneAndUpdate(
       { id },
       { $set: data },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!prescription) throw new Error(`Prescription with id ${id} not found`);
     return mongoDocToPlain(prescription);
@@ -251,7 +251,7 @@ export async function updateJobApplicationStatus(id: number, status: string) {
     const application = await JobApplicationModel.findOneAndUpdate(
       { id },
       { $set: { status } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!application) throw new Error(`Job application with id ${id} not found`);
     return mongoDocToPlain(application);

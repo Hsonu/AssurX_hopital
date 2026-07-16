@@ -202,7 +202,7 @@ export async function getNextId(name: string): Promise<number> {
   const counter = await CounterModel.findByIdAndUpdate(
     name,
     { $inc: { seq: 1 } },
-    { new: true, upsert: true, returnDocument: 'after' }
+    { upsert: true, returnDocument: 'after' }
   );
   if (!counter) throw new Error(`Counter ${name} could not be updated.`);
   return counter.seq;
