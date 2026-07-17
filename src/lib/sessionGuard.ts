@@ -144,9 +144,13 @@ export async function adminFetch(
   init?: RequestInit
 ): Promise<Response> {
   const sessionId = getAdminSessionId();
+  const email = typeof window !== 'undefined' ? (localStorage.getItem('adminEmail') || '') : '';
   const headers = new Headers(init?.headers);
   if (sessionId) {
     headers.set('X-Admin-Session', sessionId);
+  }
+  if (email) {
+    headers.set('X-Admin-Email', email);
   }
 
   const response = await fetch(input, { ...init, headers });

@@ -6,6 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser, updateUserSession, getUserActiveSession } from "./src/db/users.ts";
 import { getAdminSession, setAdminSession, clearAdminSession } from "./src/db/adminSession.ts";
+import { AdminSessionModel } from "./src/db/schema.ts";
 import authRoutes from "./src/routes/authRoutes.ts";
 import patientRoutes from "./src/routes/patientRoutes.ts";
 import { connectDB } from "./src/db/index.ts";
@@ -744,9 +745,9 @@ async function startServer() {
         return res.status(401).json({ error: "Invalid administrator credentials or security key." });
       }
 
-      // Generate a new session ID, replacing any previous admin session
+      // Generate a new session ID, replacing any previous admin session for this email
       const sessionId = crypto.randomUUID();
-      await setAdminSession(sessionId);
+      await setAdminSession(matchedAdmin.email, sessionId);
 
       res.json({ success: true, sessionId });
     } catch (error: any) {
@@ -759,10 +760,23 @@ async function startServer() {
   app.post("/api/admin/logout", async (req, res) => {
     try {
       const incomingSession = req.headers["x-admin-session"] as string | undefined;
-      const storedSession = await getAdminSession();
-      // Only clear if the requesting device owns the current session
-      if (incomingSession && incomingSession === storedSession) {
-        await clearAdminSession();
+      const adminEmail = req.headers["x-admin-email"] as string | undefined;
+
+      let emailToClear = adminEmail ? adminEmail.trim().toLowerCase() : "";
+
+      if (!emailToClear && incomingSession) {
+        // Fallback: look up email by active session
+        const doc = await AdminSessionModel.findOne({ activeSession: incomingSession }).lean();
+        if (doc) {
+          emailToClear = (doc as any)._id;
+        }
+      }
+
+      if (emailToClear) {
+        const storedSession = await getAdminSession(emailToClear);
+        if (incomingSession && incomingSession === storedSession) {
+          await clearAdminSession(emailToClear);
+        }
       }
       res.json({ success: true });
     } catch (error: any) {
@@ -782,13 +796,31 @@ async function startServer() {
     // ── Single-session enforcement for admin ────────────────────────────────
     try {
       const incomingSession = req.headers["x-admin-session"] as string | undefined;
-      const storedSession = await getAdminSession();
+      const adminEmail = req.headers["x-admin-email"] as string | undefined;
 
-      // Only enforce if a session has been established (non-empty stored session)
-      if (storedSession && incomingSession !== storedSession) {
-        return res.status(401).json({
-          error: "Your account has been logged in on another device. Please log in again."
-        });
+      if (adminEmail) {
+        const storedSession = await getAdminSession(adminEmail);
+        if (storedSession && incomingSession !== storedSession) {
+          return res.status(401).json({
+            error: "Your account has been logged in on another device. Please log in again."
+          });
+        }
+      } else if (incomingSession) {
+        // Fallback: lookup by session ID
+        const doc = await AdminSessionModel.findOne({ activeSession: incomingSession }).lean();
+        if (!doc) {
+          return res.status(401).json({
+            error: "Your account has been logged in on another device. Please log in again."
+          });
+        }
+      } else {
+        // If neither email nor session ID is provided, verify if there are any active sessions at all.
+        const activeCount = await AdminSessionModel.countDocuments({ activeSession: { $ne: "" } });
+        if (activeCount > 0) {
+          return res.status(401).json({
+            error: "Your account has been logged in on another device. Please log in again."
+          });
+        }
       }
     } catch (sessionErr) {
       // If DB is unavailable for session check, allow through (key still validated above)

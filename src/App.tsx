@@ -198,6 +198,7 @@ export default function App() {
       if (!storedAdminId || storedAdminId === myAdminId) {
         localStorage.removeItem('adminSession');
         localStorage.removeItem('assurx_admin_auth');
+        localStorage.removeItem('adminEmail');
       }
       sessionStorage.removeItem('assurx_admin_auth');
       setCurrentTab('home');

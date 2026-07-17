@@ -129,6 +129,7 @@ export default function AdminPanel({
     if (hasFlag && !hasSession) {
       localStorage.removeItem('assurx_admin_auth');
       sessionStorage.removeItem('assurx_admin_auth');
+      localStorage.removeItem('adminEmail');
       return false;
     }
     return hasFlag && hasSession;
@@ -201,6 +202,7 @@ export default function AdminPanel({
         const data = await res.json();
         // Persist the session ID (kicks any other device)
         localStorage.setItem('adminSession', data.sessionId);
+        localStorage.setItem('adminEmail', email);
         setIsAdminAuthenticated(true);
         localStorage.setItem('assurx_admin_auth', 'true');
         sessionStorage.setItem('assurx_admin_auth', 'true');
@@ -1394,6 +1396,7 @@ export default function AdminPanel({
               setIsAdminAuthenticated(false);
               localStorage.removeItem('assurx_admin_auth');
               localStorage.removeItem('adminSession');
+              localStorage.removeItem('adminEmail');
               sessionStorage.removeItem('assurx_admin_auth');
               showToast('Logged out of Admin Console successfully.', 'info');
             }}
