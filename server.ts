@@ -793,6 +793,14 @@ async function startServer() {
       return res.status(401).json({ error: "Unauthorized: Missing or invalid admin key" });
     }
 
+    const adminEmail = req.headers["x-admin-email"] as string | undefined;
+    if (adminEmail) {
+      const matchedAdmin = adminList.find(a => a.email === adminEmail.trim().toLowerCase());
+      if (!matchedAdmin || matchedAdmin.key !== adminKey) {
+        return res.status(401).json({ error: "Unauthorized: Invalid key for this admin account" });
+      }
+    }
+
     // ── Single-session enforcement for admin ────────────────────────────────
     try {
       const incomingSession = req.headers["x-admin-session"] as string | undefined;

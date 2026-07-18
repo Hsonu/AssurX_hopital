@@ -130,6 +130,7 @@ export default function AdminPanel({
       localStorage.removeItem('assurx_admin_auth');
       sessionStorage.removeItem('assurx_admin_auth');
       localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminKey');
       return false;
     }
     return hasFlag && hasSession;
@@ -203,6 +204,7 @@ export default function AdminPanel({
         // Persist the session ID (kicks any other device)
         localStorage.setItem('adminSession', data.sessionId);
         localStorage.setItem('adminEmail', email);
+        localStorage.setItem('adminKey', key);
         setIsAdminAuthenticated(true);
         localStorage.setItem('assurx_admin_auth', 'true');
         sessionStorage.setItem('assurx_admin_auth', 'true');
@@ -1389,7 +1391,7 @@ export default function AdminPanel({
               try {
                 await adminFetch('/api/admin/logout', {
                   method: 'POST',
-                  headers: { 'X-Admin-Key': 'assurx2026health' }
+                  headers: { 'X-Admin-Key': localStorage.getItem('adminKey') || 'assurx2026health' }
                 });
               } catch (_) { /* fire and forget */ }
               // Clear local state
@@ -1397,6 +1399,7 @@ export default function AdminPanel({
               localStorage.removeItem('assurx_admin_auth');
               localStorage.removeItem('adminSession');
               localStorage.removeItem('adminEmail');
+              localStorage.removeItem('adminKey');
               sessionStorage.removeItem('assurx_admin_auth');
               showToast('Logged out of Admin Console successfully.', 'info');
             }}

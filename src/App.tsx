@@ -199,6 +199,7 @@ export default function App() {
         localStorage.removeItem('adminSession');
         localStorage.removeItem('assurx_admin_auth');
         localStorage.removeItem('adminEmail');
+        localStorage.removeItem('adminKey');
       }
       sessionStorage.removeItem('assurx_admin_auth');
       setCurrentTab('home');

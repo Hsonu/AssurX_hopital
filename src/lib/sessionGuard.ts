@@ -145,12 +145,18 @@ export async function adminFetch(
 ): Promise<Response> {
   const sessionId = getAdminSessionId();
   const email = typeof window !== 'undefined' ? (localStorage.getItem('adminEmail') || '') : '';
+  const adminKey = typeof window !== 'undefined' ? (localStorage.getItem('adminKey') || '') : '';
   const headers = new Headers(init?.headers);
   if (sessionId) {
     headers.set('X-Admin-Session', sessionId);
   }
   if (email) {
     headers.set('X-Admin-Email', email);
+  }
+  if (adminKey) {
+    headers.set('X-Admin-Key', adminKey);
+  } else if (!headers.has('X-Admin-Key')) {
+    headers.set('X-Admin-Key', 'assurx2026health');
   }
 
   const response = await fetch(input, { ...init, headers });
