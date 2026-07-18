@@ -60,11 +60,11 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
           <div className="space-y-1.5 text-[11px]">
             <a href="tel:18001201100" className="flex items-center gap-1.5 hover:text-white transition-colors">
               <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Helpline (Toll-Free): 1800-120-1100</span>
+              <span>Helpline (Toll-Free): +91 9830678387 </span>
             </a>
-            <a href="mailto:support@assurx.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
+            <a href="mailto:assurxdiagonistics@gmail.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
               <Mail className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Care: support@assurx.com</span>
+              <span>Care: assurxdiagonistics@gmail.com</span>
             </a>
           </div>
         </div>

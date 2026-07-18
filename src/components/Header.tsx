@@ -63,7 +63,7 @@ export default function Header({
         <div className="flex items-center gap-4">
           <a href="tel:18001201100" className="flex items-center gap-1 hover:text-white transition-colors">
             <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Emergency Toll-Free: 1800-120-1100</span>
+            <span>Emergency Toll-Free: +91 9830678387 </span>
           </a>
         </div>
       </div>

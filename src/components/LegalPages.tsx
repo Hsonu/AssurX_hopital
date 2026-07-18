@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  FileText, ShieldCheck, RotateCcw, Activity, Info, 
-  PhoneCall, Mail, MapPin, Clock, Building, ArrowRight, Shield 
+import {
+  FileText, ShieldCheck, RotateCcw, Activity, Info,
+  PhoneCall, Mail, MapPin, Clock, Building, ArrowRight, Shield
 } from 'lucide-react';
 
 export type LegalTab = 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us';
@@ -47,11 +47,10 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                 <button
                   key={sec.id}
                   onClick={() => onSectionChange(sec.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex-shrink-0 cursor-pointer w-auto lg:w-full ${
-                    isActive 
-                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' 
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex-shrink-0 cursor-pointer w-auto lg:w-full ${isActive
+                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
                       : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
                   <span>{sec.label}</span>
@@ -104,7 +103,7 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
 
                 <h3 className="text-slate-850 font-bold font-serif text-sm mt-6">Our Core Commitment</h3>
                 <p>
-                  We are committed to putting patients first. By bypassing administrative middlemen and leveraging robotic high-throughput machinery, we pass 100% of our cost savings to the end consumer, offering premium medical services at up to 50% subsidized rates. 
+                  We are committed to putting patients first. By bypassing administrative middlemen and leveraging robotic high-throughput machinery, we pass 100% of our cost savings to the end consumer, offering premium medical services at up to 50% subsidized rates.
                 </p>
               </div>
             </div>
@@ -136,7 +135,7 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Helpline Numbers</span>
-                      <a href="tel:18001201100" className="text-slate-850 font-bold block mt-0.5 hover:underline">1800-120-1100 (Toll-Free)</a>
+                      <a href="tel:18001201100" className="text-slate-850 font-bold block mt-0.5 hover:underline">+91 9830678387  (Toll-Free)</a>
                       <a href="tel:02250117701" className="text-slate-700 text-xs block mt-0.5 hover:underline">022-50117701 (Malad Branch)</a>
                     </div>
                   </div>
@@ -148,7 +147,7 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Email Support</span>
-                      <a href="mailto:support@assurx.com" className="text-slate-850 font-bold block mt-0.5 hover:underline">support@assurx.com</a>
+                      <a href="mailto:assurxdiagonistics@gmail.com" className="text-slate-850 font-bold block mt-0.5 hover:underline">assurxdiagonistics@gmail.com</a>
                       <span className="text-slate-500 text-[10px] block mt-0.5">Average response time: 2 hours</span>
                     </div>
                   </div>
@@ -279,7 +278,7 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
 
                 <h3 className="font-bold text-slate-850 mt-4 text-xs uppercase tracking-wider">5. Your Data Rights</h3>
                 <p>
-                  You have the right to request access to your booking archives, modify profile inaccuracies, or request account deletions by emailing our customer support care at <a href="mailto:support@assurx.com" className="text-emerald-700 hover:underline">support@assurx.com</a>.
+                  You have the right to request access to your booking archives, modify profile inaccuracies, or request account deletions by emailing our customer support care at <a href="mailto:assurxdiagonistics@gmail.com" className="text-emerald-700 hover:underline">assurxdiagonistics@gmail.com</a>.
                 </p>
               </div>
             </div>
@@ -332,8 +331,8 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Go to your <strong>My Bookings</strong> section in the Patient Dashboard and select the cancel option next to your pending appointment.</li>
-                  <li>Call our Toll-Free customer support hotline at <a href="tel:18001201100" className="text-emerald-700 font-bold hover:underline">1800-120-1100</a>.</li>
-                  <li>Email your request along with the ASX booking reference ID to <a href="mailto:support@assurx.com" className="text-emerald-700 hover:underline">support@assurx.com</a>.</li>
+                  <li>Call our Toll-Free customer support hotline at <a href="tel:18001201100" className="text-emerald-700 font-bold hover:underline">+91 9830678387 </a>.</li>
+                  <li>Email your request along with the ASX booking reference ID to <a href="mailto:assurxdiagonistics@gmail.com" className="text-emerald-700 hover:underline">assurxdiagonistics@gmail.com</a>.</li>
                 </ul>
               </div>
             </div>
