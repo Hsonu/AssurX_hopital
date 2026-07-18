@@ -253,17 +253,8 @@ export default function Header({
             <span className="text-2xl font-serif italic font-bold tracking-tighter text-emerald-850">AssurX</span>
           </div>
 
-          {/* Right actions: CALL US, CART, MENU */}
+          {/* Right actions: CART, MENU */}
           <div className="flex items-center gap-2.5">
-            {/* Call button matching green button on screenshot */}
-            <a
-              href="tel:18001201100"
-              className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full text-[10px] font-black uppercase tracking-wider transition-colors flex items-center gap-1 shadow-sm"
-            >
-              <PhoneCall className="w-3 h-3 fill-current" />
-              <span>Call Us</span>
-            </a>
-
             {/* Cart Icon */}
             <button
               onClick={openCart}
