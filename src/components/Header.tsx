@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, PhoneCall, ShoppingCart, User, Menu, X, Landmark, Building, LogIn, LogOut, ClipboardList, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import { Search, MapPin, PhoneCall, Phone, ShoppingCart, User, Menu, X, Landmark, Building, LogIn, LogOut, ClipboardList, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { CartItem } from '../types';
 import { useAuth } from '../lib/auth.ts';
 import PatientBookingsModal from './PatientBookingsModal.tsx';
@@ -75,7 +75,7 @@ export default function Header({
           onClick={() => handleTabClick('home')}
           className="flex items-center gap-3 cursor-pointer select-none"
         >
-          <span className="text-3xl font-serif italic font-bold tracking-tighter text-white">AssurX</span>
+          <img src="/logo.jpeg" alt="AssurX Diagnostics" className="h-10 w-auto rounded-lg object-contain bg-white/95 px-1.5 py-0.5" />
           <div className="border-l border-white/30 h-5 pl-3">
             <span className="text-[9px] font-bold text-[#80CBC4] tracking-widest uppercase block leading-none">Scans & Labs</span>
           </div>
@@ -221,6 +221,16 @@ export default function Header({
             <span>Admin Console</span>
           </button>
 
+          {/* Call Us Button */}
+          <a
+            href="tel:+919830678387"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#AD1457] hover:bg-[#C2185B] text-white rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-md cursor-pointer"
+            title="Call AssurX Now"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            <span>Call Us</span>
+          </a>
+
           {/* Cart Trigger */}
           <button
             onClick={openCart}
@@ -248,13 +258,19 @@ export default function Header({
             onClick={() => handleTabClick('home')}
             className="flex items-center gap-2 cursor-pointer select-none"
           >
-            {/* White-on-blue logo contrast mark */}
-            <div className="w-8 h-8 rounded-xl bg-[#AD1457] flex items-center justify-center text-white font-serif italic font-black text-lg shadow-sm">A</div>
-            <span className="text-2xl font-serif italic font-bold tracking-tighter text-white">AssurX</span>
+            <img src="/logo.jpeg" alt="AssurX Diagnostics" className="h-9 w-auto rounded-lg object-contain bg-white/95 px-1 py-0.5" />
           </div>
 
-          {/* Right actions: CART, MENU */}
+          {/* Right actions: CALL, CART, MENU */}
           <div className="flex items-center gap-2.5">
+            {/* Call Us Icon */}
+            <a
+              href="tel:+919830678387"
+              className="p-2 rounded-full bg-[#AD1457] text-white shadow-md"
+              title="Call AssurX"
+            >
+              <Phone className="w-4 h-4" />
+            </a>
             {/* Cart Icon */}
             <button
               onClick={openCart}

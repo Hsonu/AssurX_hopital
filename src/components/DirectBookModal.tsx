@@ -102,7 +102,9 @@ export default function DirectBookModal({
   const basePrice = selectedItem.discountPrice || selectedItem.price;
   const homeCollectionFee = activeCollectionType === 'home' ? 150 : 0;
   const gstAmount = Math.round(basePrice * 0.05);
-  const grandTotal = basePrice + homeCollectionFee + gstAmount;
+  const subtotal = basePrice + homeCollectionFee + gstAmount;
+  const bookNowDiscount = Math.round(subtotal * 0.10);
+  const grandTotal = subtotal - bookNowDiscount;
 
   const executeDatabaseBooking = async (method: string, payStatus: string) => {
     setIsSubmitting(true);
@@ -385,6 +387,17 @@ export default function DirectBookModal({
                 </p>
               </div>
 
+              {/* 10% Book Now Discount Banner */}
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3 animate-fade-in">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm flex-shrink-0">
+                  10%
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-emerald-800 leading-tight">🎉 Book Now & Get 10% OFF!</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5 leading-snug">Flat 10% discount applied automatically on your total amount. Limited time offer!</p>
+                </div>
+              </div>
+
               {/* Selected test brief card */}
               <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex justify-between items-center">
                 <div>
@@ -396,7 +409,8 @@ export default function DirectBookModal({
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Price</span>
-                  <span className="text-lg font-black text-emerald-700">₹{basePrice}</span>
+                  <span className="text-[11px] text-slate-400 line-through">₹{subtotal}</span>
+                  <span className="text-lg font-black text-emerald-700 ml-1">₹{grandTotal}</span>
                 </div>
               </div>
 
@@ -666,6 +680,16 @@ export default function DirectBookModal({
                 <div className="flex justify-between items-center text-slate-500 text-[11px]">
                   <span>Healthcare cess & GST (5%)</span>
                   <span className="font-semibold text-slate-800">₹{gstAmount}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px] border-t border-dashed border-slate-200 pt-2">
+                  <span className="text-slate-500">Subtotal</span>
+                  <span className="font-semibold text-slate-800">₹{subtotal}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                    🎉 Book Now Discount (10% OFF)
+                  </span>
+                  <span className="font-bold text-emerald-600">-₹{bookNowDiscount}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-sm text-slate-900 border-t border-dashed border-slate-200 pt-2">
                   <span className="text-slate-850">
