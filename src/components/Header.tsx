@@ -48,22 +48,22 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm" id="main-header">
+    <header className="sticky top-0 z-50 bg-[#2D006B] border-b border-[#220052] shadow-md text-white" id="main-header">
       {/* Top Banner Contact/Info - Hidden on mobile to save space */}
-      <div className="hidden md:flex bg-slate-900 text-slate-300 py-2 px-4 text-xs font-medium justify-between items-center">
+      <div className="hidden md:flex bg-[#1A0040] text-slate-200 py-2 px-4 text-xs font-medium justify-between items-center">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="inline-block w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
             NABL Accredited & Certified Labs
           </span>
-          <span className="hidden md:flex items-center gap-1 text-slate-400 font-serif italic">
+          <span className="hidden md:flex items-center gap-1 text-slate-350 font-serif italic">
             Serving 2 Crore+ Indians with 100% Reliable Reports
           </span>
         </div>
         <div className="flex items-center gap-4">
           <a href="tel:18001201100" className="flex items-center gap-1 hover:text-white transition-colors">
-            <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Emergency Toll-Free: +91 9830678387 </span>
+            <PhoneCall className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            <span className="font-bold text-red-200">Emergency Toll-Free: +91 9830678387 </span>
           </a>
         </div>
       </div>
@@ -75,16 +75,16 @@ export default function Header({
           onClick={() => handleTabClick('home')}
           className="flex items-center gap-3 cursor-pointer select-none"
         >
-          <span className="text-3xl font-serif italic font-bold tracking-tighter text-emerald-800">AssurX</span>
-          <div className="border-l border-gray-250 h-5 pl-3">
-            <span className="text-[9px] font-bold text-gray-500 tracking-widest uppercase block leading-none">Scans & Labs</span>
+          <span className="text-3xl font-serif italic font-bold tracking-tighter text-white">AssurX</span>
+          <div className="border-l border-white/30 h-5 pl-3">
+            <span className="text-[9px] font-bold text-[#80CBC4] tracking-widest uppercase block leading-none">Scans & Labs</span>
           </div>
         </div>
 
         {/* Search Bar */}
         <div className="flex-1 max-w-md relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-400" />
+            <Search className="h-4 w-4 text-white/60" />
           </div>
           <input
             type="text"
@@ -92,12 +92,12 @@ export default function Header({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={onSearchFocus}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-xs bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all placeholder:text-slate-450 font-semibold"
+            className="w-full pl-10 pr-4 py-2 border border-white/20 rounded-full text-xs bg-white/10 hover:bg-white/15 focus:bg-white focus:text-slate-900 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white transition-all placeholder:text-white/60 text-white font-semibold"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-450 hover:text-slate-700 text-xs font-semibold"
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-white/70 hover:text-white text-xs font-semibold"
             >
               Clear
             </button>
@@ -107,12 +107,12 @@ export default function Header({
         {/* Right Action Bar */}
         <div className="flex items-center gap-4">
           {/* Branch Selector */}
-          <div className="relative flex items-center gap-1.5 bg-slate-50 border border-gray-200 rounded-full px-3 py-1.5 hover:bg-slate-100/70 transition-colors">
-            <Building className="w-3.5 h-3.5 text-emerald-700 flex-shrink-0" />
+          <div className="relative flex items-center gap-1.5 bg-white/10 border border-white/20 rounded-full px-3 py-1.5 hover:bg-white/15 transition-colors">
+            <Building className="w-3.5 h-3.5 text-white flex-shrink-0" />
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer pr-1"
+              className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer pr-1"
             >
               {branches.map((branch) => (
                 <option key={branch} value={branch} className="text-slate-800 bg-white">
@@ -123,40 +123,40 @@ export default function Header({
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-gray-500">
+          <nav className="flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-white/80">
             <button
               onClick={() => handleTabClick('home')}
-              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'home' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+              className={`hover:text-white transition-colors py-1 cursor-pointer ${currentTab === 'home' ? 'text-white border-b-2 border-red-500 font-black' : ''}`}
             >
               Home
             </button>
             <button
               onClick={() => handleTabClick('scans')}
-              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'scans' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+              className={`hover:text-white transition-colors py-1 cursor-pointer ${currentTab === 'scans' ? 'text-white border-b-2 border-red-500 font-black' : ''}`}
             >
               Scans
             </button>
             <button
               onClick={() => handleTabClick('labs')}
-              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'labs' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+              className={`hover:text-white transition-colors py-1 cursor-pointer ${currentTab === 'labs' ? 'text-white border-b-2 border-red-500 font-black' : ''}`}
             >
               Labs
             </button>
             <button
               onClick={() => handleTabClick('packages')}
-              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'packages' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+              className={`hover:text-white transition-colors py-1 cursor-pointer ${currentTab === 'packages' ? 'text-white border-b-2 border-red-500 font-black' : ''}`}
             >
               Packages
             </button>
             <button
               onClick={() => handleTabClick('bookings')}
-              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'bookings' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+              className={`hover:text-white transition-colors py-1 cursor-pointer ${currentTab === 'bookings' ? 'text-white border-b-2 border-red-500 font-black' : ''}`}
             >
               My Bookings
             </button>
             <button
               onClick={() => handleTabClick('hiring')}
-              className={`hover:text-emerald-700 transition-colors py-1 cursor-pointer ${currentTab === 'hiring' ? 'text-emerald-800 border-b-2 border-emerald-700 font-black' : ''}`}
+              className={`hover:text-white transition-colors py-1 cursor-pointer ${currentTab === 'hiring' ? 'text-white border-b-2 border-red-500 font-black' : ''}`}
             >
               Careers
             </button>
@@ -164,28 +164,28 @@ export default function Header({
 
           {/* User Auth controls */}
           {user ? (
-            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-full py-1 pl-1.5 pr-3.5">
+            <div className="flex items-center gap-2.5 bg-white/10 border border-white/20 rounded-full py-1 pl-1.5 pr-3.5">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName || "User"}
                   referrerPolicy="no-referrer"
-                  className="w-7 h-7 rounded-full object-cover border border-slate-100"
+                  className="w-7 h-7 rounded-full object-cover border border-white/20"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-emerald-700 text-white font-black text-xs flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center">
                   {user.email?.[0].toUpperCase() || "U"}
                 </div>
               )}
               <div className="text-left hidden xl:block">
-                <p className="text-[10px] font-black text-slate-800 truncate max-w-[100px] leading-none">
+                <p className="text-[10px] font-black text-white truncate max-w-[100px] leading-none">
                   {user.displayName || user.email?.split('@')[0]}
                 </p>
-                <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest block mt-0.5">Patient Account</span>
+                <span className="text-[8px] font-black text-[#80CBC4] uppercase tracking-widest block mt-0.5">Patient Account</span>
               </div>
               <button
                 onClick={() => handleTabClick('bookings')}
-                className="px-2.5 py-1.5 bg-emerald-750 hover:bg-emerald-850 text-white text-[9.5px] font-black uppercase tracking-wider rounded-full transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                className="px-2.5 py-1.5 bg-red-600 hover:bg-red-500 text-white text-[9.5px] font-black uppercase tracking-wider rounded-full transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                 title="View your diagnostic booking history and published reports"
               >
                 <ClipboardList className="w-3 h-3" />
@@ -193,7 +193,7 @@ export default function Header({
               </button>
               <button
                 onClick={logout}
-                className="p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-700 rounded-full transition-colors cursor-pointer"
+                className="p-1 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-colors cursor-pointer"
                 title="Logout Account"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -202,9 +202,9 @@ export default function Header({
           ) : (
             <button
               onClick={() => handleTabClick('bookings')}
-              className="flex items-center gap-1.5 px-4.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-full text-xs font-bold uppercase tracking-widest transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-4.5 py-2 border border-white/20 hover:bg-white/10 text-white rounded-full text-xs font-bold uppercase tracking-widest transition-all cursor-pointer shadow-xs"
             >
-              <LogIn className="w-3.5 h-3.5 text-emerald-700" />
+              <LogIn className="w-3.5 h-3.5 text-white" />
               <span>Sign In</span>
             </button>
           )}
@@ -213,8 +213,8 @@ export default function Header({
           <button
             onClick={() => handleTabClick('admin')}
             className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${currentTab === 'admin'
-                ? 'bg-emerald-950 text-white shadow-md'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-100'
+              ? 'bg-white text-[#2D006B] shadow-md hover:bg-white/95'
+              : 'bg-red-600 text-white hover:bg-red-500 shadow-md shadow-red-900/10'
               }`}
           >
             <User className="w-3.5 h-3.5" />
@@ -224,10 +224,10 @@ export default function Header({
           {/* Cart Trigger */}
           <button
             onClick={openCart}
-            className="relative flex items-center justify-center p-2 rounded-full border border-gray-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+            className="relative flex items-center justify-center p-2 rounded-full border border-white/20 bg-white/10 hover:bg-white/15 text-white transition-colors cursor-pointer"
             id="cart-trigger-btn"
           >
-            <ShoppingCart className="w-4.5 h-4.5 text-slate-800" />
+            <ShoppingCart className="w-4.5 h-4.5" />
             {cart.length > 0 && (
               <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white font-extrabold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-scale-in">
                 {cart.length}
@@ -239,18 +239,18 @@ export default function Header({
 
 
       {/* MOBILE HEADER (Clean & optimized matching your screenshot) */}
-      <div className="lg:hidden flex flex-col w-full bg-white">
+      <div className="lg:hidden flex flex-col w-full bg-[#2D006B] border-b border-[#220052] text-white shadow-md">
 
         {/* Row 1: Logo + Actions */}
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-50">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10">
           {/* Brand Logo */}
           <div
             onClick={() => handleTabClick('home')}
             className="flex items-center gap-2 cursor-pointer select-none"
           >
-            {/* Green visual mark */}
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-serif italic font-black text-lg shadow-sm shadow-emerald-100">A</div>
-            <span className="text-2xl font-serif italic font-bold tracking-tighter text-emerald-850">AssurX</span>
+            {/* White-on-blue logo contrast mark */}
+            <div className="w-8 h-8 rounded-xl bg-[#AD1457] flex items-center justify-center text-white font-serif italic font-black text-lg shadow-sm">A</div>
+            <span className="text-2xl font-serif italic font-bold tracking-tighter text-white">AssurX</span>
           </div>
 
           {/* Right actions: CART, MENU */}
@@ -258,7 +258,7 @@ export default function Header({
             {/* Cart Icon */}
             <button
               onClick={openCart}
-              className="relative p-2 rounded-full border border-slate-200 bg-slate-50/50 hover:bg-slate-100 text-slate-800"
+              className="relative p-2 rounded-full border border-white/20 bg-white/10 hover:bg-white/15 text-white"
             >
               <ShoppingCart className="w-4 h-4" />
               {cart.length > 0 && (
@@ -271,20 +271,20 @@ export default function Header({
             {/* Burger Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-50"
+              className="p-1.5 rounded-lg text-white hover:bg-white/10"
             >
               {mobileMenuOpen ? <X className="w-5.5 h-5.5" /> : <Menu className="w-5.5 h-5.5" />}
             </button>
           </div>
         </div>
 
-        {/* Row 2: Green Bar with "BOOK A TEST" and "REPORTS / ADMIN" */}
-        <div className="bg-emerald-800 px-4 py-2 flex items-center justify-center gap-3">
+        {/* Row 2: Premium blue bar with active test actions */}
+        <div className="bg-[#1A0040] px-4 py-2 flex items-center justify-center gap-3">
           <button
             onClick={() => handleTabClick('labs')}
             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider text-center rounded-lg transition-all ${currentTab === 'labs' || currentTab === 'scans' || currentTab === 'packages'
-                ? 'bg-amber-400 text-slate-900 shadow-md'
-                : 'bg-white text-emerald-900 hover:bg-slate-50'
+              ? 'bg-red-600 text-white shadow-md'
+              : 'bg-white/10 text-white border border-white/20 hover:bg-white/15'
               }`}
           >
             Book A Test
@@ -292,8 +292,8 @@ export default function Header({
           <button
             onClick={() => handleTabClick('admin')}
             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider text-center rounded-lg transition-all ${currentTab === 'admin'
-                ? 'bg-amber-400 text-slate-900 shadow-md'
-                : 'bg-white text-emerald-900 hover:bg-slate-50'
+              ? 'bg-red-600 text-white shadow-md'
+              : 'bg-white/10 text-white border border-white/20 hover:bg-white/15'
               }`}
           >
             Admin Panel
@@ -301,15 +301,15 @@ export default function Header({
         </div>
 
         {/* Row 3: Double capsule for City & Search */}
-        <div className="px-4 py-2.5 bg-slate-50/50 border-b border-slate-150">
-          <div className="flex items-center bg-white border border-slate-200 rounded-full p-1 divide-x divide-slate-200 shadow-inner">
+        <div className="px-4 py-2.5 bg-[#220052]/80 border-b border-[#1A0040]/30">
+          <div className="flex items-center bg-white/10 border border-white/20 rounded-full p-1 divide-x divide-white/20 shadow-inner">
             {/* City Selector */}
             <div className="flex items-center gap-1 pl-2.5 pr-2 py-1 max-w-[120px] flex-shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-white flex-shrink-0 animate-pulse" />
               <select
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                className="bg-transparent text-[11px] font-extrabold text-slate-750 focus:outline-none cursor-pointer pr-1 truncate w-full"
+                className="bg-transparent text-[11px] font-extrabold text-white focus:outline-none cursor-pointer pr-1 truncate w-full"
               >
                 {branches.map((branch) => (
                   <option key={branch} value={branch} className="text-slate-800 bg-white">
@@ -327,17 +327,17 @@ export default function Header({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={onSearchFocus}
-                className="w-full bg-transparent text-[11px] font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                className="w-full bg-transparent text-[11px] font-semibold text-white placeholder:text-white/60 focus:outline-none"
               />
               {searchQuery ? (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="pr-2.5 text-slate-400 hover:text-slate-600 text-[10px] font-bold"
+                  className="pr-2.5 text-white/70 hover:text-white text-[10px] font-bold"
                 >
                   Clear
                 </button>
               ) : (
-                <div className="pr-2 text-slate-400">
+                <div className="pr-2 text-white/60">
                   <Search className="w-3.5 h-3.5" />
                 </div>
               )}
@@ -349,53 +349,53 @@ export default function Header({
 
       {/* Mobile Navigation Drawer Panel */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-slate-150 shadow-2xl absolute w-full left-0 py-4 px-6 space-y-3.5 flex flex-col z-40 animate-fade-in text-left">
+        <div className="lg:hidden bg-[#2D006B]/95 backdrop-blur-md border-t border-[#220052] shadow-2xl absolute w-full left-0 py-4 px-6 space-y-3.5 flex flex-col z-40 animate-fade-in text-left text-white">
           <button
             onClick={() => handleTabClick('home')}
-            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'home' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'home' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
             Home
           </button>
           <button
             onClick={() => handleTabClick('scans')}
-            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'scans' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'scans' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
             Scans & Imaging Services
           </button>
           <button
             onClick={() => handleTabClick('labs')}
-            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'labs' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'labs' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
             Blood & Lab Tests
           </button>
           <button
             onClick={() => handleTabClick('packages')}
-            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'packages' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'packages' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
             Health Packages
           </button>
           <button
             onClick={() => handleTabClick('hiring')}
-            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'hiring' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'hiring' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
             Careers & Hiring
           </button>
           <button
             onClick={() => handleTabClick('bookings')}
-            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-slate-50 ${currentTab === 'bookings' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-600'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'bookings' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
             My Bookings
           </button>
           <button
             onClick={() => handleTabClick('admin')}
-            className={`py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 ${currentTab === 'admin' ? 'text-emerald-700 pl-2 border-l-2 border-emerald-750' : 'text-slate-650'}`}
+            className={`py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 ${currentTab === 'admin' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
-            <User className="w-4 h-4 text-emerald-750" />
+            <User className="w-4 h-4 text-white/70" />
             <span>Technician Console (Admin)</span>
           </button>
 
           {/* Mobile Login / User Profile option */}
-          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+          <div className="pt-2 border-t border-white/10 flex flex-col gap-2">
             {user ? (
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center gap-2.5 px-2">
@@ -404,25 +404,25 @@ export default function Header({
                       src={user.photoURL}
                       alt={user.displayName || "User"}
                       referrerPolicy="no-referrer"
-                      className="w-8 h-8 rounded-full object-cover border border-slate-100"
+                      className="w-8 h-8 rounded-full object-cover border border-white/20"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-black text-xs flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center">
                       {user.email?.[0].toUpperCase() || "U"}
                     </div>
                   )}
                   <div className="text-left">
-                    <p className="text-xs font-bold text-slate-800">
+                    <p className="text-xs font-bold text-white">
                       {user.displayName || user.email?.split('@')[0]}
                     </p>
-                    <p className="text-[10px] text-slate-500 font-semibold">{user.email}</p>
+                    <p className="text-[10px] text-white/60 font-semibold">{user.email}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => {
                     handleTabClick('bookings');
                   }}
-                  className="w-full py-2 bg-emerald-750 hover:bg-emerald-850 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer mb-2"
+                  className="w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer mb-2"
                 >
                   <ClipboardList className="w-3.5 h-3.5" />
                   <span>My Bookings</span>
@@ -432,7 +432,7 @@ export default function Header({
                     logout();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="w-full py-2 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Sign Out</span>
@@ -443,9 +443,9 @@ export default function Header({
                 onClick={() => {
                   handleTabClick('bookings');
                 }}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-150 text-slate-800 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <LogIn className="w-4 h-4 text-emerald-750" />
+                <LogIn className="w-4 h-4 text-white" />
                 <span>Patient Login</span>
               </button>
             )}
@@ -466,7 +466,7 @@ export default function Header({
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 p-6 space-y-6 animate-scale-in">
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">SECURE PATIENT ACCESS</span>
+                <span className="text-[9px] font-black text-[#2D006B] tracking-widest uppercase block">SECURE PATIENT ACCESS</span>
                 <h3 className="text-lg font-serif font-bold text-slate-900">Sign In to AssurX</h3>
               </div>
               <button

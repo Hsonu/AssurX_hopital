@@ -29,12 +29,12 @@ export default function WindingStats() {
   return (
     <section className="relative overflow-hidden bg-white py-20 px-4 md:px-6 border-b border-slate-100" id="winding-stats-section">
       <div className="max-w-3xl mx-auto text-center space-y-3 mb-16 relative z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-100 rounded-full text-amber-800 text-[11px] font-bold uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#F5F0FA] border border-[#E8DEFF] rounded-full text-[#2D006B] text-[11px] font-bold uppercase tracking-wider">
+          <Sparkles className="w-3.5 h-3.5 text-[#AD1457]" />
           <span>India's Largest Diagnostic Network</span>
         </div>
         <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">
-          Unmatched Scale. <span className="italic font-medium text-amber-500">Uncompromised Care.</span>
+          Unmatched Scale. <span className="italic font-medium text-[#AD1457]">Uncompromised Care.</span>
         </h2>
         <p className="text-xs md:text-sm text-slate-500 max-w-lg mx-auto">
           Through absolute precision, high-volume robotic laboratories, and widespread access points, we deliver health assurance to millions.
@@ -46,7 +46,7 @@ export default function WindingStats() {
         {/* SERPENTINE SVG BACKGROUND PATH - Responsive connecting road */}
         {/* On desktop/tablet, this draws a beautiful wavy serpentine road in the background */}
         <div className="absolute inset-0 z-0 pointer-events-none hidden sm:block">
-          <svg className="w-full h-full stroke-amber-400" fill="none" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 400 600" preserveAspectRatio="none">
+          <svg className="w-full h-full stroke-[#B2DFDB]" fill="none" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 400 600" preserveAspectRatio="none">
             {/* Smooth curvy path from circle to circle */}
             <path d="
               M 110,95 
@@ -58,7 +58,7 @@ export default function WindingStats() {
         </div>
 
         {/* Fallback road for mobile screens */}
-        <div className="absolute left-[36px] sm:left-auto sm:right-auto sm:inset-x-0 top-16 bottom-16 w-3 sm:hidden bg-amber-400 rounded-full pointer-events-none z-0"></div>
+        <div className="absolute left-[36px] sm:left-auto sm:right-auto sm:inset-x-0 top-16 bottom-16 w-3 sm:hidden bg-[#009688] rounded-full pointer-events-none z-0"></div>
 
         {/* List of Alternating Stats Nodes */}
         <div className="space-y-16 sm:space-y-24 relative z-10">
@@ -79,15 +79,15 @@ export default function WindingStats() {
                   <div className="relative flex items-center justify-center pl-4 sm:pl-0">
                     
                     {/* Ring layers matching the yellow glow from screenshot */}
-                    <div className="w-24 h-24 rounded-full bg-white border-[6px] border-amber-400 flex items-center justify-center shadow-xl relative z-10 hover:scale-105 transition-transform duration-300">
-                      {/* Inner gold concentric band */}
-                      <div className="absolute inset-2 rounded-full bg-amber-50 flex items-center justify-center">
-                        <Icon className="w-10 h-10 text-emerald-700 stroke-[1.5]" />
+                    <div className="w-24 h-24 rounded-full bg-white border-[6px] border-[#009688] flex items-center justify-center shadow-xl relative z-10 hover:scale-105 transition-transform duration-300">
+                      {/* Inner concentric band */}
+                      <div className="absolute inset-2 rounded-full bg-[#E0F2F1] flex items-center justify-center">
+                        <Icon className="w-10 h-10 text-[#00796B] stroke-[1.5]" />
                       </div>
                     </div>
 
                     {/* Small pulsing connecting dots */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-4 w-3.5 h-3.5 rounded-full bg-emerald-600 border-2 border-white shadow-md z-20 hidden sm:block"></div>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-4 w-3.5 h-3.5 rounded-full bg-[#009688] border-2 border-white shadow-md z-20 hidden sm:block"></div>
                   </div>
                 </div>
 

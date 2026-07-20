@@ -484,7 +484,7 @@ export default function App() {
             {/* SEGMENTED TEST CATALOG EXPLORER */}
             <section className="max-w-7xl mx-auto px-4 md:px-6">
               <div className="text-center space-y-2 mb-10">
-                <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-emerald-800">Diagnostic Offerings</span></h2>
+                <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
                 <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
               </div>
  
@@ -513,9 +513,9 @@ export default function App() {
                         <div>
                           <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
                             {section.category === 'scan' ? (
-                              <Activity className="w-4 h-4 text-emerald-600" />
+                              <Activity className="w-4 h-4 text-[#AD1457]" />
                             ) : (
-                              <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+                              <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
                             )}
                             {section.title}
                           </h3>
@@ -523,7 +523,7 @@ export default function App() {
                         </div>
                         <button 
                           onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
-                          className="text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                          className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
                         >
                           <span>View All ({totalCount})</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -725,15 +725,15 @@ export default function App() {
                   <div className="inline-block px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-wider">
                     Prescription Assistant
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-serif font-light text-slate-900 tracking-tight">Confused about what your <span className="italic font-medium text-emerald-800">doctor wrote?</span></h3>
+                  <h3 className="text-2xl md:text-3xl font-serif font-light text-slate-900 tracking-tight">Confused about what your <span className="italic font-medium text-[#2D006B]">doctor wrote?</span></h3>
                   <p className="text-xs md:text-sm text-slate-650 leading-relaxed max-w-xl">
                     Simply upload your handwritten or digital doctor prescription note. Our advanced diagnostics system reads and translates handwriting directly into NABL catalog tests, adding them to your booking cart in 5 seconds!
                   </p>
                   <button
                     onClick={() => setIsPrescriptionOpen(true)}
-                    className="px-6 py-3 bg-[#1a1a1a] hover:bg-gray-800 text-white font-bold uppercase tracking-widest rounded-full text-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+                    className="px-6 py-3 bg-[#2D006B] hover:bg-[#220052] text-white font-bold uppercase tracking-widest rounded-full text-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
                   >
-                    <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                    <FileText className="w-3.5 h-3.5 text-[#80CBC4]" />
                     <span>Upload & Extract Prescription Tests</span>
                   </button>
                 </div>
@@ -767,7 +767,7 @@ export default function App() {
             {/* TESTIMONIALS */}
             <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8">
               <div className="text-center md:text-left space-y-1">
-                <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-emerald-800">Success Stories</span></h3>
+                <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-[#2D006B]">Success Stories</span></h3>
                 <p className="text-xs text-slate-500">Read about the experiences of our satisfied health patrons.</p>
               </div>
 
@@ -794,12 +794,12 @@ export default function App() {
 
             {/* FAQ SECTION */}
             <section className="max-w-4xl mx-auto px-4 md:px-6 text-left space-y-6">
-              <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl text-center tracking-tight">Frequently Asked <span className="italic font-medium text-emerald-800">Questions</span></h3>
+              <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl text-center tracking-tight">Frequently Asked <span className="italic font-medium text-[#2D006B]">Questions</span></h3>
               <div className="space-y-3 border border-gray-205 rounded-3xl bg-white p-6 md:p-8 divide-y divide-gray-100 shadow-sm">
                 {FREQUENT_QUESTIONS.map((faq, idx) => (
                   <div key={idx} className="py-4 first:pt-0 last:pb-0 space-y-1.5">
                     <h4 className="font-bold text-slate-850 text-sm md:text-base flex items-start gap-2 leading-snug">
-                      <HelpCircle className="w-4.5 h-4.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <HelpCircle className="w-4.5 h-4.5 text-[#AD1457] mt-0.5 flex-shrink-0" />
                       <span>{faq.q}</span>
                     </h4>
                     <p className="text-xs text-slate-550 pl-6 leading-relaxed">{faq.a}</p>
@@ -814,7 +814,7 @@ export default function App() {
         {currentTab === 'scans' && (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-8 animate-fade-in text-left">
             <div className="space-y-2 border-b border-gray-150 pb-5">
-              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Diagnostic <span className="italic font-medium text-emerald-800">Imaging & Scans</span></h1>
+              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Diagnostic <span className="italic font-medium text-[#2D006B]">Imaging & Scans</span></h1>
               <p className="text-xs md:text-sm text-slate-500">Browse MRI, CT Scan, Ultrasound, Mammogram, Digital X-Ray and cardiology tests. Read by certified MD Radiologists.</p>
             </div>
 
@@ -914,7 +914,7 @@ export default function App() {
         {currentTab === 'labs' && (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-8 animate-fade-in text-left">
             <div className="space-y-2 border-b border-gray-150 pb-5">
-              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Blood & Pathology <span className="italic font-medium text-emerald-800">Lab Tests</span></h1>
+              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Blood & Pathology <span className="italic font-medium text-[#2D006B]">Lab Tests</span></h1>
               <p className="text-xs md:text-sm text-slate-500">Accurate bio-markers screening including thyroid, blood sugar, liver, kidney, urine, lipid, and vitamins. Sterile Home Collection available.</p>
             </div>
 
@@ -1019,7 +1019,7 @@ export default function App() {
         {currentTab === 'packages' && (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-8 animate-fade-in text-left">
             <div className="space-y-2 border-b border-gray-150 pb-5">
-              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Full Body <span className="italic font-medium text-emerald-800">Health Checkup Packages</span></h1>
+              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Full Body <span className="italic font-medium text-[#2D006B]">Health Checkup Packages</span></h1>
               <p className="text-xs md:text-sm text-slate-500">Highly discounted customized preventive screening diagnostics mapping complete vital systems, metabolic markers, and organ safety.</p>
             </div>
 

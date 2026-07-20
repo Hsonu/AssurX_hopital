@@ -5,6 +5,94 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Theme color palette — Deep Purple primary scale (from AssurX logo) */
+  --color-emerald-50: #F5F0FA; /* Light Purple Background */
+  --color-emerald-100: #E8DEFF; /* Light Purple Borders */
+  --color-emerald-150: #D4C4F0;
+  --color-emerald-200: #C0AAE6;
+  --color-emerald-250: #A88CD8;
+  --color-emerald-300: #8E6EC8;
+  --color-emerald-400: #6A3DAF;
+  --color-emerald-500: #4A1A8A; /* Secondary Purple */
+  --color-emerald-600: #2D006B; /* Primary Deep Purple */
+  --color-emerald-650: #3B0099;
+  --color-emerald-700: #220052; /* Primary Purple Hover */
+  --color-emerald-750: #1A0040; /* Primary Purple Active */
+  --color-emerald-800: #1A0033; /* Dark Text */
+  --color-emerald-850: #120022; /* Darkest Text */
+  --color-emerald-900: #120022;
+  --color-emerald-950: #0A0015;
+
+  /* Map Teal colors to match brand Green scale (from "DIAGNOSTICS" in logo) */
+  --color-teal-50: #E0F2F1;
+  --color-teal-100: #B2DFDB;
+  --color-teal-200: #80CBC4;
+  --color-teal-500: #009688;
+  --color-teal-600: #00897B;
+  --color-teal-700: #00796B;
+  --color-teal-800: #004D40;
+  --color-teal-850: #003D33;
+  --color-teal-900: #009688;
+  --color-teal-950: #001A15;
+
+  /* Map Cyan colors for gradient transitions */
+  --color-cyan-50: #EDE7F6;
+  --color-cyan-500: #4A1A8A;
+  --color-cyan-600: #2D006B;
+  --color-cyan-700: #220052;
+
+  /* Map Slate colors to match the Light Background and Border specifications */
+  --color-slate-50: #F7FAFC;
+  --color-slate-100: #E5E7EB;
+  --color-slate-150: #D1D5DB;
+  --color-slate-200: #D1D5DB;
+  --color-slate-900: #0B0F19;
+
+  /* Accent Red colors — Vivid & Premium (from logo "Assu" text) */
+  --color-red-50: #FEF2F2;
+  --color-red-100: #FEE2E2;
+  --color-red-150: #FECACA;
+  --color-red-200: #FECACA;
+  --color-red-500: #EF4444;
+  --color-red-600: #DC2626; /* Primary Accent Red */
+  --color-red-700: #B91C1C;
+  --color-red-800: #991B1B;
+  --color-red-900: #7F1D1D;
+  --color-red-950: #450A0A;
+
+  /* Custom premium shadows with purple tint */
+  --shadow-sm: 0 1px 2px 0 rgba(45, 0, 107, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(45, 0, 107, 0.07), 0 2px 4px -1px rgba(45, 0, 107, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(45, 0, 107, 0.10), 0 4px 6px -2px rgba(45, 0, 107, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(45, 0, 107, 0.12), 0 10px 10px -5px rgba(45, 0, 107, 0.05);
+  --shadow-2xl: 0 25px 50px -12px rgba(45, 0, 107, 0.18);
+}
+
+/* Global transitions and focus/scroll behaviors */
+button, a {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #2D006B !important;
+  box-shadow: 0 0 0 3px rgba(45, 0, 107, 0.15) !important;
+}
+
+/* Premium smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F5F0FA;
+}
+::-webkit-scrollbar-thumb {
+  background: #C0AAE6;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #DC2626;
 }
 
 @media print {
@@ -70,4 +158,3 @@
     box-shadow: none !important;
   }
 }
-

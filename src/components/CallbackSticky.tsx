@@ -92,10 +92,10 @@ export default function CallbackSticky() {
           
           {/* Subtle logo badge on the left matching the look */}
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 relative"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-[#AD1457] animate-ping absolute"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-[#AD1457] relative"></div>
             <div className="text-left select-none">
-              <span className="text-sm font-serif italic font-bold tracking-tight text-emerald-850 block">AssurX</span>
+              <span className="text-sm font-serif italic font-bold tracking-tight text-[#2D006B] block">AssurX</span>
               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 leading-none block -mt-0.5">Callback</span>
             </div>
           </div>
@@ -109,16 +109,16 @@ export default function CallbackSticky() {
               onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
               maxLength={15}
               disabled={isSubmitting}
-              className="w-full px-3.5 py-2 border border-slate-200 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 rounded-xl text-xs font-semibold placeholder:text-slate-400 text-slate-800 bg-slate-50/50 focus:bg-white transition-all"
+              className="w-full px-3.5 py-2 border border-slate-200 focus:border-[#2D006B] focus:outline-none focus:ring-2 focus:ring-[#2D006B]/10 rounded-xl text-xs font-semibold placeholder:text-slate-400 text-slate-800 bg-slate-50/50 focus:bg-white transition-all"
             />
             
             <button
               type="submit"
               disabled={isSubmitting || !phoneNumber}
               aria-label="Submit callback request"
-              className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-100 transition-all duration-300 cursor-pointer ${
+              className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-md shadow-red-100 transition-all duration-300 cursor-pointer ${
                 phoneNumber 
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-105 active:scale-95' 
+                  ? 'bg-red-600 hover:bg-red-700 text-white hover:scale-105 active:scale-95' 
                   : 'bg-slate-100 text-slate-400 cursor-not-allowed'
               }`}
             >

@@ -16,28 +16,28 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
       <div className="bg-slate-950 border-b border-slate-900 py-8 px-4 md:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 items-center">
           <div className="flex items-center gap-3">
-            <Award className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+            <Award className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
             <div className="text-left">
               <h4 className="font-bold text-white text-xs uppercase tracking-widest">NABL Accredited</h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Labs fully audited to ISO 15189 standards</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+            <ShieldCheck className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
             <div className="text-left">
               <h4 className="font-bold text-white text-xs uppercase tracking-widest">MD Radiologists</h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Dual-verified reporting of all scan results</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <HeartPulse className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+            <HeartPulse className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
             <div className="text-left">
               <h4 className="font-bold text-white text-xs uppercase tracking-widest">2 Crore+ Patients</h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Most trusted name in diagnostics & scans</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+            <Sparkles className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
             <div className="text-left">
               <h4 className="font-bold text-white text-xs uppercase tracking-widest">Robotic Accuracy</h4>
               <p className="text-[11px] text-slate-500 mt-0.5">Minimal human contact for sterile precision</p>
@@ -59,12 +59,12 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
           </p>
           <div className="space-y-1.5 text-[11px]">
             <a href="tel:18001201100" className="flex items-center gap-1.5 hover:text-white transition-colors">
-              <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Helpline (Toll-Free): +91 9830678387 </span>
+              <PhoneCall className="w-3.5 h-3.5 text-[#009688]" />
+              <span className="text-[#80CBC4] font-bold">Helpline (Toll-Free): +91 9830678387 </span>
             </a>
             <a href="mailto:assurxdiagonistics@gmail.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
-              <Mail className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Care: assurxdiagonistics@gmail.com</span>
+              <Mail className="w-3.5 h-3.5 text-[#009688]" />
+              <span className="text-[#80CBC4]">Care: assurxdiagonistics@gmail.com</span>
             </a>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
               <div key={idx} className="border-b border-slate-800/60 pb-1.5 last:border-b-0 last:pb-0">
                 <span className="font-bold text-slate-300 block">{center.city} Branch</span>
                 <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{center.address}</p>
-                <span className="text-[10px] text-emerald-400 font-semibold block mt-0.5">Ph: {center.phone}</span>
+                <span className="text-[10px] text-[#009688] font-semibold block mt-0.5">Ph: {center.phone}</span>
               </div>
             ))}
           </div>

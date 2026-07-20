@@ -97,43 +97,28 @@ export default function Hero({
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#d4f3f6]/90 via-[#f0fcfd]/80 to-[#fdfde2]/40 py-10 md:py-16 px-4 md:px-6" id="hero-section">
-      {/* Background yellow circles to match the exact look in the screenshot */}
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#F5F0FA]/90 via-[#F7FAFC]/80 to-[#FEF2F2]/30 py-10 md:py-16 px-4 md:px-6" id="hero-section">
+      {/* Background themed accent circles */}
       <div className="absolute right-0 top-0 bottom-0 w-full lg:w-1/2 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-yellow-300/30"></div>
-        <div className="absolute top-1/4 right-8 w-44 h-44 rounded-full bg-yellow-350/40"></div>
-        <div className="absolute bottom-12 right-24 w-60 h-60 rounded-full bg-yellow-300/30"></div>
+        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-[#2D006B]/8"></div>
+        <div className="absolute top-1/4 right-8 w-44 h-44 rounded-full bg-[#4A1A8A]/5"></div>
+        <div className="absolute bottom-12 right-24 w-60 h-60 rounded-full bg-[#DC2626]/6"></div>
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
         
         {/* Left Column: Heading and Checklist */}
         <div className="lg:col-span-7 space-y-5 md:space-y-6 text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-teal-50 border border-teal-100 rounded-full text-teal-850 text-[10px] font-black uppercase tracking-wider animate-pulse">
-            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F5F0FA] border border-[#E8DEFF] rounded-full text-[#2D006B] text-[10px] font-black uppercase tracking-wider animate-pulse">
+            <Sparkles className="w-3.5 h-3.5 text-[#AD1457]" />
             <span>Monsoon Health Subsidy Active</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-serif font-light leading-[1.1] text-slate-900 tracking-tight">
-            <span className="font-extrabold text-emerald-600">Save 60%</span> <span className="font-normal">on</span> <br />
-            <span className="italic font-medium text-emerald-800">Scans & Blood tests</span>
+            <span className="font-extrabold text-red-600">Save 60%</span> <span className="font-normal">on</span> <br />
+            <span className="italic font-medium text-[#2D006B]">Scans & Blood tests</span>
           </h1>
 
-          {/* Checklist Bullet List matching the exact look in second screenshot */}
-          <ul className="space-y-3 text-xs sm:text-sm md:text-base text-slate-700 font-bold">
-            <li className="flex items-center gap-3">
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 text-[10px] font-black shadow-md shadow-emerald-200">✓</span>
-              <span>200+ state-of-the-art diagnostic centres across India</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 text-[10px] font-black shadow-md shadow-emerald-200">✓</span>
-              <span>Trusted by over 2+ crore Indian citizens</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 text-[10px] font-black shadow-md shadow-emerald-200">✓</span>
-              <span>Accurate digital lab reports in under 6 hours</span>
-            </li>
-          </ul>
 
         </div>
 
@@ -142,8 +127,8 @@ export default function Hero({
           
           {/* Base Layout with Portrait image of a male diagnostic professional */}
           <div className="relative w-full max-w-[360px] aspect-[4/3] sm:aspect-square -mb-12 lg:mb-10 rounded-[36px] md:rounded-[48px] overflow-hidden bg-transparent flex items-end justify-center group">
-            {/* Soft decorative golden circles in backdrop */}
-            <div className="absolute top-10 right-4 w-40 h-40 rounded-full bg-amber-400/10 blur-2xl group-hover:scale-110 transition-transform"></div>
+            {/* Soft decorative blue circles in backdrop */}
+            <div className="absolute top-10 right-4 w-40 h-40 rounded-full bg-[#2D006B]/10 blur-2xl group-hover:scale-110 transition-transform"></div>
             
             <img 
               src={smilingSpecialist} 
@@ -176,7 +161,7 @@ export default function Hero({
                       }
                     }}
                     onFocus={() => setShowSuggestions(true)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-600 font-bold transition-all placeholder:text-slate-400 text-slate-800"
+                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D006B]/10 focus:border-[#2D006B] font-bold transition-all placeholder:text-slate-400 text-slate-800"
                   />
 
                   {/* Autocomplete Suggestions Panel - Positioned relative to the input box */}
@@ -195,7 +180,7 @@ export default function Hero({
                             </span>
                             <p className="text-xs font-bold text-slate-800 mt-1 truncate">{item.name}</p>
                           </div>
-                          <span className="text-xs font-black text-emerald-700 flex-shrink-0 font-mono">₹{item.discountPrice || item.price}</span>
+                          <span className="text-xs font-black text-[#2D006B] flex-shrink-0 font-mono">₹{item.discountPrice || item.price}</span>
                         </button>
                       ))}
                     </div>
@@ -213,7 +198,7 @@ export default function Hero({
                   <select
                     value={selectedBranch}
                     onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-600 font-extrabold text-slate-800 transition-all appearance-none cursor-pointer"
+                    className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D006B]/10 focus:border-[#2D006B] font-extrabold text-slate-800 transition-all appearance-none cursor-pointer"
                   >
                     {indianCities.map((city) => (
                       <option key={city.code} value={city.code}>
@@ -231,7 +216,7 @@ export default function Hero({
               <button
                 type="button"
                 onClick={handleBookNow}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-100 flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01] active:scale-[0.98]"
+                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-100 flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01] active:scale-[0.98]"
               >
                 <span>Book Now (Pay at Lab)</span>
               </button>
