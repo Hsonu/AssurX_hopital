@@ -3,6 +3,7 @@ import { Search, MapPin, PhoneCall, Phone, ShoppingCart, User, Menu, X, Landmark
 import { CartItem } from '../types';
 import { useAuth } from '../lib/auth.ts';
 import PatientBookingsModal from './PatientBookingsModal.tsx';
+import logoImg from '../../logo.jpeg';
 
 interface HeaderProps {
   currentTab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us';
@@ -69,13 +70,15 @@ export default function Header({
       </div>
 
       {/* DESKTOP HEADER (Hidden on mobile) */}
-      <div className="hidden lg:flex max-w-7xl mx-auto px-4 md:px-6 py-4 items-center justify-between gap-4">
+      <div className="hidden lg:block max-w-7xl mx-auto px-4 md:px-6 py-3">
+        {/* Row 1: Logo + Nav + Actions */}
+        <div className="flex items-center justify-between gap-4">
         {/* Logo */}
         <div
           onClick={() => handleTabClick('home')}
-          className="flex items-center gap-3 cursor-pointer select-none"
+          className="flex items-center gap-3 cursor-pointer select-none flex-shrink-0"
         >
-          <img src="/logo.jpeg" alt="AssurX Diagnostics" className="h-10 w-auto rounded-lg object-contain bg-white/95 px-1.5 py-0.5" />
+          <img src={logoImg} alt="AssurX Diagnostics" className="h-10 w-auto rounded-lg object-contain bg-white/95 px-1.5 py-0.5" />
           <div className="border-l border-white/30 h-5 pl-3">
             <span className="text-[9px] font-bold text-[#80CBC4] tracking-widest uppercase block leading-none">Scans & Labs</span>
           </div>
@@ -88,7 +91,7 @@ export default function Header({
           </div>
           <input
             type="text"
-            placeholder="Search scans (MRI, CT), blood tests or packages..."
+            placeholder="Search Tests (MRI, CBC, etc.)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={onSearchFocus}
@@ -245,6 +248,7 @@ export default function Header({
             )}
           </button>
         </div>
+        </div>
       </div>
 
 
@@ -258,7 +262,7 @@ export default function Header({
             onClick={() => handleTabClick('home')}
             className="flex items-center gap-2 cursor-pointer select-none"
           >
-            <img src="/logo.jpeg" alt="AssurX Diagnostics" className="h-9 w-auto rounded-lg object-contain bg-white/95 px-1 py-0.5" />
+            <img src={logoImg} alt="AssurX Diagnostics" className="h-9 w-auto rounded-lg object-contain bg-white/95 px-1 py-0.5" />
           </div>
 
           {/* Right actions: CALL, CART, MENU */}

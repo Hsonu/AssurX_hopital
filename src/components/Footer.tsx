@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldAlert, Award, ShieldCheck, HeartPulse, Sparkles, MapPin, PhoneCall, Mail } from 'lucide-react';
 import { ASSURX_CENTERS } from '../data';
+import logoImg from '../../logo.jpeg';
 
 interface FooterProps {
   onNavigate: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us') => void;
@@ -52,7 +53,7 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
         {/* Col 1: About - md:col-span-4 */}
         <div className="md:col-span-4 space-y-4">
           <div className="flex items-center gap-2 select-none cursor-pointer" onClick={() => onNavigate('home')}>
-            <img src="/logo.jpeg" alt="AssurX Diagnostics" className="h-10 w-auto rounded-lg object-contain bg-white/10 px-1.5 py-0.5" />
+            <img src={logoImg} alt="AssurX Diagnostics" className="h-10 w-auto rounded-lg object-contain bg-white/10 px-1.5 py-0.5" />
           </div>
           <p className="text-[11px] leading-relaxed text-slate-400">
             AssurX Scans & Labs is India’s premier diagnostics and advanced medical imaging network. Bridging clinical expertise with futuristic diagnostic technology, we make high-end MRI, CT scans, and complete laboratory blood analyses affordable and accessible for every citizen.
