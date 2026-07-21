@@ -372,7 +372,7 @@ export default function Header({
             onClick={() => handleTabClick('scans')}
             className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'scans' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
-            Scans & Imaging Services
+            Sonography & Scans Services
           </button>
           <button
             onClick={() => handleTabClick('labs')}

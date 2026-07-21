@@ -84,7 +84,15 @@ export default function App() {
     const cached = localStorage.getItem('assurx_sections');
     if (cached) {
       try {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          return parsed.map((sec: any) => {
+            if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging') {
+              return { ...sec, title: 'Sonography ' };
+            }
+            return sec;
+          });
+        }
       } catch (e) {
         // use default if parse failed
       }
@@ -92,13 +100,13 @@ export default function App() {
     return [
       {
         id: 'section-scans',
-        title: 'Imagine',
+        title: 'Popular Sonography & Scan',
         subtitle: 'Read by MD Radiologists • Same Day Reports',
         category: 'scan',
         viewAllTab: 'scans',
         bannerImage: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop',
-        bannerTag: 'Advanced Imaging Center',
-        bannerTitle: '3D High-Field MRI & Low-Dose Multi-Slice CT Scanner',
+        bannerTag: 'Advanced Sonography Center',
+        bannerTitle: 'High-Resolution 3D/4D Sonography (USG) & Advanced Scans',
         serviceIds: []
       },
       {
@@ -811,7 +819,7 @@ export default function App() {
         {currentTab === 'scans' && (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-8 animate-fade-in text-left">
             <div className="space-y-2 border-b border-gray-150 pb-5">
-              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Diagnostic <span className="italic font-medium text-[#2D006B]">Imaging & Scans</span></h1>
+              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Popular <span className="italic font-medium text-[#2D006B]">Sonography & Scans</span></h1>
               <p className="text-xs md:text-sm text-slate-500">Browse MRI, CT Scan, Ultrasound, Mammogram, Digital X-Ray and cardiology tests. Read by certified MD Radiologists.</p>
             </div>
 

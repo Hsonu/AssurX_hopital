@@ -83,7 +83,7 @@ export default function Footer({ onNavigate, centers = [] }: FooterProps) {
 
         {/* Col 2: Services Index - md:col-span-2.5 */}
         <div className="md:col-span-2.5 space-y-3">
-          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Imaging & Scans</h4>
+          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Sonography & Scans</h4>
           <ul className="space-y-2 text-[11px]">
             <li><button onClick={() => onNavigate('scans')} className="hover:text-white hover:underline transition-colors cursor-pointer">1.5T / 3T Brain MRI</button></li>
             <li><button onClick={() => onNavigate('scans')} className="hover:text-white hover:underline transition-colors cursor-pointer">High-speed CT Scans</button></li>
