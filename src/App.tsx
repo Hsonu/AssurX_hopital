@@ -92,7 +92,7 @@ export default function App() {
     return [
       {
         id: 'section-scans',
-        title: 'Popular Scans & Imaging',
+        title: 'Imagine',
         subtitle: 'Read by MD Radiologists • Same Day Reports',
         category: 'scan',
         viewAllTab: 'scans',

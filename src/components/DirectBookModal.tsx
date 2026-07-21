@@ -64,7 +64,7 @@ export default function DirectBookModal({
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [validationError, setValidationError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash_at_center' | 'online_payment'>('cash_at_center');
+  const [paymentMethod, setPaymentMethod] = useState<'cash_at_center' | 'online_payment'>('online_payment');
   const [showSimulatedGateway, setShowSimulatedGateway] = useState(false);
 
   const isPopupLoggingIn = useRef(false);
@@ -103,7 +103,8 @@ export default function DirectBookModal({
   const homeCollectionFee = activeCollectionType === 'home' ? 150 : 0;
   const gstAmount = Math.round(basePrice * 0.05);
   const subtotal = basePrice + homeCollectionFee + gstAmount;
-  const bookNowDiscount = Math.round(subtotal * 0.10);
+  // 10% discount applies ONLY when paymentMethod is 'online_payment'
+  const bookNowDiscount = paymentMethod === 'online_payment' ? Math.round(subtotal * 0.10) : 0;
   const grandTotal = subtotal - bookNowDiscount;
 
   const executeDatabaseBooking = async (method: string, payStatus: string) => {
@@ -387,16 +388,41 @@ export default function DirectBookModal({
                 </p>
               </div>
 
-              {/* 10% Book Now Discount Banner */}
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3 animate-fade-in">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm flex-shrink-0">
-                  10%
+              {/* 10% Discount Banner - Highlighted for Online Payment */}
+              {paymentMethod === 'online_payment' ? (
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3 animate-fade-in">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm flex-shrink-0 shadow-xs">
+                    10%
+                  </div>
+                  <div>
+                    <p className="text-xs font-extrabold text-emerald-800 leading-tight">🎉 Pay Online & Get 10% OFF!</p>
+                    <p className="text-[10px] text-emerald-600 mt-0.5 leading-snug">
+                      Flat 10% discount (-₹{Math.round(subtotal * 0.10)}) applied automatically for selecting Online Payment!
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-extrabold text-emerald-800 leading-tight">🎉 Book Now & Get 10% OFF!</p>
-                  <p className="text-[10px] text-emerald-600 mt-0.5 leading-snug">Flat 10% discount applied automatically on your total amount. Limited time offer!</p>
+              ) : (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm flex-shrink-0 font-bold">
+                      10%
+                    </div>
+                    <div>
+                      <p className="text-xs font-extrabold text-amber-900 leading-tight">💡 Save 10% Extra (₹{Math.round(subtotal * 0.10)})!</p>
+                      <p className="text-[10px] text-amber-700 mt-0.5 leading-snug">
+                        Select "Pay Online Securely" below to unlock 10% instant discount on your total amount.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('online_payment')}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold rounded-xl transition-all flex-shrink-0 cursor-pointer shadow-xs"
+                  >
+                    Get 10% OFF
+                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Selected test brief card */}
               <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex justify-between items-center">
@@ -409,8 +435,18 @@ export default function DirectBookModal({
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Price</span>
-                  <span className="text-[11px] text-slate-400 line-through">₹{subtotal}</span>
-                  <span className="text-lg font-black text-emerald-700 ml-1">₹{grandTotal}</span>
+                  {paymentMethod === 'online_payment' ? (
+                    <>
+                      <span className="text-[11px] text-slate-400 line-through">₹{subtotal}</span>
+                      <span className="text-lg font-black text-emerald-700 ml-1">₹{grandTotal}</span>
+                      <span className="block text-[9px] font-bold text-emerald-600">(10% OFF Applied)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-lg font-black text-slate-800">₹{subtotal}</span>
+                      <span className="block text-[9px] text-amber-600 font-semibold">(Pay online to save 10%)</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -641,9 +677,14 @@ export default function DirectBookModal({
                       onChange={() => setPaymentMethod('online_payment')}
                       className="mt-0.5 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                     />
-                    <div className="text-left select-none">
-                      <div className="text-xs font-black text-slate-800 leading-tight">Pay Online Securely</div>
-                      <p className="text-[10px] text-slate-450 mt-1 leading-normal">Pay using Razorpay (UPI, Cards, Netbanking) with real-time receipt.</p>
+                    <div className="text-left select-none flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-black text-slate-800 leading-tight">Pay Online Securely</div>
+                        <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
+                          10% OFF
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-450 mt-1 leading-normal">Pay using Razorpay (UPI, Cards, Netbanking) with instant 10% discount.</p>
                     </div>
                   </label>
                 </div>
@@ -685,12 +726,30 @@ export default function DirectBookModal({
                   <span className="text-slate-500">Subtotal</span>
                   <span className="font-semibold text-slate-800">₹{subtotal}</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="flex items-center gap-1 text-emerald-600 font-bold">
-                    🎉 Book Now Discount (10% OFF)
-                  </span>
-                  <span className="font-bold text-emerald-600">-₹{bookNowDiscount}</span>
-                </div>
+
+                {paymentMethod === 'online_payment' ? (
+                  <div className="flex justify-between items-center text-[11px] bg-emerald-50/80 p-2 rounded-xl border border-emerald-200/60">
+                    <span className="flex items-center gap-1 text-emerald-800 font-extrabold">
+                      🎉 Online Payment Discount (10% OFF)
+                    </span>
+                    <span className="font-black text-emerald-700">-₹{bookNowDiscount}</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center text-[11px] bg-amber-50/80 p-2 rounded-xl border border-amber-200/60 text-amber-800">
+                    <span className="font-medium">Online Payment Discount (10% OFF)</span>
+                    <span className="font-bold flex items-center gap-1">
+                      <span className="text-slate-400 line-through">₹{Math.round(subtotal * 0.10)}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('online_payment')}
+                        className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-md font-extrabold hover:bg-emerald-700 cursor-pointer ml-1 shadow-xs"
+                      >
+                        Select Online to Save
+                      </button>
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center font-bold text-sm text-slate-900 border-t border-dashed border-slate-200 pt-2">
                   <span className="text-slate-850">
                     {paymentMethod === 'online_payment' ? 'Total Paid Online' : 'Total Payable at Collection'}
@@ -739,8 +798,21 @@ export default function DirectBookModal({
                   <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Booking Secured!</h3>
                   <p className="text-xs text-slate-500">Your appointment is scheduled. Token ID: <span className="font-extrabold text-emerald-700">{createdBooking.bookingId}</span></p>
                 </div>
-                <div className="inline-block px-3 py-1 bg-teal-50 text-teal-800 text-[10px] font-bold rounded-full border border-teal-100">
-                  SMS & WhatsApp Confirmation sent with details
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <span className="inline-block px-3 py-1 bg-teal-50 text-teal-800 text-[10px] font-bold rounded-full border border-teal-100">
+                    SMS & WhatsApp Confirmation sent with details
+                  </span>
+                  <a
+                    href={`https://wa.me/919830678387?text=Hello%20AssurX!%20My%20Booking%20ID%20is%20${createdBooking.bookingId}%20and%20I%20have%20a%20query%20😊`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#25D366] hover:bg-[#20ba5a] text-white text-[10px] font-extrabold rounded-full shadow-xs transition-all cursor-pointer hover:scale-105"
+                  >
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                    </svg>
+                    <span>WhatsApp 9830678387 😊</span>
+                  </a>
                 </div>
               </div>
 
