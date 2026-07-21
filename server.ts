@@ -47,8 +47,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
     bookingId: 'ASX-984310',
     patient: { name: 'Vy9892 Patel', age: 29, gender: 'Male', relationship: 'Self' },
     items: [
-      { itemId: 'lab-thyroid', itemType: 'service', name: 'Thyroid Profile (T3, T4, Ultra-TSH)', price: 800, discountPrice: 390, category: 'lab' },
-      { itemId: 'lab-vitamin-d', itemType: 'service', name: 'Vitamin D (25-Hydroxy)', price: 1500, discountPrice: 690, category: 'lab' }
+      { itemId: 'pkg-fever-profile', itemType: 'package', name: 'Fever Profile', price: 3000, discountPrice: 1700, category: 'package' }
     ],
     appointmentDate: '2026-07-01',
     appointmentTime: '08:00 AM - 10:00 AM',
@@ -57,7 +56,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
     paymentMethod: 'upi',
     paymentStatus: 'paid',
     bookingStatus: 'report_ready',
-    totalAmount: 1230,
+    totalAmount: 1700,
     timestamp: '2026-07-01T08:15:00.000Z',
     simulatedReportUrl: '/reports/ASX-984310.pdf'
   },
@@ -65,7 +64,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
     bookingId: 'ASX-751294',
     patient: { name: 'Meera Sharma', age: 45, gender: 'Female', relationship: 'Other' },
     items: [
-      { itemId: 'scan-xray-chest', itemType: 'service', name: 'Digital X-Ray Chest PA View', price: 600, discountPrice: 350, category: 'scan' }
+      { itemId: 'pkg-womens-health-essential', itemType: 'package', name: "Women's Health - ESSENTIAL", price: 5000, discountPrice: 2500, category: 'package' }
     ],
     appointmentDate: '2026-07-04',
     appointmentTime: '11:00 AM - 12:00 PM',
@@ -74,7 +73,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
     paymentMethod: 'card',
     paymentStatus: 'paid',
     bookingStatus: 'sample_collected',
-    totalAmount: 350,
+    totalAmount: 2500,
     timestamp: '2026-07-04T11:30:00.000Z',
     simulatedReportUrl: '/reports/ASX-751294.pdf'
   },
@@ -82,7 +81,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
     bookingId: 'ASX-112399',
     patient: { name: 'Rajesh Mehta', age: 52, gender: 'Male', relationship: 'Other' },
     items: [
-      { itemId: 'lab-diabetes', itemType: 'service', name: 'Diabetic Screening Profile', price: 900, discountPrice: 450, category: 'lab' }
+      { itemId: 'pkg-sugar-profile', itemType: 'package', name: 'Sugar Profile', price: 2000, discountPrice: 1000, category: 'package' }
     ],
     appointmentDate: '2026-07-06',
     appointmentTime: '09:00 AM - 11:00 AM',
@@ -91,7 +90,7 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
     paymentMethod: 'netbanking',
     paymentStatus: 'paid',
     bookingStatus: 'booked',
-    totalAmount: 450,
+    totalAmount: 1000,
     timestamp: '2026-07-06T09:10:00.000Z'
   }
 ];

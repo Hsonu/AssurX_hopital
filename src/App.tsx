@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Search, MapPin, PhoneCall, ShoppingCart, User, Menu, X, 
-  ShieldCheck, ClipboardCheck, Users, Calendar, ArrowRight, 
-  Activity, FileText, BadgeCheck, Trash2, Plus, UserPlus, 
-  Info, Home, Building, QrCode, CreditCard, Laptop, Landmark, 
-  CheckCircle2, Loader2, Printer, Clock, Download, Eye, 
-  LogOut, ArrowLeft, Award, HeartPulse, Sparkles, Filter, 
-  Check, HelpCircle, Star, Sparkle, AlertTriangle
+import {
+  Search, MapPin, PhoneCall, ShoppingCart, User, Menu, X,
+  ShieldCheck, ClipboardCheck, Users, Calendar, ArrowRight,
+  Activity, FileText, BadgeCheck, Trash2, Plus, UserPlus,
+  Info, Home, Building, QrCode, CreditCard, Laptop, Landmark,
+  CheckCircle2, Loader2, Printer, Clock, Download, Eye,
+  LogOut, ArrowLeft, Award, HeartPulse, Sparkles, Filter,
+  Check, HelpCircle, Star, Sparkle, AlertTriangle, ExternalLink
 } from 'lucide-react';
 
 import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter } from './types';
@@ -32,16 +32,37 @@ import LegalPages from './components/LegalPages';
 
 const getPackageImage = (id: string) => {
   switch (id) {
-    case 'pkg-assurx-essential':
+    case 'pkg-sexual-health-basic':
+    case 'pkg-sexual-health-pro':
+      return 'https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-fever-profile':
+      return 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-sugar-profile':
+      return 'https://images.unsplash.com/photo-1628771065518-0d82f1938462?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-health-econo-plus':
+      return 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-health-gold':
       return 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop';
-    case 'pkg-assurx-premium':
+    case 'pkg-health-platinum':
+    case 'pkg-health-platinum-plus':
       return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop';
-    case 'pkg-assurx-women':
+    case 'pkg-health-ultimate':
+      return 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-womens-health-essential':
+    case 'pkg-womens-health-advance':
       return 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=600&auto=format&fit=crop';
-    case 'pkg-assurx-cardiac':
+    case 'pkg-pain-management':
+      return 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-anemia-screening':
+      return 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-pre-operative':
       return 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=600&auto=format&fit=crop';
-    case 'pkg-assurx-senior':
-      return 'https://images.unsplash.com/photo-1584515901107-568436142e00?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-cardiac-profile':
+      return 'https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-infertility-profile':
+      return 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=600&auto=format&fit=crop';
+    case 'pkg-hair-loss-profile':
+      return 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop';
     default:
       return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop';
   }
@@ -99,23 +120,12 @@ export default function App() {
     localStorage.setItem('assurx_sections', JSON.stringify(sections));
   }, [sections]);
 
-  // Dynamic diagnostic services catalog loaded from localStorage (synced with admin pricing manager)
-  const [services, setServices] = useState<DiagnosticService[]>(() => {
-    const cached = localStorage.getItem('assurx_services');
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch (e) {
-        // use default if parse failed
-      }
-    }
-    return DIAGNOSTIC_SERVICES;
-  });
+  // Dynamic diagnostic services catalog loaded from DIAGNOSTIC_SERVICES
+  const [services, setServices] = useState<DiagnosticService[]>(DIAGNOSTIC_SERVICES);
 
-  // Sync to local storage
   useEffect(() => {
-    localStorage.setItem('assurx_services', JSON.stringify(services));
-  }, [services]);
+    setServices(DIAGNOSTIC_SERVICES);
+  }, []);
 
   // Dynamic clinic centers loaded from localStorage (synced with admin branch manager)
   const [centers, setCenters] = useState<ClinicCenter[]>(() => {
@@ -137,7 +147,7 @@ export default function App() {
 
   const [isPrescriptionOpen, setIsPrescriptionOpen] = useState(false);
 
-  
+
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutBookingDetails, setCheckoutBookingDetails] = useState<{
@@ -165,7 +175,7 @@ export default function App() {
 
   const [selectedBranch, setSelectedBranch] = useState('Malad');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Tab-specific filters
   const [selectedScanSub, setSelectedScanSub] = useState('All');
   const [selectedLabSub, setSelectedLabSub] = useState('All');
@@ -186,7 +196,7 @@ export default function App() {
         localStorage.removeItem('userSession');
         localStorage.removeItem('assurx_demo_user');
       }
-      logout().catch(() => {});
+      logout().catch(() => { });
       setCurrentTab('home');
       setSessionKickedType('user');
     });
@@ -280,7 +290,7 @@ export default function App() {
     };
 
     setCart([...cart, newItem]);
-    
+
     // Show toast notification
     setAddedItemFeedback(`Successfully added "${item.name}" to cart!`);
     setTimeout(() => setAddedItemFeedback(null), 3000);
@@ -290,7 +300,7 @@ export default function App() {
   const handleAddMultipleToCart = (items: CartItem[]) => {
     const existingIds = cart.map(c => c.itemId);
     const uniqueNewItems = items.filter(item => !existingIds.includes(item.itemId));
-    
+
     if (uniqueNewItems.length > 0) {
       setCart([...cart, ...uniqueNewItems]);
       setAddedItemFeedback(`Added ${uniqueNewItems.length} prescription tests to your cart!`);
@@ -338,8 +348,8 @@ export default function App() {
   const filteredScans = services.filter(s => {
     if (s.category !== 'scan') return false;
     const matchesSub = selectedScanSub === 'All' || s.subCategory === selectedScanSub;
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          s.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSub && matchesSearch;
   });
 
@@ -348,8 +358,8 @@ export default function App() {
   const filteredLabs = services.filter(s => {
     if (s.category !== 'lab') return false;
     const matchesSub = selectedLabSub === 'All' || s.subCategory === selectedLabSub;
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          s.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSub && matchesSearch;
   });
 
@@ -365,7 +375,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col font-sans" id="app-root-frame">
-      
+
       {/* ── Session Kicked Popup ─────────────────────────────────────────── */}
       {sessionKickedType && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
@@ -449,11 +459,10 @@ export default function App() {
                               handleAddToCart(item, isPackage ? 'package' : 'service');
                               setSearchQuery('');
                             }}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
-                              inCart 
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                : 'bg-teal-600 hover:bg-teal-700 text-white shadow-sm'
-                            }`}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${inCart
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                              : 'bg-teal-600 hover:bg-teal-700 text-white shadow-sm'
+                              }`}
                           >
                             {inCart ? 'Added' : 'Book'}
                           </button>
@@ -471,9 +480,9 @@ export default function App() {
         {currentTab === 'home' && (
           <div className="space-y-12 animate-fade-in">
             {/* Hero Banner with Action Cards */}
-            <Hero 
-              onNavigate={setCurrentTab} 
-              onOpenPrescription={() => setIsPrescriptionOpen(true)} 
+            <Hero
+              onNavigate={setCurrentTab}
+              onOpenPrescription={() => setIsPrescriptionOpen(true)}
               selectedBranch={selectedBranch}
               setSelectedBranch={setSelectedBranch}
               onAddToCart={handleAddToCart}
@@ -482,304 +491,292 @@ export default function App() {
             />
 
             {/* SEGMENTED TEST CATALOG EXPLORER */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6">
-              <div className="text-center space-y-2 mb-10">
-                <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
-                <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
-              </div>
- 
-              {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                {sections.map((section) => {
-                  // Determine tests to display
-                  let displayServices: DiagnosticService[] = [];
-                  if (section.serviceIds && section.serviceIds.length > 0) {
-                    displayServices = section.serviceIds
-                      .map(id => services.find(s => s.id === id))
-                      .filter((s): s is DiagnosticService => !!s);
-                  } else {
-                    displayServices = services
-                      .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
-                      .slice(0, 4);
-                  }
-
-                  const totalCount = section.serviceIds && section.serviceIds.length > 0
-                    ? section.serviceIds.length
-                    : services.filter(s => section.category === 'all' || s.category === section.category).length;
-
-                  return (
-                    <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
-                      <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                        <div>
-                          <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
-                            {section.category === 'scan' ? (
-                              <Activity className="w-4 h-4 text-[#AD1457]" />
-                            ) : (
-                              <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
-                            )}
-                            {section.title}
-                          </h3>
-                          <span className="text-[10px] text-slate-400">{section.subtitle}</span>
-                        </div>
-                        <button 
-                          onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
-                          className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <span>View All ({totalCount})</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Section banner */}
-                      <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
-                        <img 
-                          src={resolveBannerImage(section.bannerImage)} 
-                          alt={section.title} 
-                          className="w-full h-full object-cover select-none"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-                        <div className="absolute bottom-3 left-3 right-3 text-left">
-                          <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
-                            {section.bannerTag}
-                          </span>
-                          <p className="text-white text-[10.5px] font-bold leading-tight">
-                            {section.bannerTitle}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Services list inside this panel */}
-                      <div className="space-y-3.5">
-                        {displayServices.map((service) => {
-                          const inCart = cart.some(ci => ci.itemId === service.id);
-                          return (
-                            <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <div className="space-y-1 text-left flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
-                                  {service.parametersCount && (
-                                    <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
-                                      {service.parametersCount} params
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
-                                <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
-                                  {service.category === 'scan' 
-                                    ? `Prep: ${service.preparation.split('.')[0]}` 
-                                    : `Turnaround: ${service.reportDelivery}`}
-                                </span>
-                              </div>
-                              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
-                                <div className="text-left sm:text-right">
-                                  <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
-                                  {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
-                                </div>
-                                <div className="flex gap-1.5">
-                                  <button
-                                    onClick={() => handleDirectBook(service)}
-                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
-                                  >
-                                    Book Now
-                                  </button>
-                                  <button
-                                    onClick={() => handleAddToCart(service, 'service')}
-                                    className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${
-                                      inCart 
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                        : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
-                                    }`}
-                                  >
-                                    {inCart ? 'Added' : '+ Cart'}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
-            <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
-              {/* background ambient blur dots */}
-              <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
-              
-              <div className="max-w-7xl mx-auto space-y-10 relative z-10">
-                <div className="text-center space-y-3">
-                  <span className="inline-block px-3 py-1 bg-[#16181d] border border-gray-800 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
-                    Recommended Preventive Screening
-                  </span>
-                  <h2 className="text-3xl md:text-4xl font-serif font-light text-white tracking-tight">Popular <span className="italic font-medium text-emerald-400">Health Checkup Packages</span></h2>
-                  <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
+            {services.length > 0 && (
+              <section className="max-w-7xl mx-auto px-4 md:px-6">
+                <div className="text-center space-y-2 mb-10">
+                  <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
+                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
                 </div>
- 
-                {/* Horizontal slider of packages */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                  {HEALTH_PACKAGES.slice(0, 3).map((pkg) => {
-                    const inCart = cart.some(ci => ci.itemId === pkg.id);
+
+                {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                  {sections.map((section) => {
+                    // Determine tests to display
+                    let displayServices: DiagnosticService[] = [];
+                    if (section.serviceIds && section.serviceIds.length > 0) {
+                      displayServices = section.serviceIds
+                        .map(id => services.find(s => s.id === id))
+                        .filter((s): s is DiagnosticService => !!s);
+                    } else {
+                      displayServices = services
+                        .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
+                        .slice(0, 4);
+                    }
+
+                    const totalCount = section.serviceIds && section.serviceIds.length > 0
+                      ? section.serviceIds.length
+                      : services.filter(s => section.category === 'all' || s.category === section.category).length;
+
                     return (
-                      <div 
-                        key={pkg.id} 
-                        className="bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all"
-                      >
-                        {/* Package Thumbnail Image */}
-                        <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
-                          <img 
-                            src={getPackageImage(pkg.id)} 
-                            alt={pkg.name} 
-                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
+                      <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
+                        <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                          <div>
+                            <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
+                              {section.category === 'scan' ? (
+                                <Activity className="w-4 h-4 text-[#AD1457]" />
+                              ) : (
+                                <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
+                              )}
+                              {section.title}
+                            </h3>
+                            <span className="text-[10px] text-slate-400">{section.subtitle}</span>
+                          </div>
+                          <button
+                            onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
+                            className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>View All ({totalCount})</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Section banner */}
+                        <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
+                          <img
+                            src={resolveBannerImage(section.bannerImage)}
+                            alt={section.title}
+                            className="w-full h-full object-cover select-none"
                             referrerPolicy="no-referrer"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
-                          {pkg.popular && (
-                            <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
-                              Best Value
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                          <div className="absolute bottom-3 left-3 right-3 text-left">
+                            <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
+                              {section.bannerTag}
                             </span>
-                          )}
+                            <p className="text-white text-[10.5px] font-bold leading-tight">
+                              {section.bannerTitle}
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
-                          <div className="space-y-4">
-                            <div>
-                              <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
-                              <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
-                              <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
-                            </div>
- 
-                            {/* list of subset tests included */}
-                            <div className="space-y-1.5 border-t border-gray-800 pt-4">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
-                              <div className="space-y-1 text-[11px] text-slate-400">
-                                {pkg.includedTests.slice(0, 4).map((test, idx) => (
-                                  <div key={idx} className="flex items-center gap-1.5">
-                                    <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
-                                    <span className="truncate">{test}</span>
+                        {/* Services list inside this panel */}
+                        <div className="space-y-3.5">
+                          {displayServices.map((service) => {
+                            const inCart = cart.some(ci => ci.itemId === service.id);
+                            return (
+                              <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1 text-left flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
+                                    {service.parametersCount && (
+                                      <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
+                                        {service.parametersCount} params
+                                      </span>
+                                    )}
                                   </div>
-                                ))}
-                                {pkg.includedTests.length > 4 && (
-                                  <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
- 
-                          <div className="space-y-4 pt-4 border-t border-gray-800">
-                            <div className="flex justify-between items-end">
-                              <div>
-                                <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
-                                  <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
+                                  <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
+                                  <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
+                                    {service.category === 'scan'
+                                      ? `Prep: ${service.preparation.split('.')[0]}`
+                                      : `Turnaround: ${service.reportDelivery}`}
+                                  </span>
+                                </div>
+                                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
+                                  <div className="text-left sm:text-right">
+                                    <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
+                                    {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      onClick={() => handleDirectBook(service)}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
+                                    >
+                                      Book Now
+                                    </button>
+                                    <button
+                                      onClick={() => handleAddToCart(service, 'service')}
+                                      className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
+                                        }`}
+                                    >
+                                      {inCart ? 'Added' : '+ Cart'}
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
-                              <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
-                            </div>
- 
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleDirectBook(pkg)}
-                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
-                              >
-                                Book Now (Pay at Lab)
-                              </button>
-                              <button
-                                onClick={() => handleAddToCart(pkg, 'package')}
-                                className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${
-                                  inCart 
-                                    ? 'bg-emerald-800 text-emerald-400 border border-emerald-950' 
-                                    : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
-                                }`}
-                              >
-                                {inCart ? 'Added' : '+ Cart'}
-                              </button>
-                            </div>
-                          </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
                   })}
                 </div>
- 
-                <div className="text-center pt-2">
-                  <button 
-                    onClick={() => setCurrentTab('packages')}
-                    className="px-6 py-3 border border-gray-800 hover:border-gray-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer inline-flex items-center gap-1.5"
-                  >
-                    <span>View All Health Packages</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </section>
+              </section>
+            )}
 
-            {/* HIGH-FIDELITY PRESCRIPTION UPLOAD ACTION CARD */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6">
-              <div className="bg-slate-50 border border-gray-205 rounded-3xl p-6 md:p-10 text-left grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative overflow-hidden">
-                <div className="md:col-span-8 space-y-3 relative z-10">
-                  <div className="inline-block px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-wider">
-                    Prescription Assistant
-                  </div>
-                  <h3 className="text-2xl md:text-3xl font-serif font-light text-slate-900 tracking-tight">Confused about what your <span className="italic font-medium text-[#2D006B]">doctor wrote?</span></h3>
-                  <p className="text-xs md:text-sm text-slate-650 leading-relaxed max-w-xl">
-                    Simply upload your handwritten or digital doctor prescription note. Our advanced diagnostics system reads and translates handwriting directly into NABL catalog tests, adding them to your booking cart in 5 seconds!
-                  </p>
-                  <button
-                    onClick={() => setIsPrescriptionOpen(true)}
-                    className="px-6 py-3 bg-[#2D006B] hover:bg-[#220052] text-white font-bold uppercase tracking-widest rounded-full text-xs flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-[#80CBC4]" />
-                    <span>Upload & Extract Prescription Tests</span>
-                  </button>
-                </div>
+            {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
+            {HEALTH_PACKAGES.length > 0 && (
+              <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
+                {/* background ambient blur dots */}
+                <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
 
-                <div className="md:col-span-4 flex justify-center relative">
-                  {/* abstract medical paper drawing */}
-                  <div className="w-36 h-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 flex flex-col justify-between rotate-6 relative z-10">
-                    <div className="space-y-1.5">
-                      <div className="h-2 w-10 bg-slate-200 rounded"></div>
-                      <div className="h-1.5 w-full bg-slate-100 rounded"></div>
-                      <div className="h-1.5 w-5/6 bg-slate-100 rounded"></div>
-                    </div>
-                    {/* handwritten script simulation */}
-                    <div className="border-t border-dashed border-gray-200 py-3 space-y-2">
-                      <div className="h-3 w-3/4 bg-emerald-50/50 rounded italic text-[7px] text-emerald-700 font-bold px-1 select-none">Rx: Thyroid Profile</div>
-                      <div className="h-3 w-1/2 bg-emerald-50/50 rounded italic text-[7px] text-emerald-700 font-bold px-1 select-none">Rx: Vitamin D</div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="h-2 w-6 bg-slate-200 rounded"></div>
-                      <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[8px]">✓</div>
-                    </div>
+                <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+                  <div className="text-center space-y-3">
+                    <span className="inline-block px-3 py-1 bg-[#16181d] border border-gray-800 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                      Recommended Preventive Screening
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-serif font-light text-white tracking-tight">Popular <span className="italic font-medium text-emerald-400">Health Checkup Packages</span></h2>
+                    <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
                   </div>
-                  <div className="absolute top-4 w-32 h-44 bg-emerald-100/20 rounded-2xl -rotate-3 z-0"></div>
+
+                  {/* Horizontal slider of packages */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                    {HEALTH_PACKAGES.map((pkg) => {
+                      const inCart = cart.some(ci => ci.itemId === pkg.id);
+                      return (
+                        <div
+                          key={pkg.id}
+                          className="bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all"
+                        >
+                          {/* Package Thumbnail Image */}
+                          <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
+                            <img
+                              src={getPackageImage(pkg.id)}
+                              alt={pkg.name}
+                              className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
+                            {pkg.popular && (
+                              <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
+                                Best Value
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
+                            <div className="space-y-4">
+                              <div>
+                                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
+                                <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
+                                <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
+                              </div>
+
+                              {/* list of subset tests included */}
+                              <div className="space-y-1.5 border-t border-gray-800 pt-4">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
+                                <div className="space-y-1 text-[11px] text-slate-400">
+                                  {pkg.includedTests.slice(0, 4).map((test, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5">
+                                      <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                      <span className="truncate">{test}</span>
+                                    </div>
+                                  ))}
+                                  {pkg.includedTests.length > 4 && (
+                                    <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4 pt-4 border-t border-gray-800">
+                              <div className="flex justify-between items-end">
+                                <div>
+                                  <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
+                                    <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleDirectBook(pkg)}
+                                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
+                                >
+                                  Book Now (Pay at Lab)
+                                </button>
+                                <button
+                                  onClick={() => handleAddToCart(pkg, 'package')}
+                                  className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                    ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
+                                    : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
+                                    }`}
+                                >
+                                  {inCart ? 'Added' : '+ Cart'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={() => setCurrentTab('packages')}
+                      className="px-6 py-3 border border-gray-800 hover:border-gray-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <span>View All Health Packages</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
+
+
 
             {/* TRUST ELEMENTS SECTION (SERPENTINE DESIGN) */}
             <WindingStats />
 
             {/* TESTIMONIALS */}
             <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8">
-              <div className="text-center md:text-left space-y-1">
-                <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-[#2D006B]">Success Stories</span></h3>
-                <p className="text-xs text-slate-500">Read about the experiences of our satisfied health patrons.</p>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/60 rounded-full text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-1">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span>5.0 Star Rated on Google Maps</span>
+                  </div>
+                  <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-[#2D006B]">Success Stories</span></h3>
+                  <p className="text-xs text-slate-500">Read authentic positive experiences from our satisfied health patrons.</p>
+                </div>
+                <a
+                  href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 bg-white border border-gray-250 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-full transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-red-500" />
+                  <span>View All Google Reviews</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {CUSTOMER_TESTIMONIALS.map((testimonial) => (
-                  <div key={testimonial.id} className="bg-[#fafafa]/50 border border-gray-200 p-6 rounded-3xl shadow-xs space-y-4 hover:bg-white transition-colors">
-                    <div className="flex gap-0.5 text-amber-500">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                      ))}
+                  <a
+                    key={testimonial.id}
+                    href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#fafafa]/50 border border-gray-200 p-6 rounded-3xl shadow-xs space-y-4 hover:bg-white hover:border-emerald-400 hover:shadow-md transition-all block group cursor-pointer"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex gap-0.5 text-amber-500">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                      <span className="text-[9px] font-black text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                        Google Review <ExternalLink className="w-2.5 h-2.5" />
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-655 leading-relaxed italic">"{testimonial.comment}"</p>
+                    <p className="text-xs text-slate-655 leading-relaxed italic group-hover:text-slate-900 transition-colors">"{testimonial.comment}"</p>
                     <div className="border-t border-gray-100 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold">
                       <div>
                         <span className="text-slate-800 font-bold block">{testimonial.name}</span>
@@ -787,7 +784,7 @@ export default function App() {
                       </div>
                       <span>{testimonial.date}</span>
                     </div>
-                  </div>
+                  </a>
                 ))}
               </div>
             </section>
@@ -824,11 +821,10 @@ export default function App() {
                 <button
                   key={sub}
                   onClick={() => setSelectedScanSub(sub)}
-                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${
-                    selectedScanSub === sub
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
-                      : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${selectedScanSub === sub
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
+                    : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
                   {sub}
                 </button>
@@ -845,8 +841,8 @@ export default function App() {
                 {filteredScans.map((scan) => {
                   const inCart = cart.some(ci => ci.itemId === scan.id);
                   return (
-                    <div 
-                      key={scan.id} 
+                    <div
+                      key={scan.id}
                       className="bg-white border border-gray-200 rounded-3xl p-6 hover:border-emerald-500/40 hover:shadow-lg transition-all flex flex-col justify-between gap-5 text-left"
                     >
                       <div className="space-y-3.5">
@@ -857,7 +853,7 @@ export default function App() {
                           <h3 className="font-serif font-light text-slate-900 text-base md:text-lg tracking-tight mt-2">{scan.name}</h3>
                         </div>
                         <p className="text-xs text-slate-500 leading-relaxed">{scan.description}</p>
-                        
+
                         {/* Meta boxes */}
                         <div className="space-y-1.5 border-t border-gray-100 pt-3 text-[10px] text-slate-500 font-medium">
                           <div className="flex justify-between">
@@ -892,11 +888,10 @@ export default function App() {
                           </button>
                           <button
                             onClick={() => handleAddToCart(scan, 'service')}
-                            className={`px-3 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all active:scale-[0.98] cursor-pointer ${
-                              inCart 
-                                ? 'bg-emerald-55 text-emerald-700 border border-emerald-100' 
-                                : 'border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white'
-                            }`}
+                            className={`px-3 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all active:scale-[0.98] cursor-pointer ${inCart
+                              ? 'bg-emerald-55 text-emerald-700 border border-emerald-100'
+                              : 'border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white'
+                              }`}
                           >
                             {inCart ? 'Added' : '+ Cart'}
                           </button>
@@ -924,11 +919,10 @@ export default function App() {
                 <button
                   key={sub}
                   onClick={() => setSelectedLabSub(sub)}
-                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${
-                    selectedLabSub === sub
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
-                      : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${selectedLabSub === sub
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
+                    : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
                   {sub}
                 </button>
@@ -945,8 +939,8 @@ export default function App() {
                 {filteredLabs.map((lab) => {
                   const inCart = cart.some(ci => ci.itemId === lab.id);
                   return (
-                    <div 
-                      key={lab.id} 
+                    <div
+                      key={lab.id}
                       className="bg-white border border-gray-200 rounded-3xl p-6 hover:border-emerald-500/40 hover:shadow-lg transition-all flex flex-col justify-between gap-5 text-left"
                     >
                       <div className="space-y-3.5">
@@ -962,7 +956,7 @@ export default function App() {
                         </div>
                         <h3 className="font-serif font-light text-slate-900 text-base md:text-lg tracking-tight">{lab.name}</h3>
                         <p className="text-xs text-slate-500 leading-relaxed">{lab.description}</p>
-                        
+
                         {/* Meta boxes */}
                         <div className="space-y-1.5 border-t border-gray-105 pt-3 text-[10px] text-slate-500 font-medium">
                           <div className="flex justify-between">
@@ -997,11 +991,10 @@ export default function App() {
                           </button>
                           <button
                             onClick={() => handleAddToCart(lab, 'service')}
-                            className={`px-3 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all active:scale-[0.98] cursor-pointer ${
-                              inCart 
-                                ? 'bg-emerald-55 text-emerald-700 border border-emerald-100' 
-                                : 'border border-slate-200 hover:bg-slate-55 text-slate-600 bg-white'
-                            }`}
+                            className={`px-3 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all active:scale-[0.98] cursor-pointer ${inCart
+                              ? 'bg-emerald-55 text-emerald-700 border border-emerald-100'
+                              : 'border border-slate-200 hover:bg-slate-55 text-slate-600 bg-white'
+                              }`}
                           >
                             {inCart ? 'Added' : '+ Cart'}
                           </button>
@@ -1028,15 +1021,15 @@ export default function App() {
               {HEALTH_PACKAGES.map((pkg) => {
                 const inCart = cart.some(ci => ci.itemId === pkg.id);
                 return (
-                  <div 
-                    key={pkg.id} 
+                  <div
+                    key={pkg.id}
                     className="bg-white border border-gray-205 rounded-3xl hover:border-emerald-500/40 hover:shadow-lg transition-all text-left flex flex-col justify-between overflow-hidden relative shadow-sm"
                   >
                     {/* Package Banner Image */}
                     <div className="relative aspect-[16/6] w-full bg-slate-50 overflow-hidden">
-                      <img 
-                        src={getPackageImage(pkg.id)} 
-                        alt={pkg.name} 
+                      <img
+                        src={getPackageImage(pkg.id)}
+                        alt={pkg.name}
                         className="w-full h-full object-cover select-none"
                         referrerPolicy="no-referrer"
                       />
@@ -1104,11 +1097,10 @@ export default function App() {
                         </button>
                         <button
                           onClick={() => handleAddToCart(pkg, 'package')}
-                          className={`px-3 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all active:scale-[0.98] cursor-pointer ${
-                            inCart 
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                              : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
-                          }`}
+                          className={`px-3 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all active:scale-[0.98] cursor-pointer ${inCart
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
+                            }`}
                         >
                           {inCart ? 'Added' : '+ Cart'}
                         </button>
@@ -1124,22 +1116,22 @@ export default function App() {
 
         {/* TAB 4.5: HIRING & CAREERS */}
         {currentTab === 'hiring' && (
-          <HiringCareersSection 
+          <HiringCareersSection
             selectedBranch={selectedBranch}
           />
         )}
 
         {/* TAB 4.8: MY PATIENT BOOKINGS PORTAL */}
         {currentTab === 'bookings' && (
-          <MyBookingsSection 
+          <MyBookingsSection
             onNavigateToCatalog={(tab) => setCurrentTab(tab)}
           />
         )}
 
         {/* TAB 5: ADMIN PANEL CONSOLE */}
         {currentTab === 'admin' && (
-          <AdminPanel 
-            currentTab={currentTab} 
+          <AdminPanel
+            currentTab={currentTab}
             setCurrentTab={setCurrentTab}
             bookingRefreshKey={bookingRefreshKey}
             services={services}
@@ -1152,7 +1144,7 @@ export default function App() {
         )}
         {/* TAB 6: LEGAL & COMPLIANCE PAGES (Razorpay Requirements) */}
         {['privacy-policy', 'terms-of-use', 'refund-policy', 'shipping-policy', 'about-us', 'contact-us'].includes(currentTab) && (
-          <LegalPages 
+          <LegalPages
             activeSection={currentTab as any}
             onSectionChange={(section) => setCurrentTab(section)}
           />
@@ -1193,8 +1185,8 @@ export default function App() {
           cart={cart}
           bookingDetails={checkoutBookingDetails}
           grandTotal={
-            cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) + 
-            (checkoutBookingDetails.collectionType === 'home' ? 150 : 0) + 
+            cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) +
+            (checkoutBookingDetails.collectionType === 'home' ? 150 : 0) +
             Math.round(cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) * 0.05)
           }
           onBookingSuccess={handleCheckoutSuccess}
