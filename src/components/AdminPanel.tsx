@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock, 
-  ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp, 
+import {
+  Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock,
+  ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp,
   DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw,
   FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown
 } from 'lucide-react';
@@ -109,16 +109,16 @@ const DEFAULT_ADMIN_BOOKINGS: Booking[] = [
   }
 ];
 
-export default function AdminPanel({ 
-  currentTab, 
-  setCurrentTab, 
+export default function AdminPanel({
+  currentTab,
+  setCurrentTab,
   bookingRefreshKey = 0,
   services,
   onUpdateServices,
   sections = [],
-  onUpdateSections = () => {},
+  onUpdateSections = () => { },
   centers = [],
-  onUpdateCenters = () => {}
+  onUpdateCenters = () => { }
 }: AdminPanelProps) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     const hasFlag = localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
@@ -290,7 +290,7 @@ export default function AdminPanel({
   const [editingCenterCity, setEditingCenterCity] = useState<string | null>(null);
   const [editCenterAddress, setEditCenterAddress] = useState('');
   const [editCenterPhone, setEditCenterPhone] = useState('');
-  
+
   const [isAddingCenter, setIsAddingCenter] = useState(false);
   const [newCenterCity, setNewCenterCity] = useState('');
   const [newCenterAddress, setNewCenterAddress] = useState('');
@@ -335,7 +335,7 @@ export default function AdminPanel({
     };
     const updated = [...centers, newCenter];
     onUpdateCenters(updated);
-    
+
     setNewCenterCity('');
     setNewCenterAddress('');
     setNewCenterPhone('');
@@ -451,7 +451,7 @@ export default function AdminPanel({
       setSecServiceIds([...secServiceIds, id]);
     }
   };
-  
+
   // Custom Toast state
   const [toast, setToast] = useState<{
     show: boolean;
@@ -496,7 +496,7 @@ export default function AdminPanel({
       }
     });
   };
-  
+
   // Filtering states
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<'All' | 'Malad' | 'Goregaon'>('All');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'All' | Booking['bookingStatus']>('All');
@@ -578,10 +578,10 @@ export default function AdminPanel({
       showToast('Please enter a service name.', 'error');
       return;
     }
-    
+
     // Generate unique ID
     const generatedId = `${newServiceCategory}-${newServiceName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
-    
+
     const newService: DiagnosticService = {
       id: generatedId,
       name: newServiceName.trim(),
@@ -595,10 +595,10 @@ export default function AdminPanel({
       reportDelivery: newServiceReportDelivery.trim() || 'Same Day',
       popular: newServicePopular
     };
-    
+
     const updated = [...services, newService];
     onUpdateServices(updated);
-    
+
     // Reset form
     setNewServiceName('');
     setNewServiceSubCategory('');
@@ -610,7 +610,7 @@ export default function AdminPanel({
     setNewServiceReportDelivery('Same Day');
     setNewServicePopular(false);
     setIsAddingService(false);
-    
+
     showToast('New diagnostic service added to catalog successfully!', 'success');
   };
 
@@ -645,7 +645,7 @@ export default function AdminPanel({
         const localOnlyBookings = cachedBookings.filter(
           (b: any) => b.id && !dbIds.has(String(b.id)) && !String(b.id).startsWith('b-admin-')
         );
-        const mergedBookings = localOnlyBookings.length > 0 
+        const mergedBookings = localOnlyBookings.length > 0
           ? [...localOnlyBookings, ...bookingsData]
           : bookingsData;
 
@@ -684,7 +684,7 @@ export default function AdminPanel({
       // Fallback to LocalStorage
       const cachedBookings = localStorage.getItem('assurx_bookings');
       if (cachedBookings) setBookings(JSON.parse(cachedBookings));
-      
+
       const cachedPrescriptions = localStorage.getItem('assurx_prescriptions');
       if (cachedPrescriptions) setPrescriptions(JSON.parse(cachedPrescriptions));
 
@@ -722,7 +722,7 @@ export default function AdminPanel({
       const paymentStatus = newStatus === 'report_ready' ? 'paid' : undefined;
       const res = await adminFetch(`/api/admin/bookings/${bookingId}`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Admin-Key': 'assurx2026health'
         },
@@ -732,8 +732,8 @@ export default function AdminPanel({
         // Refresh local view
         const updated = bookings.map(b => {
           if (b.id === bookingId) {
-            return { 
-              ...b, 
+            return {
+              ...b,
               bookingStatus: newStatus,
               paymentStatus: (newStatus === 'report_ready' ? 'paid' : b.paymentStatus) as 'pending' | 'paid'
             };
@@ -770,7 +770,7 @@ export default function AdminPanel({
             return;
           }
 
-          const res = await adminFetch(`/api/admin/bookings/${idStr}`, { 
+          const res = await adminFetch(`/api/admin/bookings/${idStr}`, {
             method: 'DELETE',
             headers: { 'X-Admin-Key': 'assurx2026health' }
           });
@@ -795,7 +795,7 @@ export default function AdminPanel({
     try {
       const res = await adminFetch(`/api/admin/prescriptions/${prescriptionId}`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Admin-Key': 'assurx2026health'
         },
@@ -834,7 +834,7 @@ export default function AdminPanel({
             return;
           }
 
-          const res = await adminFetch(`/api/admin/prescriptions/${idStr}`, { 
+          const res = await adminFetch(`/api/admin/prescriptions/${idStr}`, {
             method: 'DELETE',
             headers: { 'X-Admin-Key': 'assurx2026health' }
           });
@@ -876,7 +876,7 @@ export default function AdminPanel({
 
   const handleOpenViewOrder = (booking: Booking) => {
     setViewingOrderBooking(booking);
-    
+
     // Check if there is saved clinical data
     const savedCustomResultsStr = localStorage.getItem(`report_data_${booking.id}`);
     if (savedCustomResultsStr) {
@@ -902,7 +902,7 @@ export default function AdminPanel({
     try {
       const res = await adminFetch(`/api/admin/bookings/${editingPatientBooking.id}`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Admin-Key': 'assurx2026health'
         },
@@ -959,7 +959,7 @@ export default function AdminPanel({
   // Open clinical editor
   const handleOpenClinicalEditor = (booking: Booking) => {
     setEditingBooking(booking);
-    
+
     // Check if this booking has specific saved custom reports in localStorage
     const savedCustomResultsStr = localStorage.getItem(`report_data_${booking.id}`);
     if (savedCustomResultsStr) {
@@ -983,7 +983,7 @@ export default function AdminPanel({
   // Save clinical test results
   const handleSaveClinicalResults = () => {
     if (!editingBooking) return;
-    
+
     const payload = {
       parameters: reportResults,
       findings: scanFindings,
@@ -991,7 +991,7 @@ export default function AdminPanel({
     };
 
     localStorage.setItem(`report_data_${editingBooking.id}`, JSON.stringify(payload));
-    
+
     // Automatically transition booking status to report_ready if it is saved!
     handleUpdateStatus(editingBooking.id, 'report_ready');
     setEditingBooking(null);
@@ -1076,7 +1076,7 @@ export default function AdminPanel({
     if (confirmDelete) {
       const updatedServices = services.filter(s => s.id !== serviceId);
       onUpdateServices(updatedServices);
-      
+
       if (sections && onUpdateSections) {
         const updatedSections = sections.map(section => {
           if (section.serviceIds && section.serviceIds.includes(serviceId)) {
@@ -1089,7 +1089,7 @@ export default function AdminPanel({
         });
         onUpdateSections(updatedSections);
       }
-      
+
       showToast('Service deleted from catalog rate-card successfully!', 'success');
     }
   };
@@ -1183,8 +1183,8 @@ export default function AdminPanel({
 
       const savedB = await response.json();
 
-      const parsedItems = typeof savedB.items === 'string' 
-        ? JSON.parse(savedB.items) 
+      const parsedItems = typeof savedB.items === 'string'
+        ? JSON.parse(savedB.items)
         : (Array.isArray(savedB.items) ? savedB.items : []);
 
       const mappedBooking: Booking = {
@@ -1248,16 +1248,16 @@ export default function AdminPanel({
     // Branch match
     const bCity = b.address?.city || 'Malad';
     const matchesBranch = selectedBranchFilter === 'All' || bCity.toLowerCase() === selectedBranchFilter.toLowerCase();
-    
+
     // Status match
     const matchesStatus = selectedStatusFilter === 'All' || b.bookingStatus === selectedStatusFilter;
 
     // Search query match (patient name or booking ID)
     const query = searchQuery.toLowerCase();
-    const matchesSearch = !query || 
-                          b.patient.name.toLowerCase().includes(query) || 
-                          b.bookingId.toLowerCase().includes(query) ||
-                          b.items.some(it => it.name.toLowerCase().includes(query));
+    const matchesSearch = !query ||
+      b.patient.name.toLowerCase().includes(query) ||
+      b.bookingId.toLowerCase().includes(query) ||
+      b.items.some(it => it.name.toLowerCase().includes(query));
 
     return matchesBranch && matchesStatus && matchesSearch;
   });
@@ -1265,10 +1265,10 @@ export default function AdminPanel({
   // Analytics helper metrics
   const totalGrossRevenue = bookings.reduce((sum, b) => sum + b.totalAmount, 0);
   const totalBookingsCount = bookings.length;
-  
+
   const maladBookings = bookings.filter(b => (b.address?.city || '').toLowerCase() === 'malad');
   const maladRevenue = maladBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-  
+
   const goregaonBookings = bookings.filter(b => (b.address?.city || '').toLowerCase() === 'goregaon');
   const goregaonRevenue = goregaonBookings.reduce((sum, b) => sum + b.totalAmount, 0);
 
@@ -1285,11 +1285,11 @@ export default function AdminPanel({
         <div className="bg-white border border-slate-200 shadow-xl rounded-[32px] p-8 space-y-6 text-center relative overflow-hidden">
           {/* Accent decoration */}
           <div className="absolute top-0 inset-x-0 h-2 bg-emerald-600"></div>
-          
+
           <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
             <ShieldCheck className="w-8 h-8 animate-pulse" />
           </div>
-          
+
           <div className="space-y-2">
             <span className="text-[9px] font-black tracking-widest text-emerald-750 uppercase block">Restricted System Access</span>
             <h2 className="text-2xl font-serif font-light text-slate-900">Clinical <span className="italic font-medium text-emerald-800">Admin Gate</span></h2>
@@ -1335,14 +1335,14 @@ export default function AdminPanel({
                 className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 focus:outline-none font-sans font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
-            
+
             {authError && (
               <p className="text-xs text-red-600 font-semibold flex items-center gap-1.5 bg-red-50 p-2.5 rounded-xl border border-red-150">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{authError}</span>
               </p>
             )}
-            
+
             <button
               type="submit"
               disabled={lockUntil > Date.now()}
@@ -1351,7 +1351,7 @@ export default function AdminPanel({
               <span>Verify & Connect</span>
             </button>
           </form>
-          
+
           <div className="pt-2 border-t border-slate-100">
             <button
               onClick={() => setCurrentTab('home')}
@@ -1361,7 +1361,7 @@ export default function AdminPanel({
               <span>Back to Public Website</span>
             </button>
           </div>
-          
+
 
         </div>
       </div>
@@ -1370,7 +1370,7 @@ export default function AdminPanel({
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-8 animate-fade-in text-left">
-      
+
       {/* Enterprise Admin Banner Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-gray-150 pb-6">
         <div className="space-y-1.5">
@@ -1390,7 +1390,7 @@ export default function AdminPanel({
             Secure multi-branch monitoring, manual order registration, custom diagnostic reporting, and analytics.
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -1437,7 +1437,7 @@ export default function AdminPanel({
             <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
             <span>Reset Database</span>
           </button>
-          
+
           <button
             onClick={() => setCurrentTab('home')}
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest rounded-full shadow-md shadow-emerald-100 flex items-center gap-1.5 transition-all cursor-pointer"
@@ -1474,7 +1474,7 @@ export default function AdminPanel({
 
       {/* Admin Quick Statistics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+
         {/* KPI 1 */}
         <div className="bg-white border border-gray-200 p-5 rounded-3xl flex items-center justify-between shadow-xs">
           <div className="space-y-1">
@@ -1529,9 +1529,8 @@ export default function AdminPanel({
       <div className="flex flex-wrap border-b border-gray-200 gap-6 text-xs font-bold uppercase tracking-widest text-slate-400 pb-0.5">
         <button
           onClick={() => setActiveTab('dispatcher')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'dispatcher' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'dispatcher' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <ClipboardList className="w-4 h-4 text-emerald-600" />
           <span>Orders Dispatcher ({filteredBookings.length})</span>
@@ -1540,9 +1539,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('prescriptions')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'prescriptions' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'prescriptions' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <FileText className="w-4 h-4 text-teal-600" />
           <span>Prescription Consults & Leads ({prescriptions.length})</span>
@@ -1551,9 +1549,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('manual')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'manual' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'manual' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <Plus className="w-4 h-4 text-emerald-600" />
           <span>Manual Walk-in Order</span>
@@ -1562,9 +1559,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('catalog')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'catalog' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'catalog' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <Settings className="w-4 h-4 text-slate-550" />
           <span>Catalog & Pricing Manager</span>
@@ -1573,9 +1569,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('analytics')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'analytics' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'analytics' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <TrendingUp className="w-4 h-4 text-cyan-600" />
           <span>Branch Analytics</span>
@@ -1584,9 +1579,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('careers')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'careers' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'careers' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <Briefcase className="w-4 h-4 text-teal-650" />
           <span>Job Applications ({applications.length})</span>
@@ -1595,9 +1589,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('sections')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'sections' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'sections' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <LayoutGrid className="w-4 h-4 text-emerald-650" />
           <span>Homepage Sections ({sections.length})</span>
@@ -1606,9 +1599,8 @@ export default function AdminPanel({
 
         <button
           onClick={() => setActiveTab('branches')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'branches' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
-          }`}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'branches' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
         >
           <Building className="w-4 h-4 text-emerald-655" />
           <span>Branches Settings ({centers.length})</span>
@@ -1618,14 +1610,14 @@ export default function AdminPanel({
 
       {/* Main Panel Content Render Area */}
       <div className="pt-2">
-        
+
         {/* Tab 1: Dispatcher and booking manager */}
         {activeTab === 'dispatcher' && (
           <div className="space-y-6">
-            
+
             {/* Filter controls row */}
             <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col md:flex-row justify-between gap-4 items-center">
-              
+
               <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                 {/* Branch selector filter */}
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-550">
@@ -1708,10 +1700,10 @@ export default function AdminPanel({
                       {filteredBookings.map((booking) => {
                         const bBranch = booking.address?.city || 'Malad';
                         const isReportReady = booking.bookingStatus === 'report_ready';
-                        
+
                         return (
                           <tr key={booking.id} className="hover:bg-slate-50/40 transition-colors">
-                            
+
                             {/* Column 1 */}
                             <td className="py-4 px-5">
                               <div className="space-y-0.5">
@@ -1766,9 +1758,8 @@ export default function AdminPanel({
                             <td className="py-4 px-4">
                               <div className="space-y-0.5">
                                 <span className="font-bold text-slate-950 font-serif">₹{booking.totalAmount}</span>
-                                <span className={`text-[9px] font-bold uppercase block ${
-                                  booking.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-500'
-                                }`}>
+                                <span className={`text-[9px] font-bold uppercase block ${booking.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-500'
+                                  }`}>
                                   {booking.paymentStatus === 'paid' ? '● Paid' : '● Cash / Pending'}
                                 </span>
                               </div>
@@ -1779,13 +1770,12 @@ export default function AdminPanel({
                               <select
                                 value={booking.bookingStatus}
                                 onChange={(e) => handleUpdateStatus(booking.id, e.target.value as any)}
-                                className={`px-2.5 py-1.5 rounded-lg font-bold text-[10.5px] border cursor-pointer focus:outline-none ${
-                                  booking.bookingStatus === 'booked' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                  booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                  booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                  booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 font-extrabold' :
-                                  'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                }`}
+                                className={`px-2.5 py-1.5 rounded-lg font-bold text-[10.5px] border cursor-pointer focus:outline-none ${booking.bookingStatus === 'booked' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                      booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                        booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 font-extrabold' :
+                                          'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  }`}
                               >
                                 <option value="booked">Confirmed</option>
                                 <option value="sample_collected">Sample Collected</option>
@@ -1824,7 +1814,7 @@ export default function AdminPanel({
                                   <Edit2 className="w-3 h-3 text-slate-500" />
                                   <span>{isReportReady ? 'Edit Findings' : 'Publish Report'}</span>
                                 </button>
-                                
+
                                 <button
                                   onClick={() => handleDeleteBooking(booking.id)}
                                   className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer"
@@ -1850,7 +1840,7 @@ export default function AdminPanel({
         {/* Tab 2: Manual Booking walks / phone orders */}
         {activeTab === 'manual' && (
           <div className="bg-white border border-gray-200 rounded-3xl p-6 md:p-8 max-w-3xl mx-auto shadow-sm">
-            
+
             <div className="border-b border-slate-100 pb-4 mb-6">
               <h3 className="text-xl font-serif font-light text-slate-900">
                 Manual Patient <span className="italic font-medium text-emerald-800">Order Booking</span>
@@ -1859,7 +1849,7 @@ export default function AdminPanel({
             </div>
 
             <form onSubmit={handleManualBookingSubmit} className="space-y-6">
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* Patient Name */}
                 <div className="space-y-1.5 md:col-span-2">
@@ -1987,7 +1977,7 @@ export default function AdminPanel({
               <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Select Diagnostic Items & Packages</label>
                 <div className="border border-slate-200 rounded-2xl max-h-48 overflow-y-auto p-4 space-y-2 bg-slate-50/50">
-                  
+
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Packages</div>
                   {HEALTH_PACKAGES.map(pkg => (
                     <label key={pkg.id} className="flex items-center gap-2.5 py-1 text-xs cursor-pointer select-none">
@@ -2035,7 +2025,7 @@ export default function AdminPanel({
         {/* Tab 3: Catalog and Pricing management */}
         {activeTab === 'catalog' && (
           <div className="space-y-6">
-            
+
             {/* Header / Search Catalog */}
             <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
               <div>
@@ -2078,7 +2068,7 @@ export default function AdminPanel({
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 <form onSubmit={handleAddServiceSubmit} className="space-y-4 text-left">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Name */}
@@ -2244,14 +2234,13 @@ export default function AdminPanel({
                     {services.filter(s => s.name.toLowerCase().includes(catalogSearch.toLowerCase())).map((srv) => (
                       <tr key={srv.id} className="hover:bg-slate-50/40">
                         <td className="py-3.5 px-5">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                            srv.category === 'scan' ? 'bg-indigo-50 text-indigo-750' : 'bg-emerald-50 text-emerald-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${srv.category === 'scan' ? 'bg-indigo-50 text-indigo-750' : 'bg-emerald-50 text-emerald-700'
+                            }`}>
                             {srv.category === 'scan' ? 'Imaging (Radiology)' : 'Pathology (Lab)'}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-slate-900 text-sm font-bold">{srv.name}</td>
-                        
+
                         {/* Pricing column */}
                         <td className="py-3.5 px-4">
                           <span className="text-slate-500 font-mono">₹{srv.price}</span>
@@ -2262,7 +2251,7 @@ export default function AdminPanel({
                         </td>
 
                         <td className="py-3.5 px-4 text-slate-500 max-w-xs truncate">{srv.preparation}</td>
-                        
+
                         <td className="py-3.5 px-5 text-right">
                           <div className="flex gap-1.5 justify-end">
                             <button
@@ -2453,9 +2442,9 @@ export default function AdminPanel({
         {/* Tab 4: Analytics */}
         {activeTab === 'analytics' && (
           <div className="space-y-8">
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
+
               {/* Branch performance visual */}
               <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
                 <div>
@@ -2474,7 +2463,7 @@ export default function AdminPanel({
                       <span>₹{maladRevenue.toLocaleString('en-IN')} ({Math.round(totalGrossRevenue ? (maladRevenue / totalGrossRevenue) * 100 : 0)}%)</span>
                     </div>
                     <div className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="bg-emerald-600 h-full rounded-full transition-all duration-500"
                         style={{ width: `${totalBookingsCount ? (maladBookings.length / totalBookingsCount) * 100 : 0}%` }}
                       ></div>
@@ -2491,7 +2480,7 @@ export default function AdminPanel({
                       <span>₹{goregaonRevenue.toLocaleString('en-IN')} ({Math.round(totalGrossRevenue ? (goregaonRevenue / totalGrossRevenue) * 100 : 0)}%)</span>
                     </div>
                     <div className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="bg-purple-600 h-full rounded-full transition-all duration-500"
                         style={{ width: `${totalBookingsCount ? (goregaonBookings.length / totalBookingsCount) * 100 : 0}%` }}
                       ></div>
@@ -2638,12 +2627,11 @@ export default function AdminPanel({
                             )}
                           </td>
                           <td className="py-4 px-4">
-                            <span className={`text-[10px] font-extrabold uppercase block ${
-                              prx.status === 'pending_call' ? 'text-amber-600' :
-                              prx.status === 'called' ? 'text-indigo-600' : 'text-emerald-600'
-                            }`}>
+                            <span className={`text-[10px] font-extrabold uppercase block ${prx.status === 'pending_call' ? 'text-amber-600' :
+                                prx.status === 'called' ? 'text-indigo-600' : 'text-emerald-600'
+                              }`}>
                               {prx.status === 'pending_call' ? '● Pending Call' :
-                               prx.status === 'called' ? '● Called & Handled' : '● Converted to Booking'}
+                                prx.status === 'called' ? '● Called & Handled' : '● Converted to Booking'}
                             </span>
                           </td>
                           <td className="py-4 px-5 text-right">
@@ -2769,13 +2757,12 @@ export default function AdminPanel({
                           </td>
                           <td className="p-4 whitespace-nowrap">
                             <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                appItem.status === 'shortlisted'
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${appItem.status === 'shortlisted'
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : appItem.status === 'rejected'
                                     ? 'bg-rose-100 text-rose-800'
                                     : 'bg-amber-100 text-amber-800'
-                              }`}
+                                }`}
                             >
                               {appItem.status || 'pending'}
                             </span>
@@ -2911,9 +2898,9 @@ export default function AdminPanel({
                 {sections.map((section, idx) => (
                   <div key={section.id} className="bg-white border border-slate-200 rounded-[28px] overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative aspect-[21/9] bg-slate-100 overflow-hidden">
-                      <img 
-                        src={section.bannerImage === 'bloodTestingBanner' ? 'https://images.unsplash.com/photo-1579154204601-01588f351167?q=80&w=1200&auto=format&fit=crop' : section.bannerImage} 
-                        alt={section.title} 
+                      <img
+                        src={section.bannerImage === 'bloodTestingBanner' ? 'https://images.unsplash.com/photo-1579154204601-01588f351167?q=80&w=1200&auto=format&fit=crop' : section.bannerImage}
+                        alt={section.title}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent"></div>
@@ -2952,7 +2939,7 @@ export default function AdminPanel({
                           </div>
                         </div>
                         <p className="text-[11px] text-slate-500 font-semibold">{section.subtitle}</p>
-                        
+
                         <div className="pt-2 border-t border-slate-100 space-y-1">
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Service Offerings Filter:</span>
                           {section.serviceIds && section.serviceIds.length > 0 ? (
@@ -2998,7 +2985,7 @@ export default function AdminPanel({
             {isAddingSection && (
               <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
                 <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-                  
+
                   {/* Modal Title */}
                   <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                     <div>
@@ -3017,7 +3004,7 @@ export default function AdminPanel({
 
                   {/* Modal Scrollable Body */}
                   <form onSubmit={editingSectionId ? handleEditSectionSubmit : handleAddSectionSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs font-semibold text-slate-700">
-                    
+
                     {/* Section Title */}
                     <div className="space-y-1">
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Section Title</label>
@@ -3052,7 +3039,7 @@ export default function AdminPanel({
                           onChange={(e) => setSecCategory(e.target.value as any)}
                           className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
                         >
-                          <option value="scan">Scans (Imaging / Radiology)</option>
+                          <option value="scan">Sonography & Scans (Radiology)</option>
                           <option value="lab">Lab Tests (Pathology)</option>
                           <option value="all">All Catalog Items</option>
                         </select>
@@ -3066,7 +3053,7 @@ export default function AdminPanel({
                           onChange={(e) => setSecViewAllTab(e.target.value as any)}
                           className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
                         >
-                          <option value="scans">Scans & Diagnostic Imaging Page</option>
+                          <option value="scans">Sonography & Diagnostic Scans Page</option>
                           <option value="labs">Pathology & Blood Labs Page</option>
                         </select>
                       </div>
@@ -3100,7 +3087,7 @@ export default function AdminPanel({
                           </label>
                         </div>
                       </div>
-                      
+
                       {/* Presets Selection */}
                       <div className="space-y-1">
                         <span className="text-[9.5px] font-bold text-slate-450 uppercase block">Or Choose a Premium Clinic Banner Preset:</span>
@@ -3216,7 +3203,7 @@ export default function AdminPanel({
         {/* Tab 8: Clinic Branches Directory */}
         {activeTab === 'branches' && (
           <div className="space-y-6 animate-fade-in">
-            
+
             {/* Header controls row */}
             <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
               <div>
@@ -3247,7 +3234,7 @@ export default function AdminPanel({
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 <form onSubmit={handleAddCenterSubmit} className="space-y-4 text-left font-semibold text-xs text-slate-700">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Branch Name / City */}
@@ -3404,7 +3391,7 @@ export default function AdminPanel({
       {editingPatientBooking && (
         <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-            
+
             {/* Modal Title */}
             <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
               <div>
@@ -3421,7 +3408,7 @@ export default function AdminPanel({
 
             {/* Modal Scrollable Body */}
             <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-semibold text-slate-700">
-              
+
               {/* Patient Name */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Patient Name</label>
@@ -3510,7 +3497,7 @@ export default function AdminPanel({
               {/* Street Address, City, Pincode */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3.5">
                 <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Collection Location Details</span>
-                
+
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Street Address / House No.</label>
                   <input
@@ -3574,7 +3561,7 @@ export default function AdminPanel({
       {editingBooking && (
         <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-            
+
             {/* Modal Title */}
             <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
               <div>
@@ -3591,7 +3578,7 @@ export default function AdminPanel({
 
             {/* Modal Scrollable Body */}
             <div className="p-6 overflow-y-auto flex-1 space-y-5 text-xs">
-              
+
               {/* Patient Brief */}
               <div className="bg-emerald-50/35 border border-emerald-100 p-4 rounded-2xl flex justify-between items-center">
                 <div>
@@ -3613,7 +3600,7 @@ export default function AdminPanel({
                     <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">1. Laboratory Pathology Parameter Results</h4>
                     <p className="text-slate-450 text-[10.5px]">Provide exact clinical bio-marker values analyzed in the branch laboratory.</p>
                   </div>
-                  
+
                   <div className="border border-slate-150 rounded-2xl overflow-hidden divide-y divide-slate-100 font-semibold text-slate-700">
                     <div className="grid grid-cols-4 bg-slate-50 p-2.5 text-[9px] font-bold text-slate-400 uppercase">
                       <div className="col-span-2">Clinical Parameter</div>
@@ -3645,7 +3632,7 @@ export default function AdminPanel({
                 /* radiology diagnostic reports findings input sheets */
                 <div className="space-y-4">
                   <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">2. Radiology (MRI / CT / Ultrasound) Medical Narrative</h4>
-                  
+
                   <div className="space-y-3.5">
                     <div className="space-y-1.5">
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Radiological Findings</label>
@@ -3698,7 +3685,7 @@ export default function AdminPanel({
       {viewingOrderBooking && (
         <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-            
+
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
               <div>
@@ -3715,7 +3702,7 @@ export default function AdminPanel({
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-700">
-              
+
               {/* Patient & Appointment Core Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
@@ -3825,11 +3812,10 @@ export default function AdminPanel({
                                   <td className="p-2 text-slate-500 font-medium">{param.unit}</td>
                                   <td className="p-2 text-slate-500 font-medium">{param.range}</td>
                                   <td className="p-2">
-                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                                      param.status === 'high' ? 'bg-amber-100 text-amber-800' :
-                                      param.status === 'low' ? 'bg-blue-100 text-blue-800' :
-                                      'bg-emerald-100 text-emerald-800'
-                                    }`}>
+                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${param.status === 'high' ? 'bg-amber-100 text-amber-800' :
+                                        param.status === 'low' ? 'bg-blue-100 text-blue-800' :
+                                          'bg-emerald-100 text-emerald-800'
+                                      }`}>
                                       {param.status}
                                     </span>
                                   </td>
@@ -3886,17 +3872,16 @@ export default function AdminPanel({
 
       {/* --- CUSTOM FLOATING TOAST --- */}
       {toast.show && (
-        <div 
-          className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border animate-bounce-short text-xs font-bold max-w-sm ${
-            toast.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
-              : toast.type === 'error' 
-                ? 'bg-rose-50 text-rose-950 border-rose-250' 
+        <div
+          className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border animate-bounce-short text-xs font-bold max-w-sm ${toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              : toast.type === 'error'
+                ? 'bg-rose-50 text-rose-950 border-rose-250'
                 : 'bg-slate-50 text-slate-900 border-slate-200'
-          }`}
+            }`}
         >
           <div className="flex-1">{toast.message}</div>
-          <button 
+          <button
             onClick={() => setToast(prev => ({ ...prev, show: false }))}
             className="text-slate-400 hover:text-slate-600 transition-colors p-0.5"
           >

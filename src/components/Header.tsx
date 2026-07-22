@@ -62,9 +62,9 @@ export default function Header({
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <a href="tel:18001201100" className="flex items-center gap-1 hover:text-white transition-colors">
+          <a href="tel:+919830678387" className="flex items-center gap-1 hover:text-white transition-colors">
             <PhoneCall className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-            <span className="font-bold text-red-200">Emergency Toll-Free: +91 9830678387 </span>
+            <span className="font-bold text-red-200">Call: +91 9830678387</span>
           </a>
         </div>
       </div>
@@ -380,7 +380,7 @@ export default function Header({
             onClick={() => handleTabClick('scans')}
             className={`py-2 text-xs font-black uppercase tracking-wider border-b border-white/10 ${currentTab === 'scans' ? 'text-white pl-2 border-l-2 border-red-500' : 'text-white/75 hover:text-white'}`}
           >
-            Scans & Imaging Services
+            Sonography & Scans Services
           </button>
           <button
             onClick={() => handleTabClick('labs')}

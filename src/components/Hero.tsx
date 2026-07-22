@@ -14,11 +14,11 @@ interface HeroProps {
   services: DiagnosticService[];
 }
 
-export default function Hero({ 
-  onNavigate, 
-  onOpenPrescription, 
-  selectedBranch, 
-  setSelectedBranch, 
+export default function Hero({
+  onNavigate,
+  onOpenPrescription,
+  selectedBranch,
+  setSelectedBranch,
   onAddToCart,
   onDirectBook,
   services
@@ -44,17 +44,17 @@ export default function Hero({
     if (!testSearch.trim()) {
       // Show popular items by default when search is empty
       const popularServices = services.filter(s => s.popular).map(s => ({ ...s, type: 'service' as const }));
-      const popularPackages = HEALTH_PACKAGES.filter(p => p.id === 'pkg-assurx-essential').map(p => ({ ...p, type: 'package' as const }));
+      const popularPackages = HEALTH_PACKAGES.filter(p => p.popular).map(p => ({ ...p, type: 'package' as const }));
       return [...popularServices, ...popularPackages].slice(0, 5);
     }
     const query = testSearch.toLowerCase();
-    
-    const matchedServices = services.filter(s => 
-      s.name.toLowerCase().includes(query) || 
+
+    const matchedServices = services.filter(s =>
+      s.name.toLowerCase().includes(query) ||
       (s.subCategory && s.subCategory.toLowerCase().includes(query))
     ).map(s => ({ ...s, type: 'service' as const }));
 
-    const matchedPackages = HEALTH_PACKAGES.filter(p => 
+    const matchedPackages = HEALTH_PACKAGES.filter(p =>
       p.name.toLowerCase().includes(query)
     ).map(p => ({ ...p, type: 'package' as const }));
 
@@ -85,9 +85,12 @@ export default function Hero({
         onNavigate('labs');
       }
     } else {
-      // Open booking with the most popular test as default instead of an annoying alert
       const defaultService = services.find(s => s.id === 'lab-cbc') || services[0];
-      onDirectBook(defaultService);
+      if (defaultService) {
+        onDirectBook(defaultService);
+      } else {
+        onNavigate('labs');
+      }
     }
   };
 
@@ -106,7 +109,7 @@ export default function Hero({
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
-        
+
         {/* Left Column: Heading and Checklist */}
         <div className="lg:col-span-7 space-y-5 md:space-y-6 text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F5F0FA] border border-[#E8DEFF] rounded-full text-[#2D006B] text-[10px] font-black uppercase tracking-wider animate-pulse">
@@ -124,15 +127,15 @@ export default function Hero({
 
         {/* Right Column: Dynamic Portrait + Floating Interactive Card Form */}
         <div className="lg:col-span-5 flex flex-col justify-center items-center w-full relative">
-          
+
           {/* Base Layout with Portrait image of a male diagnostic professional */}
           <div className="relative w-full max-w-[360px] aspect-[4/3] sm:aspect-square -mb-12 lg:mb-10 rounded-[36px] md:rounded-[48px] overflow-hidden bg-transparent flex items-end justify-center group">
             {/* Soft decorative blue circles in backdrop */}
             <div className="absolute top-10 right-4 w-40 h-40 rounded-full bg-[#2D006B]/10 blur-2xl group-hover:scale-110 transition-transform"></div>
-            
-            <img 
-              src={smilingSpecialist} 
-              alt="Smiling Diagnostic Specialist / Radiologist" 
+
+            <img
+              src={smilingSpecialist}
+              alt="Smiling Diagnostic Specialist / Radiologist"
               className="w-full h-full object-cover object-top select-none transition-transform duration-500 hover:scale-102 mix-blend-multiply"
               referrerPolicy="no-referrer"
             />
@@ -140,7 +143,7 @@ export default function Hero({
 
           {/* Overlapping Booking Interactive Form Card */}
           <div className="w-full max-w-[380px] bg-white border border-slate-200 shadow-xl rounded-2xl md:rounded-3xl p-5 md:p-6 relative lg:absolute lg:-bottom-12 lg:-right-2 z-20 transition-all hover:shadow-2xl">
-            
+
             <div className="space-y-4">
               {/* Box 1: Test / Scan input field */}
               <div className="space-y-1 text-left" ref={suggestionRef}>

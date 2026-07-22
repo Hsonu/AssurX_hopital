@@ -728,7 +728,7 @@ export default function CheckoutModal({
                       Patient Instructions For Appointment Day
                     </div>
                     <ul className="list-disc list-inside leading-normal space-y-0.5">
-                      {cart.some(item => /sugar|fasting|lipid|pkg-assurx/i.test(item.name)) && (
+                      {cart.some(item => /sugar|fasting|lipid|pkg-/i.test(item.name || item.itemId)) && (
                         <li><span className="font-bold text-slate-700">Fasting Mandatory:</span> 10-12 hours strict fasting is required before the appointment. Do not consume tea, coffee, or milk. Water is permitted.</li>
                       )}
                       {cart.some(item => /mri/i.test(item.name)) && (
