@@ -545,6 +545,20 @@ export default function AdminPanel({
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingDiscountPrice, setEditingDiscountPrice] = useState<number>(0);
 
+  // Full edit service modal state
+  const [isEditingService, setIsEditingService] = useState(false);
+  const [editServiceId, setEditServiceId] = useState<string | null>(null);
+  const [editServiceName, setEditServiceName] = useState('');
+  const [editServiceCategory, setEditServiceCategory] = useState<'scan' | 'lab'>('lab');
+  const [editServiceSubCategory, setEditServiceSubCategory] = useState('');
+  const [editServicePrice, setEditServicePrice] = useState(0);
+  const [editServiceDiscountPrice, setEditServiceDiscountPrice] = useState(0);
+  const [editServiceDescription, setEditServiceDescription] = useState('');
+  const [editServicePreparation, setEditServicePreparation] = useState('');
+  const [editServiceDuration, setEditServiceDuration] = useState('');
+  const [editServiceReportDelivery, setEditServiceReportDelivery] = useState('');
+  const [editServicePopular, setEditServicePopular] = useState(false);
+
   // Add service modal state
   const [isAddingService, setIsAddingService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
@@ -1008,6 +1022,53 @@ export default function AdminPanel({
     onUpdateServices(updated);
     setEditingServiceId(null);
     showToast('Catalog service pricing adjusted successfully!', 'success');
+  };
+
+  // Open full edit service modal
+  const handleOpenEditService = (service: DiagnosticService) => {
+    setEditServiceId(service.id);
+    setEditServiceName(service.name);
+    setEditServiceCategory(service.category);
+    setEditServiceSubCategory(service.subCategory);
+    setEditServicePrice(service.price);
+    setEditServiceDiscountPrice(service.discountPrice || service.price);
+    setEditServiceDescription(service.description);
+    setEditServicePreparation(service.preparation);
+    setEditServiceDuration(service.duration);
+    setEditServiceReportDelivery(service.reportDelivery);
+    setEditServicePopular(service.popular || false);
+    setIsEditingService(true);
+  };
+
+  // Save all edited service fields
+  const handleSaveEditService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editServiceName.trim()) {
+      showToast('Service name cannot be empty.', 'error');
+      return;
+    }
+    const updated = services.map(s => {
+      if (s.id === editServiceId) {
+        return {
+          ...s,
+          name: editServiceName.trim(),
+          category: editServiceCategory,
+          subCategory: editServiceSubCategory.trim() || (editServiceCategory === 'scan' ? 'MRI Scans' : 'General Blood Tests'),
+          price: editServicePrice,
+          discountPrice: editServiceDiscountPrice || undefined,
+          description: editServiceDescription.trim() || s.description,
+          preparation: editServicePreparation.trim() || s.preparation,
+          duration: editServiceDuration.trim() || s.duration,
+          reportDelivery: editServiceReportDelivery.trim() || s.reportDelivery,
+          popular: editServicePopular
+        };
+      }
+      return s;
+    });
+    onUpdateServices(updated);
+    setIsEditingService(false);
+    setEditServiceId(null);
+    showToast('Service details updated successfully!', 'success');
   };
 
   const handleDeleteService = (serviceId: string) => {
@@ -2193,68 +2254,33 @@ export default function AdminPanel({
                         
                         {/* Pricing column */}
                         <td className="py-3.5 px-4">
-                          {editingServiceId === srv.id ? (
-                            <input
-                              type="number"
-                              value={editingPrice}
-                              onChange={(e) => setEditingPrice(parseInt(e.target.value) || 0)}
-                              className="w-20 px-2 py-1 border border-slate-300 rounded text-xs bg-white focus:outline-none"
-                            />
-                          ) : (
-                            <span className="text-slate-500 font-mono">₹{srv.price}</span>
-                          )}
+                          <span className="text-slate-500 font-mono">₹{srv.price}</span>
                         </td>
 
                         <td className="py-3.5 px-4">
-                          {editingServiceId === srv.id ? (
-                            <input
-                              type="number"
-                              value={editingDiscountPrice}
-                              onChange={(e) => setEditingDiscountPrice(parseInt(e.target.value) || 0)}
-                              className="w-20 px-2 py-1 border border-slate-300 rounded text-xs bg-white focus:outline-none"
-                            />
-                          ) : (
-                            <span className="text-emerald-700 font-bold font-serif">₹{srv.discountPrice || srv.price}</span>
-                          )}
+                          <span className="text-emerald-700 font-bold font-serif">₹{srv.discountPrice || srv.price}</span>
                         </td>
 
                         <td className="py-3.5 px-4 text-slate-500 max-w-xs truncate">{srv.preparation}</td>
                         
                         <td className="py-3.5 px-5 text-right">
-                          {editingServiceId === srv.id ? (
-                            <div className="flex gap-2 justify-end">
-                              <button
-                                onClick={() => handleSavePrice(srv.id)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={() => setEditingServiceId(null)}
-                                className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-1.5 justify-end">
-                              <button
-                                onClick={() => handleStartEditPrice(srv)}
-                                className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
-                              >
-                                <Edit2 className="w-3 h-3 text-slate-500" />
-                                <span>Edit Rates</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteService(srv.id)}
-                                className="px-2.5 py-1.5 border border-slate-200 hover:border-rose-350 hover:bg-rose-50 hover:text-rose-700 text-slate-550 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
-                                title="Delete Service"
-                              >
-                                <Trash2 className="w-3 h-3 text-slate-400" />
-                                <span>Delete</span>
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex gap-1.5 justify-end">
+                            <button
+                              onClick={() => handleOpenEditService(srv)}
+                              className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Edit2 className="w-3 h-3 text-slate-500" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteService(srv.id)}
+                              className="px-2.5 py-1.5 border border-slate-200 hover:border-rose-350 hover:bg-rose-50 hover:text-rose-700 text-slate-550 font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                              title="Delete Service"
+                            >
+                              <Trash2 className="w-3 h-3 text-slate-400" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
                         </td>
 
                       </tr>
@@ -2264,6 +2290,163 @@ export default function AdminPanel({
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* Full Edit Service Modal */}
+        {isEditingService && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setIsEditingService(false)}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 border border-gray-200" onClick={(e) => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-serif font-bold text-slate-900">Edit Service Details</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Modify pricing, clinical preparation, delivery times and all other attributes.</p>
+                </div>
+                <button
+                  onClick={() => setIsEditingService(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handleSaveEditService} className="px-7 py-6 space-y-5">
+                {/* Row 1: Name + Category + Sub Category */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1 md:col-span-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Service Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editServiceName}
+                      onChange={(e) => setEditServiceName(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Category</label>
+                    <select
+                      value={editServiceCategory}
+                      onChange={(e) => setEditServiceCategory(e.target.value as 'scan' | 'lab')}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    >
+                      <option value="scan">Imaging (Radiology)</option>
+                      <option value="lab">Pathology (Lab)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Sub Category</label>
+                    <input
+                      type="text"
+                      placeholder={editServiceCategory === 'scan' ? 'e.g. MRI Scans, CT Scans' : 'e.g. Thyroid, Diabetic Profiles'}
+                      value={editServiceSubCategory}
+                      onChange={(e) => setEditServiceSubCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Pricing + Duration + Report Delivery */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Standard Price (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      value={editServicePrice}
+                      onChange={(e) => setEditServicePrice(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Discount Price (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editServiceDiscountPrice}
+                      onChange={(e) => setEditServiceDiscountPrice(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Scan/Test Duration</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 20-30 mins"
+                      value={editServiceDuration}
+                      onChange={(e) => setEditServiceDuration(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Report Delivery Time</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Same Day, 24 Hours"
+                      value={editServiceReportDelivery}
+                      onChange={(e) => setEditServiceReportDelivery(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: Description + Preparation */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Clinical Description</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Detail the clinical significance and use of this scan or blood test..."
+                      value={editServiceDescription}
+                      onChange={(e) => setEditServiceDescription(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold resize-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Preparation Instructions</label>
+                    <textarea
+                      rows={3}
+                      placeholder="e.g. 10-12 hours fasting mandatory, avoid metallic jewelry..."
+                      value={editServicePreparation}
+                      onChange={(e) => setEditServicePreparation(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: Popular + Actions */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editServicePopular}
+                      onChange={(e) => setEditServicePopular(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>Mark as Popular / Feature on Homepage</span>
+                  </label>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingService(false)}
+                      className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
