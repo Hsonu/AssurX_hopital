@@ -87,8 +87,8 @@ export default function App() {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
           return parsed.map((sec: any) => {
-            if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging') {
-              return { ...sec, title: 'Sonography ' };
+            if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging' || sec.title === 'Popular Sonography & Scan' || sec.title === 'Popular Sonography & USG Scans') {
+              return { ...sec, title: 'Popular Sonography' };
             }
             return sec;
           });
@@ -100,7 +100,7 @@ export default function App() {
     return [
       {
         id: 'section-scans',
-        title: 'Popular Sonography & Scan',
+        title: 'Popular Sonography',
         subtitle: 'Read by MD Radiologists • Same Day Reports',
         category: 'scan',
         viewAllTab: 'scans',
@@ -352,7 +352,7 @@ export default function App() {
   };
 
   // Filter scan subcategories
-  const scanSubCategories = ['All', 'MRI Scans', 'CT Scans', 'Ultrasound Scans', 'Digital X-Rays', 'Cardiology Tests', 'Bone Density'];
+  const scanSubCategories = ['All', 'General Sonography', 'Obstetric Sonography', 'Color Doppler Sonography', 'ECHO (Cardiac Sonography)', 'Interventional Sonography'];
   const filteredScans = services.filter(s => {
     if (s.category !== 'scan') return false;
     const matchesSub = selectedScanSub === 'All' || s.subCategory === selectedScanSub;
@@ -362,7 +362,7 @@ export default function App() {
   });
 
   // Filter lab subcategories
-  const labSubCategories = ['All', 'General Blood Tests', 'Hormone Assays', 'Diabetic Profiles', 'Cardiac Markers', 'Organ Screeners', 'Vitamins & Minerals'];
+  const labSubCategories = ['All', 'General Blood Tests', 'Hormone Assays', 'Diabetic Profiles', 'Cardiac Markers', 'Organ Screeners', 'Vitamins & Minerals', 'Infectious Diseases', 'Allergy & Autoimmune', 'Tumor Markers', 'Heavy Metals & Special'];
   const filteredLabs = services.filter(s => {
     if (s.category !== 'lab') return false;
     const matchesSub = selectedLabSub === 'All' || s.subCategory === selectedLabSub;
@@ -818,19 +818,18 @@ export default function App() {
         {/* TAB 2: SCANS AND IMAGING TAB */}
         {currentTab === 'scans' && (
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 space-y-8 animate-fade-in text-left">
-            <div className="space-y-2 border-b border-gray-150 pb-5">
-              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Popular <span className="italic font-medium text-[#2D006B]">Sonography & Scans</span></h1>
-              <p className="text-xs md:text-sm text-slate-500">Browse MRI, CT Scan, Ultrasound, Mammogram, Digital X-Ray and cardiology tests. Read by certified MD Radiologists.</p>
+            <div className="border-b border-gray-150 pb-5">
+              <h1 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Popular <span className="italic font-medium text-[#2D006B]">Sonography</span></h1>
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex flex-wrap gap-2 py-1 select-none">
+            <div className="flex flex-wrap gap-2 py-1 select-none overflow-x-auto scrollbar-none">
               {scanSubCategories.map((sub) => (
                 <button
                   key={sub}
                   onClick={() => setSelectedScanSub(sub)}
-                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${selectedScanSub === sub
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
+                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${selectedScanSub === sub
+                    ? 'bg-[#2D006B] text-white shadow-md shadow-purple-900/20'
                     : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
                     }`}
                 >
@@ -922,12 +921,12 @@ export default function App() {
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex flex-wrap gap-2 py-1 select-none">
+            <div className="flex flex-wrap gap-2 py-1 select-none overflow-x-auto scrollbar-none">
               {labSubCategories.map((sub) => (
                 <button
                   key={sub}
                   onClick={() => setSelectedLabSub(sub)}
-                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${selectedLabSub === sub
+                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${selectedLabSub === sub
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
                     : 'bg-white border border-gray-200 text-slate-600 hover:bg-slate-50'
                     }`}
