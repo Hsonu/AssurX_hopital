@@ -3,9 +3,9 @@ import {
   Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock,
   ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp,
   DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw,
-  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown
+  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning
 } from 'lucide-react';
-import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter } from '../types';
+import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter, PatientComplaint } from '../types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
 import { auth } from '../lib/firebase.ts';
 import { adminFetch } from '../lib/sessionGuard.ts';
@@ -15,9 +15,11 @@ const cleanBookingId = (id: string) => id.split('-').slice(0, 2).join('-');
 interface AdminPanelProps {
   currentTab: string;
   setCurrentTab: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'admin') => void;
-  bookingRefreshKey?: number; // Incremented when a new booking is made to trigger immediate refresh
+  bookingRefreshKey?: number;
   services: DiagnosticService[];
   onUpdateServices: (services: DiagnosticService[]) => void;
+  packages?: HealthPackage[];
+  onUpdatePackages?: (packages: HealthPackage[]) => void;
   sections?: HomepageSection[];
   onUpdateSections?: (sections: HomepageSection[]) => void;
   centers?: ClinicCenter[];
@@ -115,6 +117,8 @@ export default function AdminPanel({
   bookingRefreshKey = 0,
   services,
   onUpdateServices,
+  packages = [],
+  onUpdatePackages = () => { },
   sections = [],
   onUpdateSections = () => { },
   centers = [],
@@ -236,7 +240,28 @@ export default function AdminPanel({
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches'>('dispatcher');
+  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages'>('dispatcher');
+
+  // Complaints state
+  const [complaints, setComplaints] = useState<PatientComplaint[]>([]);
+  const [complaintFilter, setComplaintFilter] = useState<'all' | PatientComplaint['status']>('all');
+  const [editingComplaintId, setEditingComplaintId] = useState<string | null>(null);
+  const [complaintAdminNote, setComplaintAdminNote] = useState('');
+
+  // Packages Manager State
+  const [isAddingPackage, setIsAddingPackage] = useState(false);
+  const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
+  const [pkgName, setPkgName] = useState('');
+  const [pkgPrice, setPkgPrice] = useState('');
+  const [pkgDiscountPrice, setPkgDiscountPrice] = useState('');
+  const [pkgDescription, setPkgDescription] = useState('');
+  const [pkgTestsCount, setPkgTestsCount] = useState('');
+  const [pkgIncludedTests, setPkgIncludedTests] = useState('');
+  const [pkgIdealFor, setPkgIdealFor] = useState('');
+  const [pkgFrequency, setPkgFrequency] = useState('');
+  const [pkgPreparation, setPkgPreparation] = useState('');
+  const [pkgPopular, setPkgPopular] = useState(false);
+  const [pkgSearch, setPkgSearch] = useState('');
   const [applications, setApplications] = useState<any[]>([]);
 
   // Sections Manager State
@@ -262,6 +287,102 @@ export default function AdminPanel({
     setSecServiceIds([]);
     setEditingSectionId(null);
     setIsAddingSection(false);
+  };
+
+  const handleAddPackageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pkgName.trim()) {
+      showToast('Please enter a package name.', 'error');
+      return;
+    }
+
+    const generatedId = `pkg-${pkgName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
+
+    const newPkg: HealthPackage = {
+      id: generatedId,
+      name: pkgName.trim(),
+      price: Number(pkgPrice) || 0,
+      discountPrice: pkgDiscountPrice ? Number(pkgDiscountPrice) : undefined,
+      description: pkgDescription.trim() || `${pkgName.trim()} health checkup package.`,
+      testsCount: Number(pkgTestsCount) || 0,
+      includedTests: pkgIncludedTests.split(',').map(t => t.trim()).filter(Boolean),
+      idealFor: pkgIdealFor.trim() || 'Men & Women',
+      frequency: pkgFrequency.trim() || 'Once a year',
+      preparation: pkgPreparation.trim() || 'No specific preparation required.',
+      popular: pkgPopular
+    };
+
+    const updated = [...packages, newPkg];
+    onUpdatePackages(updated);
+
+    // Reset Form
+    setPkgName('');
+    setPkgPrice('');
+    setPkgDiscountPrice('');
+    setPkgDescription('');
+    setPkgTestsCount('');
+    setPkgIncludedTests('');
+    setPkgIdealFor('');
+    setPkgFrequency('');
+    setPkgPreparation('');
+    setPkgPopular(false);
+    setIsAddingPackage(false);
+
+    showToast('New health package added successfully!', 'success');
+  };
+
+  const handleEditPackageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pkgName.trim()) {
+      showToast('Please enter a package name.', 'error');
+      return;
+    }
+
+    const updated = packages.map(pkg => {
+      if (pkg.id === editingPackageId) {
+        return {
+          ...pkg,
+          name: pkgName.trim(),
+          price: Number(pkgPrice) || 0,
+          discountPrice: pkgDiscountPrice ? Number(pkgDiscountPrice) : undefined,
+          description: pkgDescription.trim(),
+          testsCount: Number(pkgTestsCount) || 0,
+          includedTests: pkgIncludedTests.split(',').map(t => t.trim()).filter(Boolean),
+          idealFor: pkgIdealFor.trim(),
+          frequency: pkgFrequency.trim(),
+          preparation: pkgPreparation.trim(),
+          popular: pkgPopular
+        };
+      }
+      return pkg;
+    });
+
+    onUpdatePackages(updated);
+    setEditingPackageId(null);
+    setIsAddingPackage(false);
+
+    // Reset Form
+    setPkgName('');
+    setPkgPrice('');
+    setPkgDiscountPrice('');
+    setPkgDescription('');
+    setPkgTestsCount('');
+    setPkgIncludedTests('');
+    setPkgIdealFor('');
+    setPkgFrequency('');
+    setPkgPreparation('');
+    setPkgPopular(false);
+
+    showToast('Health package updated successfully!', 'success');
+  };
+
+  const handleDeletePackage = (id: string) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this health package?");
+    if (confirmDelete) {
+      const updated = packages.filter(p => p.id !== id);
+      onUpdatePackages(updated);
+      showToast('Health package deleted successfully!', 'success');
+    }
   };
 
   const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1568,6 +1689,16 @@ export default function AdminPanel({
         </button>
 
         <button
+          onClick={() => setActiveTab('packages')}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'packages' ? 'text-purple-800 font-black' : 'hover:text-slate-700'
+            }`}
+        >
+          <ClipboardList className="w-4 h-4 text-purple-600" />
+          <span>Health Packages ({packages.length})</span>
+          {activeTab === 'packages' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 rounded-full"></span>}
+        </button>
+
+        <button
           onClick={() => setActiveTab('analytics')}
           className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'analytics' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
             }`}
@@ -1605,6 +1736,20 @@ export default function AdminPanel({
           <Building className="w-4 h-4 text-emerald-655" />
           <span>Branches Settings ({centers.length})</span>
           {activeTab === 'branches' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full"></span>}
+        </button>
+
+        <button
+          onClick={() => {
+            const stored = JSON.parse(localStorage.getItem('assurx_complaints') || '[]');
+            setComplaints(stored);
+            setActiveTab('complaints');
+          }}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'complaints' ? 'text-amber-800 font-black' : 'hover:text-slate-700'
+            }`}
+        >
+          <MessageSquareWarning className="w-4 h-4 text-amber-600" />
+          <span>Patient Complaints ({complaints.length})</span>
+          {activeTab === 'complaints' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 rounded-full"></span>}
         </button>
       </div>
 
@@ -2435,6 +2580,293 @@ export default function AdminPanel({
                   </div>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 8.5: Health Packages Manager */}
+        {activeTab === 'packages' && (
+          <div className="space-y-6">
+
+            {/* Header / Search Packages */}
+            <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm">Health Checkup Packages</h3>
+                <p className="text-[11px] text-slate-400">Manage comprehensive medical panels, ideal age groups, fasting/prep rules and pricing.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => {
+                    setIsAddingPackage(true);
+                    setEditingPackageId(null);
+                    setPkgName('');
+                    setPkgPrice('1500');
+                    setPkgDiscountPrice('690');
+                    setPkgDescription('');
+                    setPkgTestsCount('10');
+                    setPkgIncludedTests('');
+                    setPkgIdealFor('Men & Women, 18-80 years');
+                    setPkgFrequency('Once in 6 months');
+                    setPkgPreparation('8-12 hours fasting required');
+                    setPkgPopular(false);
+                  }}
+                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create Package</span>
+                </button>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search health packages..."
+                    value={pkgSearch}
+                    onChange={(e) => setPkgSearch(e.target.value)}
+                    className="w-full pl-8.5 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-purple-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Add / Edit Package Form Section */}
+            {(isAddingPackage || editingPackageId) && (
+              <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 md:p-6 space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <h4 className="font-bold text-slate-850 text-xs md:text-sm flex items-center gap-1.5">
+                    <Plus className="w-4 h-4 text-purple-600" />
+                    <span>{editingPackageId ? 'Edit Health Package' : 'Create New Health Package'}</span>
+                  </h4>
+                  <button
+                    onClick={() => {
+                      setIsAddingPackage(false);
+                      setEditingPackageId(null);
+                    }}
+                    className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={editingPackageId ? handleEditPackageSubmit : handleAddPackageSubmit} className="space-y-4 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Name */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Package Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. AssurX Fever Profile, Sugar Plus"
+                        value={pkgName}
+                        onChange={(e) => setPkgName(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold"
+                      />
+                    </div>
+                    {/* Price */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Original Price (₹) *</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={pkgPrice}
+                        onChange={(e) => setPkgPrice(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold"
+                      />
+                    </div>
+                    {/* Discount Price */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Offer/Discount Price (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={pkgDiscountPrice}
+                        onChange={(e) => setPkgDiscountPrice(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Tests Count */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Tests Included Count *</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={pkgTestsCount}
+                        onChange={(e) => setPkgTestsCount(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold"
+                      />
+                    </div>
+                    {/* Ideal For */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Ideal For *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Men & Women, 18-80 years"
+                        value={pkgIdealFor}
+                        onChange={(e) => setPkgIdealFor(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold"
+                      />
+                    </div>
+                    {/* Frequency */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Recommended Frequency *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Once in 6 months, Once a year"
+                        value={pkgFrequency}
+                        onChange={(e) => setPkgFrequency(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Included Tests (comma separated) */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Included Tests (Comma separated list) *</label>
+                      <textarea
+                        rows={2}
+                        required
+                        placeholder="e.g. Complete Blood Count (CBC), Fasting Blood Sugar (FBS), Lipid Panel, Serum Creatinine"
+                        value={pkgIncludedTests}
+                        onChange={(e) => setPkgIncludedTests(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold resize-none"
+                      />
+                    </div>
+                    {/* Preparation */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Preparation Instructions *</label>
+                      <textarea
+                        rows={2}
+                        required
+                        placeholder="e.g. 8-12 hours fasting required, morning sample preferred"
+                        value={pkgPreparation}
+                        onChange={(e) => setPkgPreparation(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Clinical Description *</label>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="e.g. Comprehensive screening for metabolic disorders, organ function, sugar profiles and blood markers."
+                      value={pkgDescription}
+                      onChange={(e) => setPkgDescription(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-semibold resize-none"
+                    />
+                  </div>
+
+                  {/* Popular checkbox and Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={pkgPopular}
+                        onChange={(e) => setPkgPopular(e.target.checked)}
+                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                      />
+                      <span>Mark as bestseller / Feature on Homepage</span>
+                    </label>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingPackage(false);
+                          setEditingPackageId(null);
+                        }}
+                        className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-purple-100 cursor-pointer"
+                      >
+                        {editingPackageId ? 'Save Changes' : 'Create Package'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Packages List cards layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {packages
+                .filter(p => !pkgSearch || p.name.toLowerCase().includes(pkgSearch.toLowerCase()))
+                .map(pkg => (
+                  <div key={pkg.id} className="bg-white border border-gray-200 p-5 rounded-3xl flex flex-col justify-between hover:shadow-md transition-all text-left">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          {pkg.popular && (
+                            <span className="bg-purple-100 text-purple-700 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full block w-max mb-1.5">
+                              Bestseller Checkup
+                            </span>
+                          )}
+                          <h4 className="font-bold text-slate-800 text-sm">{pkg.name}</h4>
+                          <span className="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider block mt-0.5">{pkg.testsCount} Tests Included</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-black text-slate-800 block">₹{pkg.discountPrice || pkg.price}</span>
+                          {pkg.discountPrice && (
+                            <span className="text-[10px] text-slate-400 line-through block">₹{pkg.price}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 font-medium">{pkg.description}</p>
+                      
+                      <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5 text-[10px] text-slate-655 font-semibold">
+                        <div><span className="font-bold text-slate-500">Ideal For:</span> {pkg.idealFor}</div>
+                        <div><span className="font-bold text-slate-500">Preparation:</span> {pkg.preparation}</div>
+                        <div><span className="font-bold text-slate-500">Frequency:</span> {pkg.frequency}</div>
+                        <div><span className="font-bold text-slate-500">Tests:</span> <span className="line-clamp-2">{pkg.includedTests.join(', ')}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end border-t border-slate-100 pt-3 mt-4">
+                      <button
+                        onClick={() => {
+                          setEditingPackageId(pkg.id);
+                          setPkgName(pkg.name);
+                          setPkgPrice(pkg.price.toString());
+                          setPkgDiscountPrice(pkg.discountPrice?.toString() || '');
+                          setPkgDescription(pkg.description);
+                          setPkgTestsCount(pkg.testsCount.toString());
+                          setPkgIncludedTests(pkg.includedTests.join(', '));
+                          setPkgIdealFor(pkg.idealFor);
+                          setPkgFrequency(pkg.frequency);
+                          setPkgPreparation(pkg.preparation);
+                          setPkgPopular(!!pkg.popular);
+                          setIsAddingPackage(false);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 font-semibold"
+                      >
+                        <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeletePackage(pkg.id)}
+                        className="px-3.5 py-1.5 border border-rose-100 hover:bg-rose-50 text-rose-600 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 font-semibold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
         )}
@@ -3384,6 +3816,225 @@ export default function AdminPanel({
 
           </div>
         )}
+
+        {/* Tab 9: Patient Complaints Manager */}
+        {activeTab === 'complaints' && (() => {
+          const filteredComplaints = complaintFilter === 'all'
+            ? complaints
+            : complaints.filter(c => c.status === complaintFilter);
+
+          const statusColors: Record<PatientComplaint['status'], string> = {
+            open: 'bg-rose-50 text-rose-700 border-rose-200',
+            in_progress: 'bg-amber-50 text-amber-700 border-amber-200',
+            resolved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            dismissed: 'bg-slate-100 text-slate-500 border-slate-200',
+          };
+          const statusLabels: Record<PatientComplaint['status'], string> = {
+            open: 'Open',
+            in_progress: 'In Progress',
+            resolved: 'Resolved',
+            dismissed: 'Dismissed',
+          };
+          const categoryLabels: Record<PatientComplaint['category'], string> = {
+            service_quality: 'Service Quality',
+            staff_behavior: 'Staff Behavior',
+            billing: 'Billing Issue',
+            report_delay: 'Report Delay',
+            cleanliness: 'Cleanliness',
+            other: 'Other',
+          };
+
+          const handleStatusChange = (id: string, newStatus: PatientComplaint['status']) => {
+            const updated = complaints.map(c => c.id === id ? { ...c, status: newStatus } : c);
+            setComplaints(updated);
+            localStorage.setItem('assurx_complaints', JSON.stringify(updated));
+          };
+
+          const handleSaveNote = (id: string) => {
+            const updated = complaints.map(c => c.id === id ? { ...c, adminNotes: complaintAdminNote } : c);
+            setComplaints(updated);
+            localStorage.setItem('assurx_complaints', JSON.stringify(updated));
+            setEditingComplaintId(null);
+            setComplaintAdminNote('');
+          };
+
+          const handleDeleteComplaint = (id: string) => {
+            const updated = complaints.filter(c => c.id !== id);
+            setComplaints(updated);
+            localStorage.setItem('assurx_complaints', JSON.stringify(updated));
+          };
+
+          const openCount = complaints.filter(c => c.status === 'open').length;
+          const inProgressCount = complaints.filter(c => c.status === 'in_progress').length;
+          const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
+
+          return (
+            <div className="space-y-5 animate-fade-in">
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-center">
+                  <p className="text-2xl font-black text-rose-700">{openCount}</p>
+                  <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mt-1">Open</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
+                  <p className="text-2xl font-black text-amber-700">{inProgressCount}</p>
+                  <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mt-1">In Progress</p>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
+                  <p className="text-2xl font-black text-emerald-700">{resolvedCount}</p>
+                  <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mt-1">Resolved</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
+                  <p className="text-2xl font-black text-slate-700">{complaints.length}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Total</p>
+                </div>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex flex-wrap gap-2">
+                {(['all', 'open', 'in_progress', 'resolved', 'dismissed'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setComplaintFilter(f)}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+                      complaintFilter === f
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    {f === 'all' ? 'All' : f === 'in_progress' ? 'In Progress' : f.charAt(0).toUpperCase() + f.slice(1)} ({f === 'all' ? complaints.length : complaints.filter(c => c.status === f).length})
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    const stored = JSON.parse(localStorage.getItem('assurx_complaints') || '[]');
+                    setComplaints(stored);
+                  }}
+                  className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-white text-slate-500 border-slate-200 hover:border-slate-400 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" /> Refresh
+                </button>
+              </div>
+
+              {/* Complaints List */}
+              {filteredComplaints.length === 0 ? (
+                <div className="py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center mx-auto mb-4">
+                    <MessageSquareWarning className="w-7 h-7 text-slate-300" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-400">No Complaints</h4>
+                  <p className="text-[11px] text-slate-400 mt-1">No patient complaints found for this filter.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredComplaints.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(complaint => (
+                    <div key={complaint.id} className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                      {/* Complaint Header */}
+                      <div className="p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${statusColors[complaint.status]}`}>
+                              {statusLabels[complaint.status]}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                              {categoryLabels[complaint.category]}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-semibold">
+                              {complaint.branch} Branch
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-slate-800 text-xs">{complaint.subject}</h4>
+                          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed line-clamp-2">{complaint.description}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                          <span className="text-[9px] text-slate-400 font-semibold">
+                            {new Date(complaint.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          <span className="text-[9px] text-slate-400">
+                            {new Date(complaint.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Patient Info Row */}
+                      <div className="px-4 py-2.5 bg-slate-50/70 border-t border-slate-100 flex flex-wrap gap-x-6 gap-y-1.5 text-[10px]">
+                        <span><strong className="text-slate-500">Patient:</strong> <span className="text-slate-700 font-semibold">{complaint.patientName}</span></span>
+                        <span><strong className="text-slate-500">Phone:</strong> <span className="text-slate-700 font-semibold">{complaint.phone}</span></span>
+                        {complaint.email && <span><strong className="text-slate-500">Email:</strong> <span className="text-slate-700 font-semibold">{complaint.email}</span></span>}
+                        {complaint.bookingId && <span><strong className="text-slate-500">Booking:</strong> <span className="text-teal-700 font-bold">{complaint.bookingId}</span></span>}
+                        <span><strong className="text-slate-500">ID:</strong> <span className="text-slate-400 font-mono text-[9px]">{complaint.id}</span></span>
+                      </div>
+
+                      {/* Admin Notes */}
+                      {complaint.adminNotes && editingComplaintId !== complaint.id && (
+                        <div className="px-4 py-2.5 bg-blue-50/50 border-t border-blue-100">
+                          <p className="text-[10px] text-blue-800"><strong>Admin Note:</strong> {complaint.adminNotes}</p>
+                        </div>
+                      )}
+
+                      {/* Editing Admin Note */}
+                      {editingComplaintId === complaint.id && (
+                        <div className="px-4 py-3 bg-blue-50/50 border-t border-blue-100 space-y-2">
+                          <label className="block text-[10px] font-bold text-blue-700 uppercase tracking-wider">Admin Note</label>
+                          <textarea
+                            rows={2}
+                            value={complaintAdminNote}
+                            onChange={e => setComplaintAdminNote(e.target.value)}
+                            placeholder="Add internal notes about this complaint..."
+                            className="w-full px-3 py-2 border border-blue-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white resize-none"
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => { setEditingComplaintId(null); setComplaintAdminNote(''); }}
+                              className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[10px] font-bold rounded-lg transition-all cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleSaveNote(complaint.id)}
+                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition-all cursor-pointer"
+                            >
+                              Save Note
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions Row */}
+                      <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                        <select
+                          value={complaint.status}
+                          onChange={e => handleStatusChange(complaint.id, e.target.value as PatientComplaint['status'])}
+                          className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 cursor-pointer"
+                        >
+                          <option value="open">Open</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="dismissed">Dismissed</option>
+                        </select>
+                        <button
+                          onClick={() => {
+                            setEditingComplaintId(complaint.id);
+                            setComplaintAdminNote(complaint.adminNotes || '');
+                          }}
+                          className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-blue-50 hover:border-blue-200 text-slate-600 hover:text-blue-700 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" /> Note
+                        </button>
+                        <button
+                          onClick={() => handleDeleteComplaint(complaint.id)}
+                          className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-700 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ml-auto"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       </div>
 

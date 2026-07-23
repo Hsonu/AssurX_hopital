@@ -111,7 +111,7 @@ export default function Header({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={onSearchFocus}
-              className="w-full pl-8 pr-3 py-1.5 border border-white/20 rounded-full text-xs bg-white/10 hover:bg-white/15 focus:bg-white focus:text-slate-900 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white transition-all placeholder:text-white/60 text-white font-semibold"
+              className="w-full pl-8 pr-3 py-1.5 border border-white/20 rounded-full text-xs bg-white/10 hover:bg-white/15 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-[#80CBC4]/25 focus:border-[#80CBC4] transition-all placeholder:text-white/60 text-white font-semibold"
             />
             {searchQuery && (
               <button

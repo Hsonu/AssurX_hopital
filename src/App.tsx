@@ -135,6 +135,24 @@ export default function App() {
     setServices(DIAGNOSTIC_SERVICES);
   }, []);
 
+  // Dynamic health packages loaded from localStorage (synced with admin packages manager)
+  const [packages, setPackages] = useState<HealthPackage[]>(() => {
+    const cached = localStorage.getItem('assurx_packages');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        // use default if parse failed
+      }
+    }
+    return HEALTH_PACKAGES;
+  });
+
+  // Sync packages to localStorage
+  useEffect(() => {
+    localStorage.setItem('assurx_packages', JSON.stringify(packages));
+  }, [packages]);
+
   // Dynamic clinic centers loaded from localStorage (synced with admin branch manager)
   const [centers, setCenters] = useState<ClinicCenter[]>(() => {
     const cached = localStorage.getItem('assurx_centers');
@@ -378,7 +396,7 @@ export default function App() {
 
   const globalSearchMatches = searchQuery.trim() ? [
     ...services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
-    ...HEALTH_PACKAGES.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    ...packages.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
   ] : [];
 
   return (
@@ -624,7 +642,7 @@ export default function App() {
             )}
 
             {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
-            {HEALTH_PACKAGES.length > 0 && (
+            {packages.length > 0 && (
               <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
                 {/* background ambient blur dots */}
                 <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
@@ -640,7 +658,7 @@ export default function App() {
 
                   {/* Horizontal slider of packages */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                    {HEALTH_PACKAGES.map((pkg) => {
+                    {packages.map((pkg) => {
                       const inCart = cart.some(ci => ci.itemId === pkg.id);
                       return (
                         <div
@@ -1025,7 +1043,7 @@ export default function App() {
 
             {/* Packages List cards layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              {HEALTH_PACKAGES.map((pkg) => {
+              {packages.map((pkg) => {
                 const inCart = cart.some(ci => ci.itemId === pkg.id);
                 return (
                   <div
@@ -1143,6 +1161,8 @@ export default function App() {
             bookingRefreshKey={bookingRefreshKey}
             services={services}
             onUpdateServices={setServices}
+            packages={packages}
+            onUpdatePackages={setPackages}
             sections={sections}
             onUpdateSections={setSections}
             centers={centers}

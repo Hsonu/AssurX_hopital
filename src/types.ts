@@ -94,4 +94,17 @@ export interface ClinicCenter {
   phone: string;
 }
 
-
+export interface PatientComplaint {
+  id: string;
+  patientName: string;
+  phone: string;
+  email: string;
+  bookingId?: string;
+  category: 'service_quality' | 'staff_behavior' | 'billing' | 'report_delay' | 'cleanliness' | 'other';
+  subject: string;
+  description: string;
+  branch: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'dismissed';
+  timestamp: string;
+  adminNotes?: string;
+}
