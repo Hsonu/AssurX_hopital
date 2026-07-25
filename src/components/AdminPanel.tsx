@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock,
   ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp,
-  DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw,
+  DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw, MapPin,
   FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning
 } from 'lucide-react';
-import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter, PatientComplaint } from '../types';
+import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter, PatientComplaint, Doctor } from '../types';
 import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
 import { auth } from '../lib/firebase.ts';
 import { adminFetch } from '../lib/sessionGuard.ts';
@@ -24,6 +24,8 @@ interface AdminPanelProps {
   onUpdateSections?: (sections: HomepageSection[]) => void;
   centers?: ClinicCenter[];
   onUpdateCenters?: (centers: ClinicCenter[]) => void;
+  doctors?: Doctor[];
+  onUpdateDoctors?: (doctors: Doctor[]) => void;
 }
 
 // Default pre-seeded clinical data for our laboratory reports
@@ -122,7 +124,9 @@ export default function AdminPanel({
   sections = [],
   onUpdateSections = () => { },
   centers = [],
-  onUpdateCenters = () => { }
+  onUpdateCenters = () => { },
+  doctors = [],
+  onUpdateDoctors = () => { }
 }: AdminPanelProps) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     const hasFlag = localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
@@ -240,7 +244,7 @@ export default function AdminPanel({
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages'>('dispatcher');
+  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages' | 'doctors'>('dispatcher');
 
   // Complaints state
   const [complaints, setComplaints] = useState<PatientComplaint[]>([]);
@@ -263,6 +267,30 @@ export default function AdminPanel({
   const [pkgPopular, setPkgPopular] = useState(false);
   const [pkgSearch, setPkgSearch] = useState('');
   const [applications, setApplications] = useState<any[]>([]);
+
+  // Doctor Manager State
+  const [isAddingDoctor, setIsAddingDoctor] = useState(false);
+  const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
+  const [docName, setDocName] = useState('');
+  const [docSpecialization, setDocSpecialization] = useState('Cardiologist');
+  const [docExperience, setDocExperience] = useState('');
+  const [docQualification, setDocQualification] = useState('');
+  const [docTiming, setDocTiming] = useState('09:00 AM - 01:00 PM');
+  const [docBranch, setDocBranch] = useState('Malad');
+  const [docAvatar, setDocAvatar] = useState('');
+  const [docSearch, setDocSearch] = useState('');
+
+  const resetDoctorForm = () => {
+    setDocName('');
+    setDocSpecialization('Cardiologist');
+    setDocExperience('');
+    setDocQualification('');
+    setDocTiming('09:00 AM - 01:00 PM');
+    setDocBranch('Malad');
+    setDocAvatar('');
+    setEditingDoctorId(null);
+    setIsAddingDoctor(false);
+  };
 
   // Sections Manager State
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
@@ -398,6 +426,28 @@ export default function AdminPanel({
         if (typeof result === 'string') {
           setSecBannerImage(result);
           showToast('Image uploaded successfully!', 'success');
+        }
+      };
+      reader.onerror = () => {
+        showToast('Failed to read image file.', 'error');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDoctorAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Image size should be less than 2MB.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result === 'string') {
+          setDocAvatar(result);
+          showToast('Doctor image uploaded successfully!', 'success');
         }
       };
       reader.onerror = () => {
@@ -549,6 +599,79 @@ export default function AdminPanel({
         const updated = sections.filter(s => s.id !== id);
         onUpdateSections(updated);
         showToast('Homepage section deleted successfully!', 'success');
+      }
+    );
+  };
+
+  const handleAddDoctorSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docName.trim()) {
+      showToast('Please enter a doctor name.', 'error');
+      return;
+    }
+    const newDoc: Doctor = {
+      id: `doc-${Date.now()}`,
+      name: docName.trim(),
+      specialization: docSpecialization,
+      experience: parseInt(docExperience, 10) || 0,
+      qualification: docQualification.trim() || 'MBBS',
+      timing: docTiming.trim() || '09:00 AM - 01:00 PM',
+      branch: docBranch,
+      avatar: docAvatar.trim() || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'
+    };
+    const updated = [...doctors, newDoc];
+    onUpdateDoctors(updated);
+    resetDoctorForm();
+    showToast('New doctor added successfully!', 'success');
+  };
+
+  const handleEditDoctorSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docName.trim()) {
+      showToast('Please enter a doctor name.', 'error');
+      return;
+    }
+    const updated = doctors.map(d => {
+      if (d.id === editingDoctorId) {
+        return {
+          ...d,
+          name: docName.trim(),
+          specialization: docSpecialization,
+          experience: parseInt(docExperience, 10) || 0,
+          qualification: docQualification.trim(),
+          timing: docTiming.trim(),
+          branch: docBranch,
+          avatar: docAvatar.trim() || d.avatar
+        };
+      }
+      return d;
+    });
+    onUpdateDoctors(updated);
+    resetDoctorForm();
+    showToast('Doctor profile updated successfully!', 'success');
+  };
+
+  const handleOpenEditDoctor = (doc: Doctor) => {
+    setEditingDoctorId(doc.id);
+    setDocName(doc.name);
+    setDocSpecialization(doc.specialization);
+    setDocExperience(String(doc.experience));
+    setDocQualification(doc.qualification);
+    setDocTiming(doc.timing);
+    setDocBranch(doc.branch);
+    setDocAvatar(doc.avatar);
+    setIsAddingDoctor(true);
+  };
+
+  const handleDeleteDoctor = (id: string) => {
+    triggerConfirm(
+      'Delete Doctor Profile',
+      'Are you sure you want to delete this doctor profile? This will permanently remove them from the public directory.',
+      'Delete Profile',
+      () => {
+        const updated = doctors.filter(d => d.id !== id);
+        onUpdateDoctors(updated);
+        showToast('Doctor profile deleted successfully.', 'success');
       }
     );
   };
@@ -1739,6 +1862,16 @@ export default function AdminPanel({
         </button>
 
         <button
+          onClick={() => setActiveTab('doctors')}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'doctors' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
+            }`}
+        >
+          <UserCheck className="w-4 h-4 text-teal-650" />
+          <span>Doctors Directory ({doctors.length})</span>
+          {activeTab === 'doctors' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-700 rounded-full"></span>}
+        </button>
+
+        <button
           onClick={() => {
             const stored = JSON.parse(localStorage.getItem('assurx_complaints') || '[]');
             setComplaints(stored);
@@ -1916,10 +2049,10 @@ export default function AdminPanel({
                                 value={booking.bookingStatus}
                                 onChange={(e) => handleUpdateStatus(booking.id, e.target.value as any)}
                                 className={`px-2.5 py-1.5 rounded-lg font-bold text-[10.5px] border cursor-pointer focus:outline-none ${booking.bookingStatus === 'booked' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                      booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                        booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 font-extrabold' :
-                                          'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                    booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                      booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 font-extrabold' :
+                                        'bg-emerald-50 text-emerald-800 border-emerald-200'
                                   }`}
                               >
                                 <option value="booked">Confirmed</option>
@@ -2826,7 +2959,7 @@ export default function AdminPanel({
                       </div>
 
                       <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 font-medium">{pkg.description}</p>
-                      
+
                       <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5 text-[10px] text-slate-655 font-semibold">
                         <div><span className="font-bold text-slate-500">Ideal For:</span> {pkg.idealFor}</div>
                         <div><span className="font-bold text-slate-500">Preparation:</span> {pkg.preparation}</div>
@@ -3060,7 +3193,7 @@ export default function AdminPanel({
                           </td>
                           <td className="py-4 px-4">
                             <span className={`text-[10px] font-extrabold uppercase block ${prx.status === 'pending_call' ? 'text-amber-600' :
-                                prx.status === 'called' ? 'text-indigo-600' : 'text-emerald-600'
+                              prx.status === 'called' ? 'text-indigo-600' : 'text-emerald-600'
                               }`}>
                               {prx.status === 'pending_call' ? '● Pending Call' :
                                 prx.status === 'called' ? '● Called & Handled' : '● Converted to Booking'}
@@ -3190,10 +3323,10 @@ export default function AdminPanel({
                           <td className="p-4 whitespace-nowrap">
                             <span
                               className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${appItem.status === 'shortlisted'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : appItem.status === 'rejected'
-                                    ? 'bg-rose-100 text-rose-800'
-                                    : 'bg-amber-100 text-amber-800'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : appItem.status === 'rejected'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
                                 }`}
                             >
                               {appItem.status || 'pending'}
@@ -3896,11 +4029,10 @@ export default function AdminPanel({
                   <button
                     key={f}
                     onClick={() => setComplaintFilter(f)}
-                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
-                      complaintFilter === f
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
-                    }`}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${complaintFilter === f
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
+                      }`}
                   >
                     {f === 'all' ? 'All' : f === 'in_progress' ? 'In Progress' : f.charAt(0).toUpperCase() + f.slice(1)} ({f === 'all' ? complaints.length : complaints.filter(c => c.status === f).length})
                   </button>
@@ -4036,542 +4168,831 @@ export default function AdminPanel({
           );
         })()}
 
-      </div>
-
-      {/* --- EDIT PATIENT DETAILS MODAL POPUP --- */}
-      {editingPatientBooking && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-
-            {/* Modal Title */}
-            <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+        {activeTab === 'doctors' && (
+          <div className="space-y-6 animate-fade-in text-left">
+            {/* Header controls row */}
+            <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
               <div>
-                <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">CLINICAL DATABASE RECORDS</span>
-                <h3 className="text-lg font-serif font-bold text-slate-900">Modify Patient details: {cleanBookingId(editingPatientBooking.bookingId)}</h3>
+                <h3 className="font-bold text-slate-800 text-sm">Doctors Directory</h3>
+                <p className="text-[11px] text-slate-400">Add, edit, or remove clinical medical practitioners from your homepage patient booking listings.</p>
               </div>
               <button
-                onClick={() => setEditingPatientBooking(null)}
-                className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                onClick={() => {
+                  resetDoctorForm();
+                  setIsAddingDoctor(true);
+                }}
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm animate-fade-in"
               >
-                <X className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add New Doctor</span>
               </button>
             </div>
 
-            {/* Modal Scrollable Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-semibold text-slate-700">
-
-              {/* Patient Name */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Patient Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Patient Name"
-                  value={editedPatientName}
-                  onChange={(e) => setEditedPatientName(e.target.value)}
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Age */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Age (Years)</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    max={120}
-                    value={editedPatientAge}
-                    onChange={(e) => setEditedPatientAge(parseInt(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
-                  />
-                </div>
-
-                {/* Gender */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Gender</label>
-                  <select
-                    value={editedPatientGender}
-                    onChange={(e) => setEditedPatientGender(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+            {/* Add / Edit Doctor Form Card */}
+            {isAddingDoctor && (
+              <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 md:p-6 space-y-4 animate-fade-in">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <h4 className="font-bold text-slate-855 text-xs md:text-sm flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-emerald-650" />
+                    <span>{editingDoctorId ? 'Edit Doctor Profile' : 'Register New Doctor'}</span>
+                  </h4>
+                  <button
+                    onClick={resetDoctorForm}
+                    className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-655 transition-colors cursor-pointer"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
+
+                <form onSubmit={editingDoctorId ? handleEditDoctorSubmit : handleAddDoctorSubmit} className="space-y-4 font-semibold text-xs text-slate-700">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Doctor Name */}
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Doctor Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Dr. Alok Sharma"
+                        value={docName}
+                        onChange={(e) => setDocName(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    {/* Specialization */}
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Specialization</label>
+                      <select
+                        value={docSpecialization}
+                        onChange={(e) => setDocSpecialization(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800 cursor-pointer"
+                      >
+                        <option value="Cardiologist">Cardiologist</option>
+                        <option value="Gynecologist">Gynecologist</option>
+                        <option value="Neurologist">Neurologist</option>
+                        <option value="Pediatrician">Pediatrician</option>
+                        <option value="General Physician">General Physician</option>
+                        <option value="Dermatologist">Dermatologist</option>
+                        <option value="Radiologist">Radiologist</option>
+                        <option value="Oncologist">Oncologist</option>
+                      </select>
+                    </div>
+
+                    {/* Qualification */}
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Qualification</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. MD, DM (Cardiology)"
+                        value={docQualification}
+                        onChange={(e) => setDocQualification(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    {/* Experience (Years) */}
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Experience (in Years)</label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max="80"
+                        placeholder="e.g. 15"
+                        value={docExperience}
+                        onChange={(e) => setDocExperience(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    {/* Timings */}
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Consulting Hours</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 09:00 AM - 01:00 PM"
+                        value={docTiming}
+                        onChange={(e) => setDocTiming(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    {/* Branch availability */}
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-455 block">Clinic Branch Location</label>
+                      <select
+                        value={docBranch}
+                        onChange={(e) => setDocBranch(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-850 cursor-pointer"
+                      >
+                        {centers.map(c => (
+                          <option key={c.city} value={c.city}>{c.city}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Avatar URL & Upload */}
+                    <div className="space-y-1 md:col-span-3 text-left">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Avatar Image URL or Upload</label>
+                      <div className="flex gap-3 items-center">
+                        <div className="flex-1">
+                          <input
+                            type="url"
+                            placeholder="Paste image address or use upload button"
+                            value={docAvatar}
+                            onChange={(e) => setDocAvatar(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold font-mono text-slate-700"
+                          />
+                        </div>
+                        <div className="flex-shrink-0">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-655 hover:text-slate-800 rounded-xl text-xs cursor-pointer font-bold shadow-xs">
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Choose Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleDoctorAvatarUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form Action buttons */}
+                  <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={resetDoctorForm}
+                      className="px-4 py-2 border border-slate-200 text-slate-655 hover:bg-slate-55 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                    >
+                      {editingDoctorId ? 'Save Profile' : 'Add Doctor'}
+                    </button>
+                  </div>
+                </form>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Appointment Date */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Appointment Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={editedAppointmentDate}
-                    onChange={(e) => setEditedAppointmentDate(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
-                  />
-                </div>
+{/* Search Bar for Doctors list */ }
+<div className="bg-[#fcfcfb] border border-gray-205 p-3 rounded-2xl flex items-center justify-between gap-3">
+  <div className="relative flex-1 max-w-sm">
+    <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-slate-400" />
+    <input
+      type="text"
+      placeholder="Filter doctors by name, specialty, or branch..."
+      value={docSearch}
+      onChange={(e) => setDocSearch(e.target.value)}
+      className="w-full pl-8.5 pr-4 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white font-semibold text-slate-700"
+    />
+  </div>
+  <span className="text-[10px] text-slate-400 font-bold uppercase">
+    Showing {
+      doctors.filter(d =>
+        d.name.toLowerCase().includes(docSearch.toLowerCase()) ||
+        d.specialization.toLowerCase().includes(docSearch.toLowerCase()) ||
+        d.branch.toLowerCase().includes(docSearch.toLowerCase())
+      ).length
+    } of {doctors.length} Doctors
+  </span>
+</div>
 
-                {/* Appointment Time */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Appointment Time Slot</label>
-                  <select
-                    value={editedAppointmentTime}
-                    onChange={(e) => setEditedAppointmentTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
-                  >
-                    <option value="08:00 AM - 10:00 AM">08:00 AM - 10:00 AM</option>
-                    <option value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</option>
-                    <option value="12:00 PM - 02:00 PM">12:00 PM - 02:00 PM</option>
-                    <option value="04:00 PM - 06:00 PM">04:00 PM - 06:00 PM</option>
-                  </select>
-                </div>
+{/* Doctors Grid */ }
+{
+  doctors.length === 0 ? (
+    <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-12 text-center">
+      <UserCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+      <h4 className="font-bold text-slate-700 text-sm">No Doctors Registered</h4>
+      <p className="text-[11px] text-slate-400 mt-1">Register a doctor to see their profile here.</p>
+    </div>
+  ) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {doctors
+      .filter(d =>
+        d.name.toLowerCase().includes(docSearch.toLowerCase()) ||
+        d.specialization.toLowerCase().includes(docSearch.toLowerCase()) ||
+        d.branch.toLowerCase().includes(docSearch.toLowerCase())
+      )
+      .map((doc) => (
+        <div
+          key={doc.id}
+          className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-all hover:shadow-md hover:border-emerald-500/40"
+        >
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 border border-slate-150 flex-shrink-0">
+              <img
+                src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
+                alt={doc.name}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+
+            {/* Info details */}
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <h4 className="font-bold text-slate-800 text-xs md:text-sm">{doc.name}</h4>
               </div>
+              <p className="text-[10px] text-teal-605 font-bold uppercase tracking-wider">
+                {doc.qualification}
+              </p>
+              <p className="text-[11px] text-slate-500 font-semibold">
+                {doc.specialization} • {doc.experience} Years Experience
+              </p>
+            </div>
+          </div>
 
-              {/* Sample Collection Type */}
+          {/* Consultation metadata */}
+          <div className="my-4 border-t border-b border-slate-100 py-3 space-y-2 text-[10.5px] text-slate-550">
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Timings: <strong className="text-slate-655">{doc.timing}</strong></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              <span>Branch: <strong className="text-slate-655">{doc.branch}</strong></span>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleOpenEditDoctor(doc)}
+              className="flex-1 py-1.5 border border-slate-205 hover:border-emerald-500 hover:bg-emerald-50/30 text-slate-650 hover:text-emerald-700 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Edit2 className="w-3 h-3" />
+              <span>Edit</span>
+            </button>
+            <button
+              onClick={() => handleDeleteDoctor(doc.id)}
+              className="px-3 py-1.5 border border-slate-205 hover:border-red-500 hover:bg-red-50/30 text-slate-500 hover:text-red-705 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      ))}
+  </div>
+)
+}
+          </div >
+        )}
+
+      </div >
+
+  {/* --- EDIT PATIENT DETAILS MODAL POPUP --- */ }
+{
+  editingPatientBooking && (
+    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
+
+        {/* Modal Title */}
+        <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div>
+            <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">CLINICAL DATABASE RECORDS</span>
+            <h3 className="text-lg font-serif font-bold text-slate-900">Modify Patient details: {cleanBookingId(editingPatientBooking.bookingId)}</h3>
+          </div>
+          <button
+            onClick={() => setEditingPatientBooking(null)}
+            className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-semibold text-slate-700">
+
+          {/* Patient Name */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Patient Name</label>
+            <input
+              type="text"
+              required
+              placeholder="Patient Name"
+              value={editedPatientName}
+              onChange={(e) => setEditedPatientName(e.target.value)}
+              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Age */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Age (Years)</label>
+              <input
+                type="number"
+                required
+                min={1}
+                max={120}
+                value={editedPatientAge}
+                onChange={(e) => setEditedPatientAge(parseInt(e.target.value) || 0)}
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
+              />
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Gender</label>
+              <select
+                value={editedPatientGender}
+                onChange={(e) => setEditedPatientGender(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Appointment Date */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Appointment Date</label>
+              <input
+                type="date"
+                required
+                value={editedAppointmentDate}
+                onChange={(e) => setEditedAppointmentDate(e.target.value)}
+                className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
+              />
+            </div>
+
+            {/* Appointment Time */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Appointment Time Slot</label>
+              <select
+                value={editedAppointmentTime}
+                onChange={(e) => setEditedAppointmentTime(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+              >
+                <option value="08:00 AM - 10:00 AM">08:00 AM - 10:00 AM</option>
+                <option value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</option>
+                <option value="12:00 PM - 02:00 PM">12:00 PM - 02:00 PM</option>
+                <option value="04:00 PM - 06:00 PM">04:00 PM - 06:00 PM</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Sample Collection Type */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sample Collection Method</label>
+            <select
+              value={editedCollectionType}
+              onChange={(e) => setEditedCollectionType(e.target.value as any)}
+              className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+            >
+              <option value="center">🏢 Diagnostic Center Walk-in</option>
+              <option value="home">🏠 Sterile Home Blood Collection (+₹150)</option>
+            </select>
+          </div>
+
+          {/* Street Address, City, Pincode */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3.5">
+            <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Collection Location Details</span>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Street Address / House No.</label>
+              <input
+                type="text"
+                value={editedStreet}
+                onChange={(e) => setEditedStreet(e.target.value)}
+                placeholder="Flat/House No., building, street"
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none text-slate-800"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sample Collection Method</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">City / Branch Zone</label>
                 <select
-                  value={editedCollectionType}
-                  onChange={(e) => setEditedCollectionType(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-850"
+                  value={editedCity}
+                  onChange={(e) => setEditedCity(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none text-slate-800"
                 >
-                  <option value="center">🏢 Diagnostic Center Walk-in</option>
-                  <option value="home">🏠 Sterile Home Blood Collection (+₹150)</option>
+                  <option value="Malad">Malad</option>
+                  <option value="Goregaon">Goregaon</option>
                 </select>
               </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pincode</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={editedPincode}
+                  onChange={(e) => setEditedPincode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="6 Digits"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none text-slate-800"
+                />
+              </div>
+            </div>
+          </div>
 
-              {/* Street Address, City, Pincode */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3.5">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Collection Location Details</span>
+        </div>
 
+        {/* Modal actions footer */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+          <button
+            onClick={() => setEditingPatientBooking(null)}
+            className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold transition-all hover:bg-slate-100 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSavePatientDetails}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
+          >
+            Save Changes & Sync
+          </button>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+{/* --- DETAILED CLINICAL RESULTS EDIT MODAL POPUP --- */ }
+{
+  editingBooking && (
+    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left">
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
+
+        {/* Modal Title */}
+        <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div>
+            <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">CLINICAL DIAGNOSTIC DATA PUBLISHER</span>
+            <h3 className="text-lg font-serif font-bold text-slate-900">Publish Findings: {cleanBookingId(editingBooking.bookingId)}</h3>
+          </div>
+          <button
+            onClick={() => setEditingBooking(null)}
+            className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-5 text-xs">
+
+          {/* Patient Brief */}
+          <div className="bg-emerald-50/35 border border-emerald-100 p-4 rounded-2xl flex justify-between items-center">
+            <div>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Details</span>
+              <span className="font-bold text-slate-900 text-sm block mt-0.5">{editingBooking.patient.name}</span>
+              <span className="text-[10px] text-slate-500 font-semibold">{editingBooking.patient.age} Yrs • {editingBooking.patient.gender}</span>
+            </div>
+            <div className="text-right">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Branch Dispatch</span>
+              <span className="font-bold text-slate-800 block mt-0.5">{editingBooking.address?.city || 'Malad'} Branch</span>
+            </div>
+          </div>
+
+          {/* Department Check */}
+          {editingBooking.items.some(it => it.category === 'lab') ? (
+            /* pathology biochemistry input sheet */
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">1. Laboratory Pathology Parameter Results</h4>
+                <p className="text-slate-450 text-[10.5px]">Provide exact clinical bio-marker values analyzed in the branch laboratory.</p>
+              </div>
+
+              <div className="border border-slate-150 rounded-2xl overflow-hidden divide-y divide-slate-100 font-semibold text-slate-700">
+                <div className="grid grid-cols-4 bg-slate-50 p-2.5 text-[9px] font-bold text-slate-400 uppercase">
+                  <div className="col-span-2">Clinical Parameter</div>
+                  <div className="text-center">Observed Result Value</div>
+                  <div className="text-right">Standard Ref Range</div>
+                </div>
+
+                {reportResults.map((param, index) => (
+                  <div key={index} className="grid grid-cols-4 p-3 items-center">
+                    <div className="col-span-2 font-bold text-slate-800">{param.parameter}</div>
+                    <div className="flex justify-center">
+                      <input
+                        type="text"
+                        required
+                        value={param.result}
+                        onChange={(e) => updateResultValue(index, e.target.value)}
+                        className="w-20 px-2 py-1 text-center font-bold border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+                      />
+                      <span className="text-[10px] text-slate-400 ml-1 mt-1.5">{param.unit}</span>
+                    </div>
+                    <div className="text-right text-slate-400 font-mono text-[10.5px]">{param.range}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {editingBooking.items.some(it => it.category === 'scan') ? (
+            /* radiology diagnostic reports findings input sheets */
+            <div className="space-y-4">
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">2. Radiology (MRI / CT / Ultrasound) Medical Narrative</h4>
+
+              <div className="space-y-3.5">
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Street Address / House No.</label>
-                  <input
-                    type="text"
-                    value={editedStreet}
-                    onChange={(e) => setEditedStreet(e.target.value)}
-                    placeholder="Flat/House No., building, street"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none text-slate-800"
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Radiological Findings</label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={scanFindings}
+                    onChange={(e) => setScanFindings(e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl font-semibold leading-relaxed text-slate-700 bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">City / Branch Zone</label>
-                    <select
-                      value={editedCity}
-                      onChange={(e) => setEditedCity(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none text-slate-800"
-                    >
-                      <option value="Malad">Malad</option>
-                      <option value="Goregaon">Goregaon</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pincode</label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={editedPincode}
-                      onChange={(e) => setEditedPincode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="6 Digits"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none text-slate-800"
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Final Doctor Impression</label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={scanImpression}
+                    onChange={(e) => setScanImpression(e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl font-bold leading-relaxed text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  />
                 </div>
               </div>
-
             </div>
+          ) : null}
 
-            {/* Modal actions footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button
-                onClick={() => setEditingPatientBooking(null)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold transition-all hover:bg-slate-100 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSavePatientDetails}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
-              >
-                Save Changes & Sync
-              </button>
-            </div>
-
-          </div>
         </div>
-      )}
 
-      {/* --- DETAILED CLINICAL RESULTS EDIT MODAL POPUP --- */}
-      {editingBooking && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-
-            {/* Modal Title */}
-            <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <div>
-                <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">CLINICAL DIAGNOSTIC DATA PUBLISHER</span>
-                <h3 className="text-lg font-serif font-bold text-slate-900">Publish Findings: {cleanBookingId(editingBooking.bookingId)}</h3>
-              </div>
-              <button
-                onClick={() => setEditingBooking(null)}
-                className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Scrollable Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-5 text-xs">
-
-              {/* Patient Brief */}
-              <div className="bg-emerald-50/35 border border-emerald-100 p-4 rounded-2xl flex justify-between items-center">
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Details</span>
-                  <span className="font-bold text-slate-900 text-sm block mt-0.5">{editingBooking.patient.name}</span>
-                  <span className="text-[10px] text-slate-500 font-semibold">{editingBooking.patient.age} Yrs • {editingBooking.patient.gender}</span>
-                </div>
-                <div className="text-right">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Branch Dispatch</span>
-                  <span className="font-bold text-slate-800 block mt-0.5">{editingBooking.address?.city || 'Malad'} Branch</span>
-                </div>
-              </div>
-
-              {/* Department Check */}
-              {editingBooking.items.some(it => it.category === 'lab') ? (
-                /* pathology biochemistry input sheet */
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">1. Laboratory Pathology Parameter Results</h4>
-                    <p className="text-slate-450 text-[10.5px]">Provide exact clinical bio-marker values analyzed in the branch laboratory.</p>
-                  </div>
-
-                  <div className="border border-slate-150 rounded-2xl overflow-hidden divide-y divide-slate-100 font-semibold text-slate-700">
-                    <div className="grid grid-cols-4 bg-slate-50 p-2.5 text-[9px] font-bold text-slate-400 uppercase">
-                      <div className="col-span-2">Clinical Parameter</div>
-                      <div className="text-center">Observed Result Value</div>
-                      <div className="text-right">Standard Ref Range</div>
-                    </div>
-
-                    {reportResults.map((param, index) => (
-                      <div key={index} className="grid grid-cols-4 p-3 items-center">
-                        <div className="col-span-2 font-bold text-slate-800">{param.parameter}</div>
-                        <div className="flex justify-center">
-                          <input
-                            type="text"
-                            required
-                            value={param.result}
-                            onChange={(e) => updateResultValue(index, e.target.value)}
-                            className="w-20 px-2 py-1 text-center font-bold border border-slate-300 rounded focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
-                          />
-                          <span className="text-[10px] text-slate-400 ml-1 mt-1.5">{param.unit}</span>
-                        </div>
-                        <div className="text-right text-slate-400 font-mono text-[10.5px]">{param.range}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {editingBooking.items.some(it => it.category === 'scan') ? (
-                /* radiology diagnostic reports findings input sheets */
-                <div className="space-y-4">
-                  <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">2. Radiology (MRI / CT / Ultrasound) Medical Narrative</h4>
-
-                  <div className="space-y-3.5">
-                    <div className="space-y-1.5">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Radiological Findings</label>
-                      <textarea
-                        rows={4}
-                        required
-                        value={scanFindings}
-                        onChange={(e) => setScanFindings(e.target.value)}
-                        className="w-full p-3 border border-slate-200 rounded-xl font-semibold leading-relaxed text-slate-700 bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Final Doctor Impression</label>
-                      <textarea
-                        rows={2}
-                        required
-                        value={scanImpression}
-                        onChange={(e) => setScanImpression(e.target.value)}
-                        className="w-full p-3 border border-slate-200 rounded-xl font-bold leading-relaxed text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-            </div>
-
-            {/* Modal actions footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button
-                onClick={() => setEditingBooking(null)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold transition-all hover:bg-slate-100 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveClinicalResults}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
-              >
-                Release & Publish Reports
-              </button>
-            </div>
-
-          </div>
+        {/* Modal actions footer */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+          <button
+            onClick={() => setEditingBooking(null)}
+            className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold transition-all hover:bg-slate-100 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSaveClinicalResults}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer"
+          >
+            Release & Publish Reports
+          </button>
         </div>
-      )}
 
-      {/* --- ADMIN VIEW ORDER DETAILS MODAL --- */}
-      {viewingOrderBooking && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
+      </div>
+    </div>
+  )
+}
 
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <div>
-                <span className="text-[9px] font-black text-sky-700 tracking-widest uppercase block">SECURE CLINICAL RECORD VIEWER</span>
-                <h3 className="text-lg font-serif font-bold text-slate-900">Order & Booking Details: {cleanBookingId(viewingOrderBooking.bookingId)}</h3>
+{/* --- ADMIN VIEW ORDER DETAILS MODAL --- */ }
+{
+  viewingOrderBooking && (
+    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
+
+        {/* Modal Header */}
+        <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div>
+            <span className="text-[9px] font-black text-sky-700 tracking-widest uppercase block">SECURE CLINICAL RECORD VIEWER</span>
+            <h3 className="text-lg font-serif font-bold text-slate-900">Order & Booking Details: {cleanBookingId(viewingOrderBooking.bookingId)}</h3>
+          </div>
+          <button
+            onClick={() => setViewingOrderBooking(null)}
+            className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-700">
+
+          {/* Patient & Appointment Core Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Patient Demographics</span>
+              <div className="space-y-1 font-semibold text-slate-800">
+                <p className="text-sm font-extrabold text-slate-900">{viewingOrderBooking.patient.name}</p>
+                <p>Age: {viewingOrderBooking.patient.age} Years</p>
+                <p>Gender: {viewingOrderBooking.patient.gender}</p>
+                <p>Relationship: {viewingOrderBooking.patient.relationship}</p>
               </div>
-              <button
-                onClick={() => setViewingOrderBooking(null)}
-                className="p-1.5 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6 text-xs text-slate-700">
-
-              {/* Patient & Appointment Core Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Patient Demographics</span>
-                  <div className="space-y-1 font-semibold text-slate-800">
-                    <p className="text-sm font-extrabold text-slate-900">{viewingOrderBooking.patient.name}</p>
-                    <p>Age: {viewingOrderBooking.patient.age} Years</p>
-                    <p>Gender: {viewingOrderBooking.patient.gender}</p>
-                    <p>Relationship: {viewingOrderBooking.patient.relationship}</p>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Appointment Timeline</span>
-                  <div className="space-y-1 font-semibold text-slate-800">
-                    <p className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-slate-400" />
-                      <span>{viewingOrderBooking.appointmentDate}</span>
-                    </p>
-                    <p>Time Slot: {viewingOrderBooking.appointmentTime}</p>
-                    <p className="capitalize">Collection: {viewingOrderBooking.collectionType === 'home' ? '🏠 Home Collection' : '🏢 Walk-In Center Visit'}</p>
-                    <p>Status: <span className="font-extrabold uppercase text-emerald-700">{viewingOrderBooking.bookingStatus.replace('_', ' ')}</span></p>
-                  </div>
-                </div>
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Appointment Timeline</span>
+              <div className="space-y-1 font-semibold text-slate-800">
+                <p className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span>{viewingOrderBooking.appointmentDate}</span>
+                </p>
+                <p>Time Slot: {viewingOrderBooking.appointmentTime}</p>
+                <p className="capitalize">Collection: {viewingOrderBooking.collectionType === 'home' ? '🏠 Home Collection' : '🏢 Walk-In Center Visit'}</p>
+                <p>Status: <span className="font-extrabold uppercase text-emerald-700">{viewingOrderBooking.bookingStatus.replace('_', ' ')}</span></p>
               </div>
+            </div>
+          </div>
 
-              {/* Address details if Home collection */}
-              {viewingOrderBooking.collectionType === 'home' && (
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dispatch Address</span>
-                  <p className="font-bold text-slate-800">{viewingOrderBooking.address?.street}, {viewingOrderBooking.address?.city} - {viewingOrderBooking.address?.pincode}</p>
-                </div>
+          {/* Address details if Home collection */}
+          {viewingOrderBooking.collectionType === 'home' && (
+            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dispatch Address</span>
+              <p className="font-bold text-slate-800">{viewingOrderBooking.address?.street}, {viewingOrderBooking.address?.city} - {viewingOrderBooking.address?.pincode}</p>
+            </div>
+          )}
+
+          {/* Ordered Items and Pricing */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Diagnostic Services Ordered</span>
+            <div className="border border-slate-100 rounded-2xl overflow-hidden">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    <th className="p-3">Test / Package Name</th>
+                    <th className="p-3 text-right">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                  {viewingOrderBooking.items.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/40">
+                      <td className="p-3 font-bold text-slate-800">{item.name}</td>
+                      <td className="p-3 text-right font-mono text-slate-900">₹{item.discountPrice || item.price}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-50/50 font-bold">
+                    <td className="p-3 text-slate-900">Total Amount</td>
+                    <td className="p-3 text-right font-mono text-base text-emerald-800">₹{viewingOrderBooking.totalAmount}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-between items-center px-2">
+              <span className="text-[10px] text-slate-500 font-bold">Payment Method: <span className="uppercase text-slate-700">{viewingOrderBooking.paymentMethod}</span></span>
+              <span className={`text-[10px] font-bold uppercase ${viewingOrderBooking.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-500'}`}>
+                Payment Status: {viewingOrderBooking.paymentStatus === 'paid' ? 'Paid' : 'Cash on Delivery / Pending'}
+              </span>
+            </div>
+          </div>
+
+          {/* Clinical Results & Report Preview */}
+          <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clinical Reports & Findings</span>
+              {viewingOrderBooking.bookingStatus === 'report_ready' && viewingOrderBooking.simulatedReportUrl && (
+                <a
+                  href={viewingOrderBooking.simulatedReportUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10.5px] rounded-lg flex items-center gap-1 transition-all"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-100" />
+                  <span>Download Patient PDF Report</span>
+                </a>
               )}
+            </div>
 
-              {/* Ordered Items and Pricing */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Diagnostic Services Ordered</span>
-                <div className="border border-slate-100 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        <th className="p-3">Test / Package Name</th>
-                        <th className="p-3 text-right">Price</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                      {viewingOrderBooking.items.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/40">
-                          <td className="p-3 font-bold text-slate-800">{item.name}</td>
-                          <td className="p-3 text-right font-mono text-slate-900">₹{item.discountPrice || item.price}</td>
-                        </tr>
-                      ))}
-                      <tr className="bg-slate-50/50 font-bold">
-                        <td className="p-3 text-slate-900">Total Amount</td>
-                        <td className="p-3 text-right font-mono text-base text-emerald-800">₹{viewingOrderBooking.totalAmount}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-[10px] text-slate-500 font-bold">Payment Method: <span className="uppercase text-slate-700">{viewingOrderBooking.paymentMethod}</span></span>
-                  <span className={`text-[10px] font-bold uppercase ${viewingOrderBooking.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-500'}`}>
-                    Payment Status: {viewingOrderBooking.paymentStatus === 'paid' ? 'Paid' : 'Cash on Delivery / Pending'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Clinical Results & Report Preview */}
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clinical Reports & Findings</span>
-                  {viewingOrderBooking.bookingStatus === 'report_ready' && viewingOrderBooking.simulatedReportUrl && (
-                    <a
-                      href={viewingOrderBooking.simulatedReportUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10.5px] rounded-lg flex items-center gap-1 transition-all"
-                    >
-                      <Download className="w-3.5 h-3.5 text-emerald-100" />
-                      <span>Download Patient PDF Report</span>
-                    </a>
-                  )}
-                </div>
-
-                {viewingOrderBooking.bookingStatus === 'report_ready' ? (
-                  <div className="space-y-4">
-                    {/* Lab parameters if lab service */}
-                    {viewingReportResults.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[9.5px] font-extrabold text-slate-450 uppercase block">Laboratory Chemistry & Biomarkers</span>
-                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                          <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50/50 border-b border-slate-200 text-[9px] text-slate-400 font-black uppercase">
-                                <th className="p-2">Parameter</th>
-                                <th className="p-2">Result</th>
-                                <th className="p-2">Unit</th>
-                                <th className="p-2">Reference Range</th>
-                                <th className="p-2">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-150 font-bold text-slate-700 text-[11px]">
-                              {viewingReportResults.map((param, index) => (
-                                <tr key={index} className="hover:bg-slate-50/20">
-                                  <td className="p-2 text-slate-900">{param.parameter}</td>
-                                  <td className="p-2 font-mono text-slate-800">{param.result}</td>
-                                  <td className="p-2 text-slate-500 font-medium">{param.unit}</td>
-                                  <td className="p-2 text-slate-500 font-medium">{param.range}</td>
-                                  <td className="p-2">
-                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${param.status === 'high' ? 'bg-amber-100 text-amber-800' :
-                                        param.status === 'low' ? 'bg-blue-100 text-blue-800' :
-                                          'bg-emerald-100 text-emerald-800'
-                                      }`}>
-                                      {param.status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Scan findings if radiology */}
-                    {viewingFindings && (
-                      <div className="space-y-2">
-                        <div className="space-y-1">
-                          <span className="text-[9.5px] font-extrabold text-slate-450 uppercase block">Radiology Clinical Description</span>
-                          <div className="p-3 bg-white border border-slate-150 rounded-xl text-[10.5px] font-medium text-slate-600 italic leading-relaxed">
-                            "{viewingFindings}"
-                          </div>
-                        </div>
-                        {viewingImpression && (
-                          <div className="space-y-1">
-                            <span className="text-[9.5px] font-extrabold text-slate-450 uppercase block">Radiologist Impression</span>
-                            <div className="p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-900 uppercase">
-                              {viewingImpression}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+            {viewingOrderBooking.bookingStatus === 'report_ready' ? (
+              <div className="space-y-4">
+                {/* Lab parameters if lab service */}
+                {viewingReportResults.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[9.5px] font-extrabold text-slate-450 uppercase block">Laboratory Chemistry & Biomarkers</span>
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50/50 border-b border-slate-200 text-[9px] text-slate-400 font-black uppercase">
+                            <th className="p-2">Parameter</th>
+                            <th className="p-2">Result</th>
+                            <th className="p-2">Unit</th>
+                            <th className="p-2">Reference Range</th>
+                            <th className="p-2">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-150 font-bold text-slate-700 text-[11px]">
+                          {viewingReportResults.map((param, index) => (
+                            <tr key={index} className="hover:bg-slate-50/20">
+                              <td className="p-2 text-slate-900">{param.parameter}</td>
+                              <td className="p-2 font-mono text-slate-800">{param.result}</td>
+                              <td className="p-2 text-slate-500 font-medium">{param.unit}</td>
+                              <td className="p-2 text-slate-500 font-medium">{param.range}</td>
+                              <td className="p-2">
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${param.status === 'high' ? 'bg-amber-100 text-amber-800' :
+                                  param.status === 'low' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-emerald-100 text-emerald-800'
+                                  }`}>
+                                  {param.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                ) : (
-                  <div className="p-4 bg-amber-50 border border-amber-200/50 rounded-xl text-[11px] text-amber-800 font-bold text-center">
-                    Clinical findings have not been published yet. Set status to "Report Released" or click "Publish Report" to create lab findings.
+                )}
+
+                {/* Scan findings if radiology */}
+                {viewingFindings && (
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <span className="text-[9.5px] font-extrabold text-slate-450 uppercase block">Radiology Clinical Description</span>
+                      <div className="p-3 bg-white border border-slate-150 rounded-xl text-[10.5px] font-medium text-slate-600 italic leading-relaxed">
+                        "{viewingFindings}"
+                      </div>
+                    </div>
+                    {viewingImpression && (
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-extrabold text-slate-450 uppercase block">Radiologist Impression</span>
+                        <div className="p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-900 uppercase">
+                          {viewingImpression}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button
-                onClick={() => setViewingOrderBooking(null)}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 font-bold transition-all cursor-pointer"
-              >
-                Close Order View
-              </button>
-            </div>
-
+            ) : (
+              <div className="p-4 bg-amber-50 border border-amber-200/50 rounded-xl text-[11px] text-amber-800 font-bold text-center">
+                Clinical findings have not been published yet. Set status to "Report Released" or click "Publish Report" to create lab findings.
+              </div>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* --- CUSTOM FLOATING TOAST --- */}
-      {toast.show && (
-        <div
-          className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border animate-bounce-short text-xs font-bold max-w-sm ${toast.type === 'success'
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-              : toast.type === 'error'
-                ? 'bg-rose-50 text-rose-950 border-rose-250'
-                : 'bg-slate-50 text-slate-900 border-slate-200'
-            }`}
-        >
-          <div className="flex-1">{toast.message}</div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
           <button
-            onClick={() => setToast(prev => ({ ...prev, show: false }))}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-0.5"
+            onClick={() => setViewingOrderBooking(null)}
+            className="px-4 py-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 font-bold transition-all cursor-pointer"
           >
-            <X className="w-3.5 h-3.5" />
+            Close Order View
           </button>
         </div>
-      )}
 
-      {/* --- CUSTOM IN-APP CONFIRM MODAL --- */}
-      {confirmAction && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9990]">
-          <div className="bg-white border border-slate-100 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-scale-up text-left">
-            <div className="p-6 space-y-3">
-              <div className="flex items-center gap-2.5 text-rose-700">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <h3 className="text-base font-serif font-bold text-slate-900">{confirmAction.title}</h3>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                {confirmAction.message}
-              </p>
-            </div>
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmAction(null)}
-                className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 text-xs font-bold transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => confirmAction.onConfirm()}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-rose-150 cursor-pointer"
-              >
-                {confirmAction.confirmText}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      </div>
     </div>
+  )
+}
+
+{/* --- CUSTOM FLOATING TOAST --- */ }
+{
+  toast.show && (
+    <div
+      className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border animate-bounce-short text-xs font-bold max-w-sm ${toast.type === 'success'
+        ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+        : toast.type === 'error'
+          ? 'bg-rose-50 text-rose-950 border-rose-250'
+          : 'bg-slate-50 text-slate-900 border-slate-200'
+        }`}
+    >
+      <div className="flex-1">{toast.message}</div>
+      <button
+        onClick={() => setToast(prev => ({ ...prev, show: false }))}
+        className="text-slate-400 hover:text-slate-600 transition-colors p-0.5"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )
+}
+
+{/* --- CUSTOM IN-APP CONFIRM MODAL --- */ }
+{
+  confirmAction && (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9990]">
+      <div className="bg-white border border-slate-100 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-scale-up text-left">
+        <div className="p-6 space-y-3">
+          <div className="flex items-center gap-2.5 text-rose-700">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <h3 className="text-base font-serif font-bold text-slate-900">{confirmAction.title}</h3>
+          </div>
+          <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+            {confirmAction.message}
+          </p>
+        </div>
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+          <button
+            onClick={() => setConfirmAction(null)}
+            className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 text-xs font-bold transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => confirmAction.onConfirm()}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-rose-150 cursor-pointer"
+          >
+            {confirmAction.confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+    </div >
   );
 }

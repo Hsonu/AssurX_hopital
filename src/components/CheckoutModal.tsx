@@ -109,11 +109,11 @@ export default function CheckoutModal({
         setPayStep(steps[currentStepIndex]);
       } else {
         clearInterval(interval);
-        
+
         try {
           const bookingIdNum = Math.floor(100000 + Math.random() * 900000);
           const token = idToken || '';
-          
+
           const response = await userFetch('/api/booking', {
             method: 'POST',
             headers: {
@@ -147,9 +147,9 @@ export default function CheckoutModal({
           }
 
           const savedB = await response.json();
-          
-          const parsedItems = typeof savedB.items === 'string' 
-            ? JSON.parse(savedB.items) 
+
+          const parsedItems = typeof savedB.items === 'string'
+            ? JSON.parse(savedB.items)
             : (Array.isArray(savedB.items) ? savedB.items : []);
 
           // Fallback storage sync
@@ -211,7 +211,7 @@ export default function CheckoutModal({
 
   const handleSimulatePayment = async () => {
     setValidationError('');
-    
+
     if (paymentMethod === 'cash_at_center') {
       executeDatabaseBooking('cash_at_center', 'pending');
       return;
@@ -219,6 +219,7 @@ export default function CheckoutModal({
 
     setIsPaying(true);
     setPayStep("Initializing secure checkout gateway...");
+
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded || !(window as any).Razorpay) {
       setIsPaying(false);
@@ -226,10 +227,34 @@ export default function CheckoutModal({
       return;
     }
 
+    let orderId = "";
+    try {
+      setPayStep("Creating secure payment order...");
+      const orderResponse = await userFetch('/api/payments/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ amount: grandTotal })
+      });
+      if (!orderResponse.ok) {
+        const errText = await orderResponse.text();
+        throw new Error(`Server returned ${orderResponse.status}: ${errText}`);
+      }
+      const orderData = await orderResponse.json();
+      orderId = orderData.orderId;
+    } catch (err: any) {
+      console.error("Order creation failed:", err);
+      setIsPaying(false);
+      alert(`Failed to initialize payment gateway: ${err.message || err}. Please try again.`);
+      return;
+    }
+
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_T009i1fdo0TocB",
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_THjqoa9dwRMlXq",
       amount: grandTotal * 100, // in paise
       currency: "INR",
+      order_id: orderId,
       name: "AssurX Scans & Labs",
       description: `Diagnostic Booking - ${bookingDetails.patient.name}`,
       image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=120&auto=format&fit=crop",
@@ -252,7 +277,7 @@ export default function CheckoutModal({
         }
       }
     };
-    
+
     setPayStep("Opening Razorpay Secure Gateway...");
     const rzp = new (window as any).Razorpay(options);
     rzp.open();
@@ -262,11 +287,11 @@ export default function CheckoutModal({
     const element = document.getElementById('official-invoice-frame');
     if (element && (window as any).html2pdf) {
       const opt = {
-        margin:       [0.4, 0.4, 0.4, 0.4],
-        filename:     `AssurX-Invoice-${createdBooking?.bookingId || 'Token'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2.5, useCORS: true, logging: false },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        margin: [0.4, 0.4, 0.4, 0.4],
+        filename: `AssurX-Invoice-${createdBooking?.bookingId || 'Token'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2.5, useCORS: true, logging: false },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
       (window as any).html2pdf().from(element).set(opt).save();
     } else {
@@ -277,20 +302,20 @@ export default function CheckoutModal({
   return (
     <div className="fixed inset-0 z-55 flex items-center justify-center p-4 overflow-y-auto" id="checkout-modal-root">
       {/* Backdrop */}
-      <div 
+      <div
         onClick={isSuccess ? undefined : onClose} // Lock backdrop click on success so they read the invoice or click done
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
       ></div>
 
       {/* Main Dialog Box */}
       <div className="relative bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden z-10 border border-slate-100 max-h-[92vh] flex flex-col animate-scale-in">
-        
+
         {/* Blue bar top */}
         <div className="h-2 bg-gradient-to-r from-teal-500 to-cyan-500"></div>
 
         {/* Modal Close - hidden on success */}
         {!isSuccess && !isPaying && (
-          <button 
+          <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors z-20 cursor-pointer"
           >
@@ -300,7 +325,7 @@ export default function CheckoutModal({
 
         {/* Scrollable Container */}
         <div className="overflow-y-auto flex-1 p-6 md:p-8">
-          
+
           {/* STATE 1: PAYING LOADER */}
           {isPaying && (
             <div className="py-16 text-center space-y-5">
@@ -346,11 +371,10 @@ export default function CheckoutModal({
                   {/* UPI */}
                   <button
                     onClick={() => setPaymentMethod('upi')}
-                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${
-                      paymentMethod === 'upi'
-                        ? 'border-teal-600 bg-teal-50/20 text-teal-800'
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-600'
-                    }`}
+                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${paymentMethod === 'upi'
+                      ? 'border-teal-600 bg-teal-50/20 text-teal-800'
+                      : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                      }`}
                   >
                     <QrCode className="w-5 h-5 text-teal-600" />
                     <div>
@@ -362,11 +386,10 @@ export default function CheckoutModal({
                   {/* CARD */}
                   <button
                     onClick={() => setPaymentMethod('card')}
-                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${
-                      paymentMethod === 'card'
-                        ? 'border-teal-600 bg-teal-50/20 text-teal-800'
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-600'
-                    }`}
+                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${paymentMethod === 'card'
+                      ? 'border-teal-600 bg-teal-50/20 text-teal-800'
+                      : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                      }`}
                   >
                     <CreditCard className="w-5 h-5 text-teal-600" />
                     <div>
@@ -378,11 +401,10 @@ export default function CheckoutModal({
                   {/* NETBANKING */}
                   <button
                     onClick={() => setPaymentMethod('netbanking')}
-                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${
-                      paymentMethod === 'netbanking'
-                        ? 'border-teal-600 bg-teal-50/20 text-teal-800'
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-600'
-                    }`}
+                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${paymentMethod === 'netbanking'
+                      ? 'border-teal-600 bg-teal-50/20 text-teal-800'
+                      : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                      }`}
                   >
                     <Laptop className="w-5 h-5 text-teal-600" />
                     <div>
@@ -394,11 +416,10 @@ export default function CheckoutModal({
                   {/* CASH */}
                   <button
                     onClick={() => setPaymentMethod('cash_at_center')}
-                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${
-                      paymentMethod === 'cash_at_center'
-                        ? 'border-teal-600 bg-teal-50/20 text-teal-800'
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-600'
-                    }`}
+                    className={`flex-shrink-0 md:w-full p-3 border rounded-xl flex items-center gap-3 transition-colors text-left cursor-pointer ${paymentMethod === 'cash_at_center'
+                      ? 'border-teal-600 bg-teal-50/20 text-teal-800'
+                      : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                      }`}
                   >
                     <Landmark className="w-5 h-5 text-teal-600" />
                     <div>
@@ -421,13 +442,12 @@ export default function CheckoutModal({
                           <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center rounded p-1">
                             <div className="grid grid-cols-5 gap-1 w-full h-full p-1 bg-white">
                               {Array.from({ length: 25 }).map((_, i) => (
-                                <div 
-                                  key={i} 
-                                  className={`rounded-xs ${
-                                    (i % 3 === 0 && i % 2 === 0) || i === 0 || i === 4 || i === 20 || i === 24 
-                                      ? 'bg-slate-900' 
-                                      : 'bg-white border border-slate-100'
-                                  }`}
+                                <div
+                                  key={i}
+                                  className={`rounded-xs ${(i % 3 === 0 && i % 2 === 0) || i === 0 || i === 4 || i === 20 || i === 24
+                                    ? 'bg-slate-900'
+                                    : 'bg-white border border-slate-100'
+                                    }`}
                                 ></div>
                               ))}
                             </div>
@@ -437,7 +457,7 @@ export default function CheckoutModal({
                             X
                           </div>
                         </div>
-                        
+
                         <span className="inline-block px-2 py-0.5 bg-teal-100 text-teal-800 rounded font-bold text-[9px] uppercase tracking-wider mt-2">
                           UPI Merchant ID: ASSURX@AXIS
                         </span>
@@ -532,11 +552,10 @@ export default function CheckoutModal({
                           <button
                             key={bank}
                             onClick={() => setSelectedBank(bank)}
-                            className={`p-2.5 border rounded-lg text-xs font-bold text-left flex items-center gap-2 transition-colors cursor-pointer ${
-                              selectedBank === bank
-                                ? 'border-teal-600 bg-teal-55/15 text-teal-850'
-                                : 'border-slate-100 hover:bg-slate-50 text-slate-600'
-                            }`}
+                            className={`p-2.5 border rounded-lg text-xs font-bold text-left flex items-center gap-2 transition-colors cursor-pointer ${selectedBank === bank
+                              ? 'border-teal-600 bg-teal-55/15 text-teal-850'
+                              : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                              }`}
                           >
                             <span className="w-2 h-2 rounded-full bg-teal-600 inline-block"></span>
                             {bank}
@@ -551,9 +570,9 @@ export default function CheckoutModal({
                     <div className="space-y-4 bg-teal-50/20 border border-teal-100/30 p-4 rounded-xl text-left animate-fade-in">
                       {/* Section Image Banner */}
                       <div className="relative h-28 w-full rounded-lg overflow-hidden bg-slate-100 border border-teal-100/20">
-                        <img 
-                          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop" 
-                          alt="Professional medical sample collection at home" 
+                        <img
+                          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop"
+                          alt="Professional medical sample collection at home"
                           className="w-full h-full object-cover object-center"
                           referrerPolicy="no-referrer"
                         />
@@ -650,9 +669,8 @@ export default function CheckoutModal({
                     <div className="text-left sm:text-right">
                       <div className="text-xs font-bold text-slate-700">Receipt No: #{createdBooking.bookingId}</div>
                       <p className="text-[10px] text-slate-400 mt-0.5">Date: {new Date(createdBooking.timestamp).toLocaleDateString()}</p>
-                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold mt-1.5 ${
-                        createdBooking.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
+                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold mt-1.5 ${createdBooking.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
                         {createdBooking.paymentStatus === 'paid' ? 'PAID ONLINE' : 'PAY ON VISIT'}
                       </span>
                     </div>
@@ -682,7 +700,7 @@ export default function CheckoutModal({
                       <div className="flex items-start gap-1.5 text-[10px] text-slate-500 leading-tight">
                         <MapPin className="w-3.5 h-3.5 text-teal-600 flex-shrink-0 mt-0.5" />
                         <span>
-                          {createdBooking.collectionType === 'home' && createdBooking.address 
+                          {createdBooking.collectionType === 'home' && createdBooking.address
                             ? `Home Collection: ${createdBooking.address.street}, ${createdBooking.address.city} - ${createdBooking.address.pincode}`
                             : 'Center Visit: Main Diagnostic Center (Egmore Hub)'
                           }
@@ -701,7 +719,7 @@ export default function CheckoutModal({
                           <span className="font-bold">₹{item.discountPrice || item.price}</span>
                         </div>
                       ))}
-                      
+
                       {createdBooking.collectionType === 'home' && (
                         <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
                           <span>Phlebotomist Home Collection Fee</span>
@@ -744,10 +762,10 @@ export default function CheckoutModal({
                   {/* Barcode representation using custom styled lines */}
                   <div className="flex flex-col items-center justify-center pt-2.5 border-t border-slate-100 gap-1 select-none">
                     <div className="flex gap-[1px] h-8 items-center bg-white p-1 rounded">
-                      {[1,3,1,2,4,1,3,2,1,2,3,1,4,1,2,3,1,1,2,4,1,3,1,2,4,1,1,3,2,1,4,1,1].map((w, idx) => (
-                        <div 
-                          key={idx} 
-                          className="bg-slate-900 h-full" 
+                      {[1, 3, 1, 2, 4, 1, 3, 2, 1, 2, 3, 1, 4, 1, 2, 3, 1, 1, 2, 4, 1, 3, 1, 2, 4, 1, 1, 3, 2, 1, 4, 1, 1].map((w, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-900 h-full"
                           style={{ width: `${w}px` }}
                         ></div>
                       ))}
@@ -804,7 +822,7 @@ export default function CheckoutModal({
                 <span className="text-xs font-bold text-slate-500">Amount to Pay</span>
                 <span className="text-lg font-black text-emerald-700 font-mono">₹{grandTotal}</span>
               </div>
-              
+
               <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3 text-[10.5px] text-amber-850 font-medium leading-relaxed text-left">
                 ℹ️ The live Razorpay SDK was blocked by an AdBlocker or local firewall. We have automatically launched the secure sandbox simulation so you can continue testing.
               </div>

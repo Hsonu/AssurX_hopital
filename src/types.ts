@@ -108,3 +108,15 @@ export interface PatientComplaint {
   timestamp: string;
   adminNotes?: string;
 }
+
+export interface Doctor {
+  id: string;
+  name: string;
+  specialization: string;
+  experience: number;
+  qualification: string;
+  timing: string;
+  branch: string;
+  avatar: string;
+}
+

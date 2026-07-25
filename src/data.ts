@@ -1,4 +1,4 @@
-import { DiagnosticService, HealthPackage, Testimonial } from './types';
+import { DiagnosticService, HealthPackage, Testimonial, Doctor } from './types';
 
 export const DIAGNOSTIC_SERVICES: DiagnosticService[] = [
   // --- GENERAL ULTRASOUND (USG) ---
@@ -2463,3 +2463,67 @@ export const ASSURX_CENTERS = [
   { city: "Malad", address: "Shop 1-3, SV Road, Opp. Malad Railway Station, Malad West, Mumbai - 400064", phone: "022-50117701" },
   { city: "Goregaon", address: "G-4, Sun Plaza, SV Road, Near Goregaon East Metro, Goregaon, Mumbai - 400063", phone: "022-50117702" }
 ];
+
+export const DEFAULT_DOCTORS: Doctor[] = [
+  {
+    id: 'doc-alok-sharma',
+    name: 'Dr. Alok Sharma',
+    specialization: 'Cardiologist',
+    experience: 15,
+    qualification: 'MD, DM (Cardiology)',
+    timing: '09:00 AM - 01:00 PM',
+    branch: 'Malad',
+    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=300&auto=format&fit=crop'
+  },
+  {
+    id: 'doc-reena-mehta',
+    name: 'Dr. Reena Mehta',
+    specialization: 'Gynecologist',
+    experience: 10,
+    qualification: 'MD (Gynecology)',
+    timing: '02:00 PM - 06:00 PM',
+    branch: 'Malad',
+    avatar: 'https://images.unsplash.com/photo-1594824813573-246434de83fb?q=80&w=300&auto=format&fit=crop'
+  },
+  {
+    id: 'doc-s-iyer',
+    name: 'Dr. S. Iyer',
+    specialization: 'Neurologist',
+    experience: 18,
+    qualification: 'DM (Neurology)',
+    timing: '10:00 AM - 02:00 PM',
+    branch: 'Goregaon',
+    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=300&auto=format&fit=crop'
+  },
+  {
+    id: 'doc-priya-patel',
+    name: 'Dr. Priya Patel',
+    specialization: 'Pediatrician',
+    experience: 8,
+    qualification: 'MD (Pediatrics)',
+    timing: '04:00 PM - 08:00 PM',
+    branch: 'Goregaon',
+    avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop'
+  },
+  {
+    id: 'doc-shreyas-masrani',
+    name: 'Dr. Shreyas Masrani',
+    specialization: 'Radiologist',
+    experience: 30,
+    qualification: 'MD (Radio-Diagnosis)',
+    timing: '11:00 AM - 03:00 PM',
+    branch: 'Goregaon',
+    avatar: '/shreyas_masrani.jpg'
+  },
+  {
+    id: 'doc-biswajit-mondal',
+    name: 'Dr. Biswajit Mondal',
+    specialization: 'General Physician',
+    experience: 6,
+    qualification: 'MBBS',
+    timing: '10:00 AM - 02:00 PM',
+    branch: 'Malad',
+    avatar: '/biswajit_mondal.png'
+  }
+];
+

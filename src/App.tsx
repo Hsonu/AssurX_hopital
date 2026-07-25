@@ -6,11 +6,11 @@ import {
   Info, Home, Building, QrCode, CreditCard, Laptop, Landmark,
   CheckCircle2, Loader2, Printer, Clock, Download, Eye,
   LogOut, ArrowLeft, Award, HeartPulse, Sparkles, Filter,
-  Check, HelpCircle, Star, Sparkle, AlertTriangle, ExternalLink
+  Check, HelpCircle, Star, Sparkle, AlertTriangle, AlertCircle, ExternalLink
 } from 'lucide-react';
 
-import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter } from './types';
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES, FREQUENT_QUESTIONS, CUSTOMER_TESTIMONIALS, ASSURX_CENTERS } from './data';
+import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter, Doctor } from './types';
+import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES, FREQUENT_QUESTIONS, CUSTOMER_TESTIMONIALS, ASSURX_CENTERS, DEFAULT_DOCTORS } from './data';
 import { auth } from './lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuth } from './lib/auth.ts';
@@ -170,6 +170,36 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('assurx_centers', JSON.stringify(centers));
   }, [centers]);
+
+  // Dynamic doctors directory loaded from localStorage
+  const [doctors, setDoctors] = useState<Doctor[]>(() => {
+    const cached = localStorage.getItem('assurx_doctors');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as Doctor[];
+        const parsedIds = new Set(parsed.map(d => d.id));
+        const missing = DEFAULT_DOCTORS.filter(d => !parsedIds.has(d.id));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          localStorage.setItem('assurx_doctors', JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
+      } catch (e) {
+        // use default if parse failed
+      }
+    }
+    return DEFAULT_DOCTORS;
+  });
+
+  // Sync doctors to localStorage
+  useEffect(() => {
+    localStorage.setItem('assurx_doctors', JSON.stringify(doctors));
+  }, [doctors]);
+
+  const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
+  const [doctorSpecialtyFilter, setDoctorSpecialtyFilter] = useState('All');
+  const [doctorBranchFilter, setDoctorBranchFilter] = useState('All');
 
   const [isPrescriptionOpen, setIsPrescriptionOpen] = useState(false);
 
@@ -398,6 +428,18 @@ export default function App() {
     ...services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
     ...packages.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
   ] : [];
+
+  const filteredDoctors = doctors.filter(doc => {
+    const matchesSearch = doc.name.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
+                          doc.specialization.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
+                          doc.qualification.toLowerCase().includes(doctorSearchQuery.toLowerCase());
+                          
+    const matchesSpecialty = doctorSpecialtyFilter === 'All' || doc.specialization === doctorSpecialtyFilter;
+    const matchesBranch = doctorBranchFilter === 'All' || doc.branch === doctorBranchFilter;
+    
+    return matchesSearch && matchesSpecialty && matchesBranch;
+  });
+
 
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col font-sans" id="app-root-frame">
@@ -756,6 +798,120 @@ export default function App() {
             )}
 
 
+
+            {/* MEET OUR EXPERT DOCTORS SECTION */}
+            {doctors.length > 0 && (
+              <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-10 animate-fade-in" id="doctors-section">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-gray-100 pb-6">
+                  <div className="space-y-2">
+                    <span className="inline-block px-3 py-1 bg-teal-50 border border-teal-200/60 rounded-full text-teal-800 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                      Consult Top Medical Experts
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">
+                      Meet Our <span className="italic font-medium text-[#2D006B]">Expert Doctors</span>
+                    </h2>
+                    <p className="text-xs md:text-sm text-slate-500 max-w-xl">
+                      Book direct slots or request callbacks for clinical diagnostics evaluation with our certified specialists.
+                    </p>
+                  </div>
+
+                  {/* Filters and search row */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    {/* Search */}
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search doctors..."
+                        value={doctorSearchQuery}
+                        onChange={(e) => setDoctorSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
+                      />
+                    </div>
+                    {/* Specialty filter */}
+                    <select
+                      value={doctorSpecialtyFilter}
+                      onChange={(e) => setDoctorSpecialtyFilter(e.target.value)}
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-full text-xs focus:outline-none bg-white font-medium text-slate-700 cursor-pointer"
+                    >
+                      <option value="All">All Specialties</option>
+                      {Array.from(new Set(doctors.map(d => d.specialization))).map(spec => (
+                        <option key={spec} value={spec}>{spec}</option>
+                      ))}
+                    </select>
+                    {/* Branch filter */}
+                    <select
+                      value={doctorBranchFilter}
+                      onChange={(e) => setDoctorBranchFilter(e.target.value)}
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-full text-xs focus:outline-none bg-white font-medium text-slate-700 cursor-pointer"
+                    >
+                      <option value="All">All Branches</option>
+                      {Array.from(new Set(doctors.map(d => d.branch))).map(br => (
+                        <option key={br} value={br}>{br} Branch</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {filteredDoctors.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50/50 border border-dashed border-gray-200 rounded-3xl">
+                    <AlertCircle className="w-8 h-8 text-slate-350 mx-auto mb-2" />
+                    <p className="text-sm font-medium text-slate-500">No doctors match your query or filters.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
+                    {filteredDoctors.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="bg-white border border-gray-200/80 rounded-3xl shadow-xs hover:shadow-md hover:border-teal-500/50 transition-all duration-300 p-5 flex flex-col justify-between group overflow-hidden"
+                      >
+                        <div className="space-y-4">
+                          {/* Doctor Image / Avatar with dynamic effect */}
+                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 shadow-inner">
+                            <img
+                              src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
+                              alt={doc.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute bottom-2 left-2 flex gap-1.5 flex-wrap">
+                              <span className="bg-teal-700 text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded shadow-sm">
+                                {doc.specialization}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <h3 className="font-serif font-bold text-slate-900 text-sm md:text-base leading-snug group-hover:text-teal-700 transition-colors">
+                              {doc.name}
+                            </h3>
+                            <p className="text-[10px] text-teal-600 font-bold uppercase tracking-wider">
+                              {doc.qualification}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-semibold">
+                              {doc.experience} Years Experience
+                            </p>
+                          </div>
+
+                          <div className="space-y-1.5 border-t border-gray-100 pt-3 text-[11px] text-slate-500">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5 text-teal-650 flex-shrink-0" />
+                              <span>{doc.timing}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                              <span className="font-bold text-slate-600">{doc.branch} Branch</span>
+                            </div>
+                          </div>
+                        </div>
+
+
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
             {/* TRUST ELEMENTS SECTION (SERPENTINE DESIGN) */}
             <WindingStats />
@@ -1167,6 +1323,8 @@ export default function App() {
             onUpdateSections={setSections}
             centers={centers}
             onUpdateCenters={setCenters}
+            doctors={doctors}
+            onUpdateDoctors={setDoctors}
           />
         )}
         {/* TAB 6: LEGAL & COMPLIANCE PAGES (Razorpay Requirements) */}

@@ -282,6 +282,70 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Create Razorpay Order
+  app.post("/api/payments/create-order", async (req, res) => {
+    try {
+      const { amount } = req.body;
+      if (!amount || isNaN(Number(amount))) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
+      const keyId = process.env.VITE_RAZORPAY_KEY_ID || "rzp_live_THjqoa9dwRMlXq";
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || "0whX8Ck0YxPnbymio2ICyqpk";
+
+      const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+      const postData = JSON.stringify({
+        amount: Math.round(Number(amount) * 100), // convert to paise
+        currency: "INR",
+        receipt: `rcpt_${Math.floor(Math.random() * 1000000)}`
+      });
+
+      const options = {
+        hostname: "api.razorpay.com",
+        port: 443,
+        path: "/v1/orders",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Basic ${auth}`,
+          "Content-Length": Buffer.byteLength(postData)
+        }
+      };
+
+      const request = https.request(options, (apiRes) => {
+        let body = "";
+        apiRes.on("data", (chunk) => {
+          body += chunk;
+        });
+        apiRes.on("end", () => {
+          try {
+            const data = JSON.parse(body);
+            if (apiRes.statusCode === 200 || apiRes.statusCode === 201) {
+              res.json({ orderId: data.id });
+            } else {
+              console.error("Razorpay order creation failed:", data);
+              res.status(apiRes.statusCode || 400).json({ error: data.error?.description || "Razorpay API error" });
+            }
+          } catch (e: any) {
+            console.error("Error parsing Razorpay response:", e);
+            res.status(500).json({ error: "Failed to parse payment server response" });
+          }
+        });
+      });
+
+      request.on("error", (e) => {
+        console.error("HTTP client error when connecting to Razorpay:", e);
+        res.status(500).json({ error: "Failed to contact Razorpay servers" });
+      });
+
+      request.write(postData);
+      request.end();
+    } catch (err: any) {
+      console.error("Error creating payment order:", err);
+      res.status(500).json({ error: err.message || "Failed to create payment order" });
+    }
+  });
+
   // Mount Patient authentication and functional routers
   app.use("/api/auth", authRoutes);
   app.use("/auth", authRoutes);
