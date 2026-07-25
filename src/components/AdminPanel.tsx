@@ -874,9 +874,7 @@ export default function AdminPanel({
   const fetchDatabaseData = async (silent = false) => {
     if (!silent) setIsSyncing(true);
     try {
-      const bookingsRes = await adminFetch('/api/admin/bookings', {
-        headers: { 'X-Admin-Key': 'assurx2026health' }
-      });
+      const bookingsRes = await adminFetch('/api/admin/bookings');
       if (bookingsRes.ok) {
         const bookingsData = await bookingsRes.json();
 
@@ -901,9 +899,7 @@ export default function AdminPanel({
         throw new Error(`Real-time bookings fetch returned status ${bookingsRes.status}`);
       }
 
-      const prescriptionsRes = await adminFetch('/api/admin/prescriptions', {
-        headers: { 'X-Admin-Key': 'assurx2026health' }
-      });
+      const prescriptionsRes = await adminFetch('/api/admin/prescriptions');
       if (prescriptionsRes.ok) {
         const prescriptionsData = await prescriptionsRes.json();
         setPrescriptions(prescriptionsData);
@@ -912,9 +908,7 @@ export default function AdminPanel({
         throw new Error(`Real-time prescriptions fetch returned status ${prescriptionsRes.status}`);
       }
 
-      const careersRes = await adminFetch('/api/admin/careers', {
-        headers: { 'X-Admin-Key': 'assurx2026health' }
-      });
+      const careersRes = await adminFetch('/api/admin/careers');
       if (careersRes.ok) {
         const careersData = await careersRes.json();
         setApplications(careersData);
@@ -1014,8 +1008,7 @@ export default function AdminPanel({
           }
 
           const res = await adminFetch(`/api/admin/bookings/${idStr}`, {
-            method: 'DELETE',
-            headers: { 'X-Admin-Key': 'assurx2026health' }
+            method: 'DELETE'
           });
           if (res.ok) {
             const updated = bookings.filter(b => String(b.id) !== idStr);
@@ -1078,8 +1071,7 @@ export default function AdminPanel({
           }
 
           const res = await adminFetch(`/api/admin/prescriptions/${idStr}`, {
-            method: 'DELETE',
-            headers: { 'X-Admin-Key': 'assurx2026health' }
+            method: 'DELETE'
           });
           if (res.ok) {
             const updated = prescriptions.filter(p => String(p.id) !== idStr);
@@ -1687,8 +1679,7 @@ export default function AdminPanel({
                 async () => {
                   try {
                     const res = await adminFetch('/api/admin/reset', {
-                      method: 'POST',
-                      headers: { 'X-Admin-Key': 'assurx2026health' }
+                      method: 'POST'
                     });
                     if (res.ok) {
                       localStorage.removeItem('assurx_bookings');
@@ -1727,8 +1718,7 @@ export default function AdminPanel({
               // Invalidate the active session on the server
               try {
                 await adminFetch('/api/admin/logout', {
-                  method: 'POST',
-                  headers: { 'X-Admin-Key': localStorage.getItem('adminKey') || 'assurx2026health' }
+                  method: 'POST'
                 });
               } catch (_) { /* fire and forget */ }
               // Clear local state
@@ -3436,8 +3426,7 @@ export default function AdminPanel({
                                     async () => {
                                       try {
                                         const res = await adminFetch(`/api/admin/careers/${appItem.id}`, {
-                                          method: 'DELETE',
-                                          headers: { 'X-Admin-Key': 'assurx2026health' }
+                                          method: 'DELETE'
                                         });
                                         if (res.ok) {
                                           showToast('Job application deleted successfully', 'success');
