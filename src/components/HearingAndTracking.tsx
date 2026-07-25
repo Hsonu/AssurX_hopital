@@ -197,6 +197,7 @@ export function TrackOrderSection({ onGoToBooking, selectedBranch }: TrackOrderP
       case 'sample_collected': return 'Sample/Details Collected';
       case 'processing': return 'Lab Processing';
       case 'report_ready': return 'Simulated Report Published';
+      case 'no_show': return 'Patient No Show';
       default: return 'Pending';
     }
   };
@@ -461,6 +462,7 @@ export function TrackOrderSection({ onGoToBooking, selectedBranch }: TrackOrderP
                               b.bookingStatus === 'report_ready' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' :
                               b.bookingStatus === 'processing' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/15' :
                               b.bookingStatus === 'sample_collected' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/15' :
+                              b.bookingStatus === 'no_show' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/15' :
                               'bg-slate-500/10 text-slate-400 border border-slate-800'
                             }`}>
                               {b.bookingStatus === 'report_ready' ? 'Report Published' : b.bookingStatus.replace('_', ' ')}

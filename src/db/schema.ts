@@ -208,3 +208,74 @@ export async function getNextId(name: string): Promise<number> {
   return counter.seq;
 }
 
+
+// ─── DIAGNOSTIC SERVICE ────────────────────────────────────────────────────────
+
+export interface IDiagnosticService extends Document {
+  id: string;
+  name: string;
+  category: 'scan' | 'lab';
+  subCategory: string;
+  price: number;
+  discountPrice?: number;
+  description: string;
+  preparation: string;
+  duration: string;
+  reportDelivery: string;
+  parametersCount?: number;
+  popular?: boolean;
+}
+
+const diagnosticServiceSchema = new Schema<IDiagnosticService>({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  category: { type: String, required: true, enum: ['scan', 'lab'] },
+  subCategory: { type: String, required: true },
+  price: { type: Number, required: true },
+  discountPrice: { type: Number },
+  description: { type: String, required: true },
+  preparation: { type: String, required: true },
+  duration: { type: String, required: true },
+  reportDelivery: { type: String, required: true },
+  parametersCount: { type: Number },
+  popular: { type: Boolean, default: false },
+});
+
+export const DiagnosticServiceModel: Model<IDiagnosticService> =
+  mongoose.models.DiagnosticService || mongoose.model<IDiagnosticService>('DiagnosticService', diagnosticServiceSchema);
+
+
+// ─── HEALTH PACKAGE ────────────────────────────────────────────────────────────
+
+export interface IHealthPackage extends Document {
+  id: string;
+  name: string;
+  price: number;
+  discountPrice?: number;
+  description: string;
+  testsCount: number;
+  includedTests: string[];
+  idealFor: string;
+  frequency: string;
+  preparation: string;
+  popular?: boolean;
+}
+
+const healthPackageSchema = new Schema<IHealthPackage>({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  discountPrice: { type: Number },
+  description: { type: String, required: true },
+  testsCount: { type: Number, required: true },
+  includedTests: { type: [String], required: true },
+  idealFor: { type: String, required: true },
+  frequency: { type: String, required: true },
+  preparation: { type: String, required: true },
+  popular: { type: Boolean, default: false },
+});
+
+export const HealthPackageModel: Model<IHealthPackage> =
+  mongoose.models.HealthPackage || mongoose.model<IHealthPackage>('HealthPackage', healthPackageSchema);
+
+

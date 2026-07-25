@@ -446,6 +446,7 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
                         booking.bookingStatus === 'processing' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
                         booking.bookingStatus === 'sample_collected' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                         booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-150' :
+                        booking.bookingStatus === 'no_show' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                         'bg-slate-50 text-slate-500 border-slate-200'
                       }`}>
                         {booking.bookingStatus === 'report_ready' ? 'Report Ready' : booking.bookingStatus.replace('_', ' ')}

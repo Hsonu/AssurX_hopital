@@ -512,12 +512,14 @@ export default function PatientBookingsModal({ isOpen, onClose, idToken, userEma
                                 booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse' :
                                 booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border border-purple-200 animate-pulse' :
                                 booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                booking.bookingStatus === 'no_show' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
                                 'bg-emerald-600 text-white shadow-md shadow-emerald-50'
                               }`}>
                                 {booking.bookingStatus === 'booked' ? '● Confirmed' :
                                  booking.bookingStatus === 'sample_collected' ? '● Sample Collected' :
                                  booking.bookingStatus === 'processing' ? '● In Lab Processing' :
                                  booking.bookingStatus === 'cancelled' ? '● Cancelled' :
+                                 booking.bookingStatus === 'no_show' ? '⚠ No Show' :
                                  '✔ Report Released'}
                               </span>
                             </div>

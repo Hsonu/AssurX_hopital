@@ -317,14 +317,15 @@ export default function AdminPanel({
     setIsAddingSection(false);
   };
 
-  const handleAddPackageSubmit = (e: React.FormEvent) => {
+  const handleAddPackageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pkgName.trim()) {
       showToast('Please enter a package name.', 'error');
       return;
     }
 
-    const generatedId = `pkg-${pkgName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
+    // Generate unique ID
+    const generatedId = `pkg-${pkgName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
     const newPkg: HealthPackage = {
       id: generatedId,
@@ -340,76 +341,109 @@ export default function AdminPanel({
       popular: pkgPopular
     };
 
-    const updated = [...packages, newPkg];
-    onUpdatePackages(updated);
+    try {
+      const res = await adminFetch('/api/admin/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPkg)
+      });
+      if (!res.ok) throw new Error("Failed to create package");
+      const updated = [...packages, newPkg];
+      onUpdatePackages(updated);
 
-    // Reset Form
-    setPkgName('');
-    setPkgPrice('');
-    setPkgDiscountPrice('');
-    setPkgDescription('');
-    setPkgTestsCount('');
-    setPkgIncludedTests('');
-    setPkgIdealFor('');
-    setPkgFrequency('');
-    setPkgPreparation('');
-    setPkgPopular(false);
-    setIsAddingPackage(false);
+      // Reset Form
+      setPkgName('');
+      setPkgPrice('');
+      setPkgDiscountPrice('');
+      setPkgDescription('');
+      setPkgTestsCount('');
+      setPkgIncludedTests('');
+      setPkgIdealFor('');
+      setPkgFrequency('');
+      setPkgPreparation('');
+      setPkgPopular(false);
+      setIsAddingPackage(false);
 
-    showToast('New health package added successfully!', 'success');
+      showToast('New health package added successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save health package to database.', 'error');
+    }
   };
 
-  const handleEditPackageSubmit = (e: React.FormEvent) => {
+  const handleEditPackageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pkgName.trim()) {
       showToast('Please enter a package name.', 'error');
       return;
     }
 
-    const updated = packages.map(pkg => {
-      if (pkg.id === editingPackageId) {
-        return {
-          ...pkg,
-          name: pkgName.trim(),
-          price: Number(pkgPrice) || 0,
-          discountPrice: pkgDiscountPrice ? Number(pkgDiscountPrice) : undefined,
-          description: pkgDescription.trim(),
-          testsCount: Number(pkgTestsCount) || 0,
-          includedTests: pkgIncludedTests.split(',').map(t => t.trim()).filter(Boolean),
-          idealFor: pkgIdealFor.trim(),
-          frequency: pkgFrequency.trim(),
-          preparation: pkgPreparation.trim(),
-          popular: pkgPopular
-        };
-      }
-      return pkg;
-    });
+    const updatedFields = {
+      name: pkgName.trim(),
+      price: Number(pkgPrice) || 0,
+      discountPrice: pkgDiscountPrice ? Number(pkgDiscountPrice) : undefined,
+      description: pkgDescription.trim(),
+      testsCount: Number(pkgTestsCount) || 0,
+      includedTests: pkgIncludedTests.split(',').map(t => t.trim()).filter(Boolean),
+      idealFor: pkgIdealFor.trim(),
+      frequency: pkgFrequency.trim(),
+      preparation: pkgPreparation.trim(),
+      popular: pkgPopular
+    };
 
-    onUpdatePackages(updated);
-    setEditingPackageId(null);
-    setIsAddingPackage(false);
+    try {
+      const res = await adminFetch(`/api/admin/packages/${editingPackageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (!res.ok) throw new Error("Failed to update package");
+      
+      const updated = packages.map(pkg => {
+        if (pkg.id === editingPackageId) {
+          return { ...pkg, ...updatedFields };
+        }
+        return pkg;
+      });
 
-    // Reset Form
-    setPkgName('');
-    setPkgPrice('');
-    setPkgDiscountPrice('');
-    setPkgDescription('');
-    setPkgTestsCount('');
-    setPkgIncludedTests('');
-    setPkgIdealFor('');
-    setPkgFrequency('');
-    setPkgPreparation('');
-    setPkgPopular(false);
+      onUpdatePackages(updated);
+      setEditingPackageId(null);
+      setIsAddingPackage(false);
 
-    showToast('Health package updated successfully!', 'success');
+      // Reset Form
+      setPkgName('');
+      setPkgPrice('');
+      setPkgDiscountPrice('');
+      setPkgDescription('');
+      setPkgTestsCount('');
+      setPkgIncludedTests('');
+      setPkgIdealFor('');
+      setPkgFrequency('');
+      setPkgPreparation('');
+      setPkgPopular(false);
+
+      showToast('Health package updated successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update health package in database.', 'error');
+    }
   };
 
-  const handleDeletePackage = (id: string) => {
+  const handleDeletePackage = async (id: string) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this health package?");
     if (confirmDelete) {
-      const updated = packages.filter(p => p.id !== id);
-      onUpdatePackages(updated);
-      showToast('Health package deleted successfully!', 'success');
+      try {
+        const res = await adminFetch(`/api/admin/packages/${id}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) throw new Error("Failed to delete package");
+        const updated = packages.filter(p => p.id !== id);
+        onUpdatePackages(updated);
+        showToast('Health package deleted successfully!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to delete health package from database.', 'error');
+      }
     }
   };
 
@@ -816,7 +850,7 @@ export default function AdminPanel({
   const [newServiceReportDelivery, setNewServiceReportDelivery] = useState('Same Day');
   const [newServicePopular, setNewServicePopular] = useState(false);
 
-  const handleAddServiceSubmit = (e: React.FormEvent) => {
+  const handleAddServiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName.trim()) {
       showToast('Please enter a service name.', 'error');
@@ -840,22 +874,33 @@ export default function AdminPanel({
       popular: newServicePopular
     };
 
-    const updated = [...services, newService];
-    onUpdateServices(updated);
+    try {
+      const res = await adminFetch('/api/admin/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newService)
+      });
+      if (!res.ok) throw new Error("Failed to save service");
+      const updated = [...services, newService];
+      onUpdateServices(updated);
 
-    // Reset form
-    setNewServiceName('');
-    setNewServiceSubCategory('');
-    setNewServicePrice(1000);
-    setNewServiceDiscountPrice(500);
-    setNewServiceDescription('');
-    setNewServicePreparation('');
-    setNewServiceDuration('15 mins');
-    setNewServiceReportDelivery('Same Day');
-    setNewServicePopular(false);
-    setIsAddingService(false);
+      // Reset form
+      setNewServiceName('');
+      setNewServiceSubCategory('');
+      setNewServicePrice(1000);
+      setNewServiceDiscountPrice(500);
+      setNewServiceDescription('');
+      setNewServicePreparation('');
+      setNewServiceDuration('15 mins');
+      setNewServiceReportDelivery('Same Day');
+      setNewServicePopular(false);
+      setIsAddingService(false);
 
-    showToast('New diagnostic service added to catalog successfully!', 'success');
+      showToast('New diagnostic service added to catalog successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save diagnostic service to database.', 'error');
+    }
   };
 
   // Manual Walk-in Booking state
@@ -1255,17 +1300,30 @@ export default function AdminPanel({
     setEditingPrice(service.price);
     setEditingDiscountPrice(service.discountPrice || service.price);
   };
-
-  const handleSavePrice = (id: string) => {
-    const updated = services.map(s => {
-      if (s.id === id) {
-        return { ...s, price: editingPrice, discountPrice: editingDiscountPrice };
-      }
-      return s;
-    });
-    onUpdateServices(updated);
-    setEditingServiceId(null);
-    showToast('Catalog service pricing adjusted successfully!', 'success');
+  const handleSavePrice = async (id: string) => {
+    const targetService = services.find(s => s.id === id);
+    if (!targetService) return;
+    try {
+      const updatedFields = { price: editingPrice, discountPrice: editingDiscountPrice };
+      const res = await adminFetch(`/api/admin/services/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (!res.ok) throw new Error("Failed to save price");
+      const updated = services.map(s => {
+        if (s.id === id) {
+          return { ...s, ...updatedFields };
+        }
+        return s;
+      });
+      onUpdateServices(updated);
+      setEditingServiceId(null);
+      showToast('Catalog service pricing adjusted successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to adjust pricing in database.', 'error');
+    }
   };
 
   // Open full edit service modal
@@ -1285,56 +1343,75 @@ export default function AdminPanel({
   };
 
   // Save all edited service fields
-  const handleSaveEditService = (e: React.FormEvent) => {
+  const handleSaveEditService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editServiceName.trim()) {
       showToast('Service name cannot be empty.', 'error');
       return;
     }
-    const updated = services.map(s => {
-      if (s.id === editServiceId) {
-        return {
-          ...s,
-          name: editServiceName.trim(),
-          category: editServiceCategory,
-          subCategory: editServiceSubCategory.trim() || (editServiceCategory === 'scan' ? 'General Ultrasound' : 'General Blood Tests'),
-          price: editServicePrice,
-          discountPrice: editServiceDiscountPrice || undefined,
-          description: editServiceDescription.trim() || s.description,
-          preparation: editServicePreparation.trim() || s.preparation,
-          duration: editServiceDuration.trim() || s.duration,
-          reportDelivery: editServiceReportDelivery.trim() || s.reportDelivery,
-          popular: editServicePopular
-        };
-      }
-      return s;
-    });
-    onUpdateServices(updated);
-    setIsEditingService(false);
-    setEditServiceId(null);
-    showToast('Service details updated successfully!', 'success');
+    const updatedFields = {
+      name: editServiceName.trim(),
+      category: editServiceCategory,
+      subCategory: editServiceSubCategory.trim() || (editServiceCategory === 'scan' ? 'General Ultrasound' : 'General Blood Tests'),
+      price: editServicePrice,
+      discountPrice: editServiceDiscountPrice || undefined,
+      description: editServiceDescription.trim(),
+      preparation: editServicePreparation.trim(),
+      duration: editServiceDuration.trim(),
+      reportDelivery: editServiceReportDelivery.trim(),
+      popular: editServicePopular
+    };
+    try {
+      const res = await adminFetch(`/api/admin/services/${editServiceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (!res.ok) throw new Error("Failed to save service details");
+      const updated = services.map(s => {
+        if (s.id === editServiceId) {
+          return { ...s, ...updatedFields };
+        }
+        return s;
+      });
+      onUpdateServices(updated);
+      setIsEditingService(false);
+      setEditServiceId(null);
+      showToast('Service details updated successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update service details in database.', 'error');
+    }
   };
 
-  const handleDeleteService = (serviceId: string) => {
+  const handleDeleteService = async (serviceId: string) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this service from the catalog? This will also remove it from any configured homepage offering sections.");
     if (confirmDelete) {
-      const updatedServices = services.filter(s => s.id !== serviceId);
-      onUpdateServices(updatedServices);
-
-      if (sections && onUpdateSections) {
-        const updatedSections = sections.map(section => {
-          if (section.serviceIds && section.serviceIds.includes(serviceId)) {
-            return {
-              ...section,
-              serviceIds: section.serviceIds.filter(id => id !== serviceId)
-            };
-          }
-          return section;
+      try {
+        const res = await adminFetch(`/api/admin/services/${serviceId}`, {
+          method: 'DELETE'
         });
-        onUpdateSections(updatedSections);
-      }
+        if (!res.ok) throw new Error("Failed to delete service");
+        const updatedServices = services.filter(s => s.id !== serviceId);
+        onUpdateServices(updatedServices);
 
-      showToast('Service deleted from catalog rate-card successfully!', 'success');
+        if (sections && onUpdateSections) {
+          const updatedSections = sections.map(section => {
+            if (section.serviceIds && section.serviceIds.includes(serviceId)) {
+              return {
+                ...section,
+                serviceIds: section.serviceIds.filter(id => id !== serviceId)
+              };
+            }
+            return section;
+          });
+          onUpdateSections(updatedSections);
+        }
+        showToast('Service deleted from catalog rate-card successfully!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to delete service from database.', 'error');
+      }
     }
   };
 
@@ -1521,6 +1598,7 @@ export default function AdminPanel({
     sample_collected: bookings.filter(b => b.bookingStatus === 'sample_collected').length,
     processing: bookings.filter(b => b.bookingStatus === 'processing').length,
     report_ready: bookings.filter(b => b.bookingStatus === 'report_ready').length,
+    no_show: bookings.filter(b => b.bookingStatus === 'no_show').length,
   };
 
   if (!isAdminAuthenticated) {
@@ -1925,6 +2003,7 @@ export default function AdminPanel({
                     <option value="sample_collected">Sample Collected</option>
                     <option value="processing">Processing in Lab</option>
                     <option value="report_ready">Report Released</option>
+                    <option value="no_show">No Show</option>
                   </select>
                 </div>
 
@@ -2052,13 +2131,15 @@ export default function AdminPanel({
                                   booking.bookingStatus === 'sample_collected' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                     booking.bookingStatus === 'processing' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                       booking.bookingStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 font-extrabold' :
-                                        'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        booking.bookingStatus === 'no_show' ? 'bg-orange-50 text-orange-700 border-orange-200 font-extrabold' :
+                                          'bg-emerald-50 text-emerald-800 border-emerald-200'
                                   }`}
                               >
                                 <option value="booked">Confirmed</option>
                                 <option value="sample_collected">Sample Collected</option>
                                 <option value="processing">In Lab Processing</option>
                                 <option value="report_ready">Report Released</option>
+                                <option value="no_show">No Show</option>
                                 <option value="cancelled">Cancelled</option>
                               </select>
                             </td>
@@ -3081,6 +3162,10 @@ export default function AdminPanel({
                   <div className="bg-emerald-50/50 border border-emerald-100 p-3 rounded-2xl">
                     <span className="block text-[9px] font-bold uppercase text-slate-400">4. Report Released</span>
                     <span className="text-2xl font-serif font-bold text-emerald-800 mt-1 block">{statusCounts.report_ready} patients</span>
+                  </div>
+                  <div className="bg-orange-50/50 border border-orange-100 p-3 rounded-2xl">
+                    <span className="block text-[9px] font-bold uppercase text-slate-400">⚠ No Show</span>
+                    <span className="text-2xl font-serif font-bold text-orange-700 mt-1 block">{statusCounts.no_show} patients</span>
                   </div>
                 </div>
 

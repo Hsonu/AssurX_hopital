@@ -2009,6 +2009,266 @@ export const DIAGNOSTIC_SERVICES: DiagnosticService[] = [
     duration: '15 mins',
     reportDelivery: '12 Hours',
     popular: true
+  },
+
+  // --- X-RAY ---
+  {
+    id: 'scan-xray-chest',
+    name: 'Digital X-Ray Chest PA View',
+    category: 'scan',
+    subCategory: 'X-Ray (Digital Radiography)',
+    price: 600,
+    discountPrice: 350,
+    description: 'High-resolution digital chest X-Ray for lung, cardiac, and mediastinal evaluation. Detects pneumonia, TB, pleural effusion, and cardiomegaly.',
+    preparation: 'Remove metallic jewelry and clothing above the waist. Wear hospital gown.',
+    duration: '5-10 mins',
+    reportDelivery: 'Immediate (within 30 mins)',
+    popular: true
+  },
+  {
+    id: 'scan-xray-spine',
+    name: 'Digital X-Ray Spine (Cervical/Lumbar)',
+    category: 'scan',
+    subCategory: 'X-Ray (Digital Radiography)',
+    price: 800,
+    discountPrice: 450,
+    description: 'Digital AP and Lateral radiographic views of cervical or lumbosacral spine for disc disease, spondylosis, and fractures.',
+    preparation: 'Remove metallic accessories. No special fasting.',
+    duration: '10 mins',
+    reportDelivery: 'Immediate (within 30 mins)'
+  },
+  {
+    id: 'scan-xray-joint',
+    name: 'Digital X-Ray Joint (Knee/Shoulder/Wrist)',
+    category: 'scan',
+    subCategory: 'X-Ray (Digital Radiography)',
+    price: 600,
+    discountPrice: 350,
+    description: 'Digital radiography for single joint evaluation — arthritis, fracture, dislocation, and bone deformity assessment.',
+    preparation: 'Remove metallic items from the area.',
+    duration: '5-10 mins',
+    reportDelivery: 'Immediate (within 30 mins)'
+  },
+  {
+    id: 'scan-xray-abdomen',
+    name: 'Digital X-Ray Abdomen',
+    category: 'scan',
+    subCategory: 'X-Ray (Digital Radiography)',
+    price: 700,
+    discountPrice: 400,
+    description: 'Abdominal X-Ray for bowel obstruction, kidney stones, free gas under diaphragm, and calcifications.',
+    preparation: 'No special preparation.',
+    duration: '5-10 mins',
+    reportDelivery: 'Immediate (within 30 mins)'
+  },
+
+  // --- CT SCAN ---
+  {
+    id: 'scan-ct-brain',
+    name: 'CT Scan Brain (Plain)',
+    category: 'scan',
+    subCategory: 'CT Scan (Computed Tomography)',
+    price: 5000,
+    discountPrice: 3000,
+    description: 'Non-contrast computed tomography of the brain to evaluate stroke, hemorrhage, tumors, head injury, and hydrocephalus.',
+    preparation: 'No fasting for plain CT. Remove hair clips and earrings.',
+    duration: '15-20 mins',
+    reportDelivery: '2-4 Hours',
+    popular: true
+  },
+  {
+    id: 'scan-ct-chest',
+    name: 'CT Scan Chest (HRCT)',
+    category: 'scan',
+    subCategory: 'CT Scan (Computed Tomography)',
+    price: 6000,
+    discountPrice: 3500,
+    description: 'High-Resolution CT of thorax for interstitial lung disease, COVID sequelae, pulmonary fibrosis, and mediastinal pathology.',
+    preparation: 'Fasting 4 hours if contrast may be needed. Remove metallic accessories.',
+    duration: '20 mins',
+    reportDelivery: '2-4 Hours',
+    popular: true
+  },
+  {
+    id: 'scan-ct-abdomen',
+    name: 'CT Scan Abdomen & Pelvis',
+    category: 'scan',
+    subCategory: 'CT Scan (Computed Tomography)',
+    price: 8000,
+    discountPrice: 5000,
+    description: 'Comprehensive abdominal and pelvic CT for liver, kidney, pancreatic, bowel, and adnexal pathology evaluation.',
+    preparation: 'Fasting 6 hours. Drink oral contrast as instructed. Creatinine report required.',
+    duration: '25-30 mins',
+    reportDelivery: '4-6 Hours'
+  },
+
+  // --- MRI ---
+  {
+    id: 'scan-mri-brain',
+    name: 'MRI Brain (Plain)',
+    category: 'scan',
+    subCategory: 'MRI (Magnetic Resonance Imaging)',
+    price: 8000,
+    discountPrice: 5000,
+    description: 'High-field 1.5T MRI of brain for demyelination, tumors, infarcts, vascular malformations, and epilepsy evaluation.',
+    preparation: 'No metallic implants allowed. Remove all metallic items. No fasting needed.',
+    duration: '30-45 mins',
+    reportDelivery: '4-6 Hours',
+    popular: true
+  },
+  {
+    id: 'scan-mri-spine',
+    name: 'MRI Spine (Cervical/Lumbar)',
+    category: 'scan',
+    subCategory: 'MRI (Magnetic Resonance Imaging)',
+    price: 8000,
+    discountPrice: 5000,
+    description: 'MRI of cervical or lumbosacral spine for disc herniation, canal stenosis, cord compression, and nerve root impingement.',
+    preparation: 'Screening for metallic implants mandatory. Wear comfortable clothing.',
+    duration: '30-45 mins',
+    reportDelivery: '4-6 Hours',
+    popular: true
+  },
+  {
+    id: 'scan-mri-knee',
+    name: 'MRI Knee Joint',
+    category: 'scan',
+    subCategory: 'MRI (Magnetic Resonance Imaging)',
+    price: 8000,
+    discountPrice: 5000,
+    description: 'Detailed MRI evaluation of knee menisci, cruciate ligaments, collateral ligaments, cartilage, and bone marrow edema.',
+    preparation: 'No metallic items. No knee braces with metal during scan.',
+    duration: '30-40 mins',
+    reportDelivery: '4-6 Hours'
+  },
+  {
+    id: 'scan-mri-shoulder',
+    name: 'MRI Shoulder Joint',
+    category: 'scan',
+    subCategory: 'MRI (Magnetic Resonance Imaging)',
+    price: 8000,
+    discountPrice: 5000,
+    description: 'MRI assessment of rotator cuff, labrum, glenohumeral joint, and subacromial space pathology.',
+    preparation: 'No metallic items. Remove jewelry and watches.',
+    duration: '30-40 mins',
+    reportDelivery: '4-6 Hours'
+  },
+
+  // --- MAMMOGRAPHY ---
+  {
+    id: 'scan-mammography-bilateral',
+    name: 'Digital Mammography (Bilateral)',
+    category: 'scan',
+    subCategory: 'Mammography',
+    price: 3500,
+    discountPrice: 2000,
+    description: 'Full-field digital mammography screening for early breast cancer detection, microcalcifications, and tissue density evaluation.',
+    preparation: 'No deodorant, powder, or lotion on chest area. Schedule 5-10 days after period starts.',
+    duration: '15-20 mins',
+    reportDelivery: '2-4 Hours',
+    popular: true
+  },
+
+  // --- DEXA (Bone Density) ---
+  {
+    id: 'scan-dexa-bone-density',
+    name: 'DEXA Bone Density Scan',
+    category: 'scan',
+    subCategory: 'DEXA (Bone Densitometry)',
+    price: 3000,
+    discountPrice: 1800,
+    description: 'Dual-Energy X-Ray Absorptiometry (DXA) for osteoporosis diagnosis. Measures bone mineral density at hip and lumbar spine.',
+    preparation: 'No calcium supplements 24 hours before. Avoid barium studies 7 days prior.',
+    duration: '15-20 mins',
+    reportDelivery: '2 Hours',
+    popular: true
+  },
+
+  // --- ECG / EKG ---
+  {
+    id: 'scan-ecg-12-lead',
+    name: 'ECG / EKG (12-Lead)',
+    category: 'scan',
+    subCategory: 'Cardiac Diagnostics',
+    price: 500,
+    discountPrice: 300,
+    description: 'Standard 12-lead electrocardiogram recording heart rhythm, rate, conduction abnormalities, and ischemic changes.',
+    preparation: 'No caffeine 2 hours before. Wear loose clothing for chest electrode placement.',
+    duration: '10 mins',
+    reportDelivery: 'Immediate (within 15 mins)',
+    popular: true
+  },
+
+  // --- STRESS TEST (TMT) ---
+  {
+    id: 'scan-tmt-stress-test',
+    name: 'TMT / Treadmill Stress Test',
+    category: 'scan',
+    subCategory: 'Cardiac Diagnostics',
+    price: 3500,
+    discountPrice: 2000,
+    description: 'Exercise stress ECG test monitoring cardiac response during graded treadmill exercise for coronary artery disease screening.',
+    preparation: 'Wear comfortable shoes. Light meal 2 hours before. Avoid beta-blockers 48 hours prior (consult doctor).',
+    duration: '30-45 mins',
+    reportDelivery: 'Immediate (within 1 hour)',
+    popular: true
+  },
+
+  // --- HOLTER MONITOR ---
+  {
+    id: 'scan-holter-monitor-24h',
+    name: 'Holter Monitor (24-Hour)',
+    category: 'scan',
+    subCategory: 'Cardiac Diagnostics',
+    price: 4000,
+    discountPrice: 2500,
+    description: 'Continuous 24-hour ambulatory ECG recording for intermittent arrhythmia, palpitation, and syncope evaluation.',
+    preparation: 'Shower before fitting. Avoid magnets, electric blankets. Keep a symptom diary.',
+    duration: '24 hours (device worn)',
+    reportDelivery: '24-48 Hours'
+  },
+
+  // --- PFT (Pulmonary Function Test) ---
+  {
+    id: 'scan-pft-spirometry',
+    name: 'Pulmonary Function Test (PFT / Spirometry)',
+    category: 'scan',
+    subCategory: 'Pulmonary Diagnostics',
+    price: 1500,
+    discountPrice: 800,
+    description: 'Spirometry-based lung function assessment measuring FVC, FEV1, and PEFR for asthma, COPD, and restrictive lung disease.',
+    preparation: 'No bronchodilator inhaler 6 hours before. Avoid heavy meals. No smoking 4 hours prior.',
+    duration: '15-20 mins',
+    reportDelivery: 'Immediate (within 30 mins)',
+    popular: true
+  },
+
+  // --- AUDIOMETRY ---
+  {
+    id: 'scan-audiometry-pta',
+    name: 'Audiometry / Pure Tone Audiogram (PTA)',
+    category: 'scan',
+    subCategory: 'ENT Diagnostics',
+    price: 1200,
+    discountPrice: 700,
+    description: 'Pure Tone Audiometry hearing assessment across frequencies to detect sensorineural and conductive hearing loss.',
+    preparation: 'Avoid loud noise exposure 12 hours before test. Clean ears (no wax blockage).',
+    duration: '20-30 mins',
+    reportDelivery: 'Immediate (within 30 mins)'
+  },
+
+  // --- OPG (Dental X-Ray) ---
+  {
+    id: 'scan-opg-dental',
+    name: 'OPG / Dental Panoramic X-Ray',
+    category: 'scan',
+    subCategory: 'Dental Diagnostics',
+    price: 1000,
+    discountPrice: 600,
+    description: 'Orthopantomogram (OPG) panoramic radiograph of entire jaw, teeth, TMJ, and sinuses for dental and maxillofacial evaluation.',
+    preparation: 'Remove earrings, necklace, spectacles, and dentures.',
+    duration: '5-10 mins',
+    reportDelivery: 'Immediate (within 30 mins)'
   }
 ];
 

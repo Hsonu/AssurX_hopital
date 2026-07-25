@@ -40,6 +40,15 @@ import {
   getAllJobApplications,
   updateJobApplicationStatus,
   deleteJobApplication,
+  seedCatalog,
+  getAllServices,
+  createService,
+  updateService,
+  deleteService,
+  getAllPackages,
+  createPackage,
+  updatePackage,
+  deletePackage,
 } from "./src/db/queries.ts";
 
 const DEFAULT_ADMIN_BOOKINGS_SEED = [
@@ -150,6 +159,7 @@ async function startServer() {
 
   try {
     await connectDB();
+    await seedCatalog();
   } catch (error) {
     console.error("⚠️ WARNING: MongoDB connection failed on startup. Starting server in offline mode. Database features will be unavailable.");
   }
@@ -197,11 +207,13 @@ async function startServer() {
   };
 
   // Server-side price calculation & verification helper (Check 4)
-  const calculateTotalAmount = (items: any[], collectionType: string): number => {
+  const calculateTotalAmount = async (items: any[], collectionType: string): Promise<number> => {
     let itemsTotal = 0;
+    const dbServices = await getAllServices();
+    const dbPackages = await getAllPackages();
     for (const item of items) {
-      const matchedService = DIAGNOSTIC_SERVICES.find(s => s.id === item.itemId);
-      const matchedPackage = HEALTH_PACKAGES.find(p => p.id === item.itemId);
+      const matchedService = dbServices.find((s: any) => s.id === item.itemId);
+      const matchedPackage = dbPackages.find((p: any) => p.id === item.itemId);
       const catalogItem = matchedService || matchedPackage;
       if (!catalogItem) {
         throw new Error(`Item ${item.itemId} not found in catalog.`);
@@ -481,7 +493,7 @@ async function startServer() {
 
       // Server-side price calculation & validation (Check 4)
       try {
-        const expectedTotal = calculateTotalAmount(items, collectionType);
+        const expectedTotal = await calculateTotalAmount(items, collectionType);
         if (totalAmount !== expectedTotal) {
           return res.status(400).json({ error: `Validation failed: Price mismatch. Expected ₹${expectedTotal}, but received ₹${totalAmount}.` });
         }
@@ -909,6 +921,96 @@ async function startServer() {
     } catch (error: any) {
       console.error("Error resetting database:", error);
       res.status(500).json({ error: error.message || "Failed to reset database" });
+    }
+  });
+
+  // ─── SERVICES & PACKAGES ENDPOINTS ──────────────────────────────────────────
+
+  // GET: Public - Retrieve all diagnostic services from MongoDB
+  app.get("/api/services", async (req, res) => {
+    try {
+      const services = await getAllServices();
+      res.json(services);
+    } catch (error: any) {
+      console.error("Error fetching services:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch services" });
+    }
+  });
+
+  // POST: Admin only - Create a new diagnostic service
+  app.post("/api/admin/services", requireAdminAuth, async (req, res) => {
+    try {
+      const newService = await createService(req.body);
+      res.json(newService);
+    } catch (error: any) {
+      console.error("Error creating service:", error);
+      res.status(500).json({ error: error.message || "Failed to create service" });
+    }
+  });
+
+  // PUT: Admin only - Update an existing diagnostic service
+  app.put("/api/admin/services/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const updatedService = await updateService(req.params.id, req.body);
+      res.json(updatedService);
+    } catch (error: any) {
+      console.error("Error updating service:", error);
+      res.status(500).json({ error: error.message || "Failed to update service" });
+    }
+  });
+
+  // DELETE: Admin only - Delete a diagnostic service
+  app.delete("/api/admin/services/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const deletedService = await deleteService(req.params.id);
+      res.json(deletedService);
+    } catch (error: any) {
+      console.error("Error deleting service:", error);
+      res.status(500).json({ error: error.message || "Failed to delete service" });
+    }
+  });
+
+  // GET: Public - Retrieve all health packages from MongoDB
+  app.get("/api/packages", async (req, res) => {
+    try {
+      const packages = await getAllPackages();
+      res.json(packages);
+    } catch (error: any) {
+      console.error("Error fetching packages:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch packages" });
+    }
+  });
+
+  // POST: Admin only - Create a new health package
+  app.post("/api/admin/packages", requireAdminAuth, async (req, res) => {
+    try {
+      const newPackage = await createPackage(req.body);
+      res.json(newPackage);
+    } catch (error: any) {
+      console.error("Error creating package:", error);
+      res.status(500).json({ error: error.message || "Failed to create package" });
+    }
+  });
+
+  // PUT: Admin only - Update an existing health package
+  app.put("/api/admin/packages/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const updatedPackage = await updatePackage(req.params.id, req.body);
+      res.json(updatedPackage);
+    } catch (error: any) {
+      console.error("Error updating package:", error);
+      res.status(500).json({ error: error.message || "Failed to update package" });
+    }
+  });
+
+  // DELETE: Admin only - Delete a health package
+  app.delete("/api/admin/packages/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const deletedPackage = await deletePackage(req.params.id);
+      res.json(deletedPackage);
+    } catch (error: any) {
+      console.error("Error deleting package:", error);
+      res.status(500).json({ error: error.message || "Failed to delete package" });
     }
   });
 

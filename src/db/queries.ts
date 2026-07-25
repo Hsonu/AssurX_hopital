@@ -4,8 +4,11 @@ import {
   BookingModel,
   PrescriptionModel,
   JobApplicationModel,
+  DiagnosticServiceModel,
+  HealthPackageModel,
   getNextId,
 } from './schema.ts';
+import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data.ts';
 
 // Ensure DB is connected before any query
 async function ensureConnected() {
@@ -197,6 +200,9 @@ export async function clearAllData() {
     await BookingModel.deleteMany({});
     await PrescriptionModel.deleteMany({});
     await JobApplicationModel.deleteMany({});
+    await DiagnosticServiceModel.deleteMany({});
+    await HealthPackageModel.deleteMany({});
+    await seedCatalog();
     return { success: true };
   } catch (error) {
     console.error('Failed to clear database tables:', error);
@@ -284,3 +290,129 @@ function mongoDocToPlain(doc: any): any {
   // Keep _id as string reference but use `id` as the primary numeric identifier
   return obj;
 }
+
+
+// ─── SERVICES & PACKAGES CRUD ───────────────────────────────────────────────
+
+export async function seedCatalog() {
+  await ensureConnected();
+  try {
+    const serviceCount = await DiagnosticServiceModel.countDocuments();
+    if (serviceCount === 0) {
+      console.log("🌱 Seeding diagnostic services into MongoDB...");
+      await DiagnosticServiceModel.insertMany(DIAGNOSTIC_SERVICES);
+    }
+    const packageCount = await HealthPackageModel.countDocuments();
+    if (packageCount === 0) {
+      console.log("🌱 Seeding health packages into MongoDB...");
+      await HealthPackageModel.insertMany(HEALTH_PACKAGES);
+    }
+  } catch (error) {
+    console.error("Failed to seed catalog data:", error);
+  }
+}
+
+// Diagnostic Services Queries
+export async function getAllServices() {
+  await ensureConnected();
+  try {
+    const services = await DiagnosticServiceModel.find({});
+    return services.map(mongoDocToPlain);
+  } catch (error) {
+    console.error('Failed to fetch services:', error);
+    throw new Error('Failed to retrieve services from database.', { cause: error });
+  }
+}
+
+export async function createService(serviceData: any) {
+  await ensureConnected();
+  try {
+    const newService = new DiagnosticServiceModel(serviceData);
+    await newService.save();
+    return mongoDocToPlain(newService);
+  } catch (error) {
+    console.error('Failed to create service:', error);
+    throw new Error('Failed to create service in database.', { cause: error });
+  }
+}
+
+export async function updateService(id: string, serviceData: any) {
+  await ensureConnected();
+  try {
+    const service = await DiagnosticServiceModel.findOneAndUpdate(
+      { id },
+      { $set: serviceData },
+      { returnDocument: 'after' }
+    );
+    if (!service) throw new Error(`Service ${id} not found`);
+    return mongoDocToPlain(service);
+  } catch (error) {
+    console.error(`Failed to update service ${id}:`, error);
+    throw new Error('Failed to update service in database.', { cause: error });
+  }
+}
+
+export async function deleteService(id: string) {
+  await ensureConnected();
+  try {
+    const service = await DiagnosticServiceModel.findOneAndDelete({ id });
+    if (!service) return null;
+    return mongoDocToPlain(service);
+  } catch (error) {
+    console.error(`Failed to delete service ${id}:`, error);
+    throw new Error('Failed to delete service from database.', { cause: error });
+  }
+}
+
+// Health Packages Queries
+export async function getAllPackages() {
+  await ensureConnected();
+  try {
+    const packages = await HealthPackageModel.find({});
+    return packages.map(mongoDocToPlain);
+  } catch (error) {
+    console.error('Failed to fetch health packages:', error);
+    throw new Error('Failed to retrieve health packages from database.', { cause: error });
+  }
+}
+
+export async function createPackage(packageData: any) {
+  await ensureConnected();
+  try {
+    const newPackage = new HealthPackageModel(packageData);
+    await newPackage.save();
+    return mongoDocToPlain(newPackage);
+  } catch (error) {
+    console.error('Failed to create package:', error);
+    throw new Error('Failed to create package in database.', { cause: error });
+  }
+}
+
+export async function updatePackage(id: string, packageData: any) {
+  await ensureConnected();
+  try {
+    const pkg = await HealthPackageModel.findOneAndUpdate(
+      { id },
+      { $set: packageData },
+      { returnDocument: 'after' }
+    );
+    if (!pkg) throw new Error(`Health package ${id} not found`);
+    return mongoDocToPlain(pkg);
+  } catch (error) {
+    console.error(`Failed to update package ${id}:`, error);
+    throw new Error('Failed to update health package in database.', { cause: error });
+  }
+}
+
+export async function deletePackage(id: string) {
+  await ensureConnected();
+  try {
+    const pkg = await HealthPackageModel.findOneAndDelete({ id });
+    if (!pkg) return null;
+    return mongoDocToPlain(pkg);
+  } catch (error) {
+    console.error(`Failed to delete package ${id}:`, error);
+    throw new Error('Failed to delete health package from database.', { cause: error });
+  }
+}
+

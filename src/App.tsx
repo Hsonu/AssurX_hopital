@@ -128,30 +128,36 @@ export default function App() {
     localStorage.setItem('assurx_sections', JSON.stringify(sections));
   }, [sections]);
 
-  // Dynamic diagnostic services catalog loaded from DIAGNOSTIC_SERVICES
-  const [services, setServices] = useState<DiagnosticService[]>(DIAGNOSTIC_SERVICES);
+  // Dynamic diagnostic services catalog loaded from database
+  const [services, setServices] = useState<DiagnosticService[]>([]);
+  // Dynamic health packages loaded from database
+  const [packages, setPackages] = useState<HealthPackage[]>([]);
 
   useEffect(() => {
-    setServices(DIAGNOSTIC_SERVICES);
+    // Fetch services
+    fetch('/api/services')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load services");
+        return res.json();
+      })
+      .then(data => setServices(data))
+      .catch(err => {
+        console.error("Error fetching services:", err);
+        setServices(DIAGNOSTIC_SERVICES); // Fallback to local static copy on error
+      });
+
+    // Fetch packages
+    fetch('/api/packages')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load packages");
+        return res.json();
+      })
+      .then(data => setPackages(data))
+      .catch(err => {
+        console.error("Error fetching packages:", err);
+        setPackages(HEALTH_PACKAGES); // Fallback to local static copy on error
+      });
   }, []);
-
-  // Dynamic health packages loaded from localStorage (synced with admin packages manager)
-  const [packages, setPackages] = useState<HealthPackage[]>(() => {
-    const cached = localStorage.getItem('assurx_packages');
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch (e) {
-        // use default if parse failed
-      }
-    }
-    return HEALTH_PACKAGES;
-  });
-
-  // Sync packages to localStorage
-  useEffect(() => {
-    localStorage.setItem('assurx_packages', JSON.stringify(packages));
-  }, [packages]);
 
   // Dynamic clinic centers loaded from localStorage (synced with admin branch manager)
   const [centers, setCenters] = useState<ClinicCenter[]>(() => {
