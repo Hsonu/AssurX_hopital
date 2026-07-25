@@ -148,52 +148,18 @@ export default function AdminPanel({
   const [adminKeyInput, setAdminKeyInput] = useState('');
   const [authError, setAuthError] = useState('');
 
-  const [attempts, setAttempts] = useState<number>(() => {
-    return parseInt(localStorage.getItem('assurx_admin_attempts') || '0', 10);
-  });
-  const [lockUntil, setLockUntil] = useState<number>(() => {
-    return parseInt(localStorage.getItem('assurx_admin_lock_until') || '0', 10);
-  });
+  const [attempts, setAttempts] = useState<number>(0);
+  const [lockUntil, setLockUntil] = useState<number>(0);
   const [remainingTime, setRemainingTime] = useState<string>('');
 
   useEffect(() => {
-    if (lockUntil > Date.now()) {
-      const updateTimer = () => {
-        const diff = lockUntil - Date.now();
-        if (diff <= 0) {
-          setLockUntil(0);
-          setAttempts(0);
-          localStorage.removeItem('assurx_admin_lock_until');
-          localStorage.setItem('assurx_admin_attempts', '0');
-          setAuthError('');
-          setRemainingTime('');
-        } else {
-          const hours = Math.floor(diff / (3600 * 1000));
-          const minutes = Math.floor((diff % (3600 * 1000)) / 60000);
-          const seconds = Math.floor((diff % 60000) / 1000);
-          let timeStr = '';
-          if (hours > 0) {
-            timeStr += `${hours}h `;
-          }
-          timeStr += `${minutes}m ${seconds}s`;
-          setRemainingTime(timeStr);
-          setAuthError(`This terminal is locked due to multiple invalid login attempts. Please try again in ${timeStr}.`);
-        }
-      };
-
-      updateTimer();
-      const interval = setInterval(updateTimer, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [lockUntil]);
+    // Clear lock on load if any was set previously
+    localStorage.removeItem('assurx_admin_lock_until');
+    localStorage.setItem('assurx_admin_attempts', '0');
+  }, []);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (lockUntil > Date.now()) {
-      setAuthError(`This terminal is locked. Please try again in ${remainingTime}.`);
-      return;
-    }
 
     const email = adminEmailInput.trim().toLowerCase();
     const password = adminPasswordInput.trim();
@@ -223,19 +189,7 @@ export default function AdminPanel({
         localStorage.removeItem('assurx_admin_lock_until');
       } else {
         const errData = await res.json().catch(() => ({}));
-        const nextAttempts = attempts + 1;
-        setAttempts(nextAttempts);
-        localStorage.setItem('assurx_admin_attempts', String(nextAttempts));
-
-        if (nextAttempts >= 3) {
-          const lockExpiration = Date.now() + 60 * 60 * 1000; // 1 hour
-          setLockUntil(lockExpiration);
-          localStorage.setItem('assurx_admin_lock_until', String(lockExpiration));
-          setAuthError('Too many failed login attempts. This terminal has been locked for 1 hour.');
-        } else {
-          const attemptsLeft = 3 - nextAttempts;
-          setAuthError(`${errData.error || 'Invalid administrator credentials or security key.'} ${attemptsLeft} ${attemptsLeft === 1 ? 'attempt' : 'attempts'} remaining.`);
-        }
+        setAuthError(errData.error || 'Invalid administrator credentials or security key.');
       }
     } catch (err) {
       console.error('Admin login network error:', err);
