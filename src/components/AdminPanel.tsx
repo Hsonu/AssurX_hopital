@@ -447,42 +447,59 @@ export default function AdminPanel({
 
   // Clinic branch management states
   const [editingCenterCity, setEditingCenterCity] = useState<string | null>(null);
+  const [editCenterCity, setEditCenterCity] = useState('');
   const [editCenterAddress, setEditCenterAddress] = useState('');
   const [editCenterPhone, setEditCenterPhone] = useState('');
+  const [editCenterWhatsappNumber, setEditCenterWhatsappNumber] = useState('');
 
   const [isAddingCenter, setIsAddingCenter] = useState(false);
   const [newCenterCity, setNewCenterCity] = useState('');
   const [newCenterAddress, setNewCenterAddress] = useState('');
   const [newCenterPhone, setNewCenterPhone] = useState('');
+  const [newCenterWhatsappNumber, setNewCenterWhatsappNumber] = useState('');
 
   const handleStartEditCenter = (center: ClinicCenter) => {
     setEditingCenterCity(center.city);
+    setEditCenterCity(center.city);
     setEditCenterAddress(center.address);
     setEditCenterPhone(center.phone);
+    setEditCenterWhatsappNumber(center.whatsappNumber || center.phone || '');
   };
 
-  const handleSaveCenter = async (city: string) => {
-    if (!editCenterAddress.trim() || !editCenterPhone.trim()) {
-      showToast('Please enter both address and phone number.', 'error');
+  const handleSaveCenter = async (originalCity: string) => {
+    if (!editCenterCity.trim() || !editCenterAddress.trim() || !editCenterPhone.trim()) {
+      showToast('Please enter Branch Name, Address, and Phone Number.', 'error');
       return;
     }
-    const updatedFields = { address: editCenterAddress.trim(), phone: editCenterPhone.trim() };
+    if (
+      editCenterCity.trim().toLowerCase() !== originalCity.toLowerCase() &&
+      centers.some(c => c.city.toLowerCase() === editCenterCity.trim().toLowerCase())
+    ) {
+      showToast(`A branch with the name "${editCenterCity.trim()}" already exists.`, 'error');
+      return;
+    }
+    const updatedFields = {
+      city: editCenterCity.trim(),
+      address: editCenterAddress.trim(),
+      phone: editCenterPhone.trim(),
+      whatsappNumber: editCenterWhatsappNumber.trim() || editCenterPhone.trim()
+    };
     try {
-      const res = await adminFetch(`/api/admin/centers/${city}`, {
+      const res = await adminFetch(`/api/admin/centers/${encodeURIComponent(originalCity)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedFields)
       });
       if (!res.ok) throw new Error("Failed to update center");
       const updated = centers.map(c => {
-        if (c.city === city) {
+        if (c.city === originalCity) {
           return { ...c, ...updatedFields };
         }
         return c;
       });
       onUpdateCenters(updated);
       setEditingCenterCity(null);
-      showToast(`${city} branch details updated in database successfully!`, 'success');
+      showToast(`Branch "${updatedFields.city}" updated in database successfully!`, 'success');
     } catch (err) {
       console.error(err);
       showToast('Failed to update branch in database.', 'error');
@@ -492,7 +509,7 @@ export default function AdminPanel({
   const handleAddCenterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCenterCity.trim() || !newCenterAddress.trim() || !newCenterPhone.trim()) {
-      showToast('Please fill out all branch fields.', 'error');
+      showToast('Please fill out all required branch fields.', 'error');
       return;
     }
     if (centers.some(c => c.city.toLowerCase() === newCenterCity.trim().toLowerCase())) {
@@ -502,7 +519,8 @@ export default function AdminPanel({
     const newCenter: ClinicCenter = {
       city: newCenterCity.trim(),
       address: newCenterAddress.trim(),
-      phone: newCenterPhone.trim()
+      phone: newCenterPhone.trim(),
+      whatsappNumber: newCenterWhatsappNumber.trim() || newCenterPhone.trim()
     };
     try {
       const res = await adminFetch('/api/admin/centers', {
@@ -517,6 +535,7 @@ export default function AdminPanel({
       setNewCenterCity('');
       setNewCenterAddress('');
       setNewCenterPhone('');
+      setNewCenterWhatsappNumber('');
       setIsAddingCenter(false);
       showToast(`New branch ${newCenter.city} registered in database successfully!`, 'success');
     } catch (err) {
@@ -3962,13 +3981,24 @@ export default function AdminPanel({
                     </div>
                     {/* Phone Contact */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">Branch Contact Number</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">Branch Contact Phone</label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. 022-50117703, +91 9876543210"
+                        placeholder="e.g. 022-50117703"
                         value={newCenterPhone}
                         onChange={(e) => setNewCenterPhone(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                      />
+                    </div>
+                    {/* WhatsApp Contact */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-450 block">Branch WhatsApp Number</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 919830678387 or +91 9830678387"
+                        value={newCenterWhatsappNumber}
+                        onChange={(e) => setNewCenterWhatsappNumber(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
                       />
                     </div>
@@ -4013,7 +4043,8 @@ export default function AdminPanel({
                     <tr className="bg-slate-50 border-b border-gray-200 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
                       <th className="py-4 px-5 w-40">Branch Name</th>
                       <th className="py-4 px-4">Clinic Address</th>
-                      <th className="py-4 px-4 w-52">Phone Contact</th>
+                      <th className="py-4 px-4 w-44">Phone Contact</th>
+                      <th className="py-4 px-4 w-44">WhatsApp Contact</th>
                       <th className="py-4 px-5 text-right w-56">Controls</th>
                     </tr>
                   </thead>
@@ -4021,10 +4052,19 @@ export default function AdminPanel({
                     {centers.map((center) => (
                       <tr key={center.city} className="hover:bg-slate-50/40">
                         <td className="py-4 px-5">
-                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 w-fit">
-                            <Building className="w-3.5 h-3.5 text-emerald-600" />
-                            {center.city}
-                          </span>
+                          {editingCenterCity === center.city ? (
+                            <input
+                              type="text"
+                              value={editCenterCity}
+                              onChange={(e) => setEditCenterCity(e.target.value)}
+                              className="w-full px-2.5 py-1.5 border border-slate-350 rounded-xl text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-bold uppercase text-emerald-900"
+                            />
+                          ) : (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 w-fit">
+                              <Building className="w-3.5 h-3.5 text-emerald-600" />
+                              {center.city}
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 px-4">
                           {editingCenterCity === center.city ? (
@@ -4048,6 +4088,21 @@ export default function AdminPanel({
                             />
                           ) : (
                             <span className="text-emerald-700 font-bold font-mono text-[12.5px]">{center.phone}</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4">
+                          {editingCenterCity === center.city ? (
+                            <input
+                              type="text"
+                              value={editCenterWhatsappNumber}
+                              onChange={(e) => setEditCenterWhatsappNumber(e.target.value)}
+                              placeholder="WhatsApp Number"
+                              className="w-full px-3 py-1.5 border border-slate-350 rounded-xl text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold text-slate-800"
+                            />
+                          ) : (
+                            <span className="text-emerald-600 font-bold font-mono text-[12.5px] flex items-center gap-1">
+                              💬 {center.whatsappNumber || center.phone}
+                            </span>
                           )}
                         </td>
                         <td className="py-4 px-5 text-right">

@@ -15,6 +15,7 @@ export interface SeedCenter {
   city: string;
   address: string;
   phone: string;
+  whatsappNumber?: string;
 }
 
 export const SEED_TESTIMONIALS: Testimonial[] = [
@@ -68,8 +69,8 @@ export const SEED_FAQS: SeedFAQ[] = [
 ];
 
 export const SEED_CENTERS: SeedCenter[] = [
-  { city: "Malad", address: "Shop 1-3, SV Road, Opp. Malad Railway Station, Malad West, Mumbai - 400064", phone: "022-50117701" },
-  { city: "Goregaon", address: "G-4, Sun Plaza, SV Road, Near Goregaon East Metro, Goregaon, Mumbai - 400063", phone: "022-50117702" }
+  { city: "Malad", address: "Shop 1-3, SV Road, Opp. Malad Railway Station, Malad West, Mumbai - 400064", phone: "022-50117701", whatsappNumber: "919830678387" },
+  { city: "Goregaon", address: "G-4, Sun Plaza, SV Road, Near Goregaon East Metro, Goregaon, Mumbai - 400063", phone: "022-50117702", whatsappNumber: "919830678387" }
 ];
 
 export const SEED_DOCTORS: Doctor[] = [

@@ -325,12 +325,14 @@ export interface ICenter extends Document {
   city: string;
   address: string;
   phone: string;
+  whatsappNumber?: string;
 }
 
 const centerSchema = new Schema<ICenter>({
   city: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
+  whatsappNumber: { type: String, required: false },
 });
 
 export const CenterModel: Model<ICenter> =

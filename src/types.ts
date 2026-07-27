@@ -92,6 +92,7 @@ export interface ClinicCenter {
   city: string;
   address: string;
   phone: string;
+  whatsappNumber?: string;
 }
 
 export interface PatientComplaint {
