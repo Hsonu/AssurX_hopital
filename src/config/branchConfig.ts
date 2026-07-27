@@ -51,7 +51,7 @@ export function getBranchInfo(branchId?: string, centers?: any[]): BranchConfig 
       const num = matchedCenter.whatsappNumber || matchedCenter.phone || '919830678387';
       return {
         id: matchedCenter.city,
-        name: matchedCenter.city.toLowerCase().includes('branch') || matchedCenter.city.toLowerCase().includes('mumbai') ? matchedCenter.city : `${matchedCenter.city} Branch`,
+        name: matchedCenter.city,
         whatsappNumber: formatWhatsAppNumber(num),
         phone: matchedCenter.phone || '+91 9830678387',
         address: matchedCenter.address
@@ -104,7 +104,7 @@ export function getAllBranches(centers?: any[]): Array<{ code: string; name: str
   if (centers && centers.length > 0) {
     return centers.map((c: any) => ({
       code: c.city,
-      name: c.city.toLowerCase().includes('branch') || c.city.toLowerCase().includes('mumbai') ? c.city : `${c.city} Branch`
+      name: c.city
     }));
   }
 
