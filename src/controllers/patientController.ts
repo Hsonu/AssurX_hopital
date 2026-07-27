@@ -3,7 +3,7 @@ import { PatientAuthRequest } from '../middleware/jwtAuth.ts';
 import PatientModel from '../models/Patient.ts';
 import { BookingModel, getNextId } from '../db/schema.ts';
 import mongoose from 'mongoose';
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data.ts';
+import { getAllServices, getAllPackages, formatBookingDoc } from '../db/queries.ts';
 
 // GET /patient/profile
 export const getProfile = async (req: PatientAuthRequest, res: Response) => {
@@ -78,46 +78,7 @@ export const getBookings = async (req: PatientAuthRequest, res: Response) => {
 
     const bookings = await BookingModel.find({ patientId }).sort({ id: -1 });
 
-    const formatted = bookings.map((b) => {
-      let itemsObj = [];
-      try {
-        itemsObj = typeof b.items === 'string' ? JSON.parse(b.items) : b.items;
-      } catch {
-        itemsObj = [];
-      }
-
-      return {
-        id: String(b.id),
-        bookingId: b.bookingId,
-        patient: {
-          name: b.patientName,
-          age: b.patientAge,
-          gender: b.patientGender,
-          relationship: b.patientRelationship,
-        },
-        items: itemsObj,
-        appointmentDate: b.appointmentDate,
-        appointmentTime: b.appointmentTime,
-        collectionType: b.collectionType,
-        address: {
-          street: b.street || "",
-          city: b.city || "",
-          pincode: b.pincode || "",
-        },
-        paymentMethod: b.paymentMethod,
-        paymentStatus: b.paymentStatus,
-        bookingStatus: b.bookingStatus,
-        totalAmount: b.totalAmount,
-        prescriptionName: b.prescriptionName || undefined,
-        simulatedReportUrl: b.simulatedReportUrl || undefined,
-        timestamp: b.timestamp,
-        doctor: b.doctor || '',
-        department: b.department || '',
-        bookingDate: b.bookingDate,
-      };
-    });
-
-    res.json(formatted);
+    res.json(bookings.map(formatBookingDoc));
   } catch (error: any) {
     console.error('Error fetching bookings:', error);
     res.status(500).json({ error: error.message || 'Failed to fetch bookings' });
@@ -188,9 +149,11 @@ export const createBooking = async (req: PatientAuthRequest, res: Response) => {
     // Server-side price calculation & validation (Check 4)
     try {
       let itemsTotal = 0;
+      const dbServices = await getAllServices();
+      const dbPackages = await getAllPackages();
       for (const item of items) {
-        const matchedService = DIAGNOSTIC_SERVICES.find(s => s.id === item.itemId);
-        const matchedPackage = HEALTH_PACKAGES.find(p => p.id === item.itemId);
+        const matchedService = dbServices.find((s: any) => s.id === item.itemId);
+        const matchedPackage = dbPackages.find((p: any) => p.id === item.itemId);
         const catalogItem = matchedService || matchedPackage;
         if (!catalogItem) {
           throw new Error(`Item ${item.itemId} not found in catalog.`);
@@ -242,7 +205,7 @@ export const createBooking = async (req: PatientAuthRequest, res: Response) => {
 
     await newBooking.save();
 
-    res.status(201).json(newBooking);
+    res.status(201).json(formatBookingDoc(newBooking));
   } catch (error: any) {
     console.error('Error creating booking:', error);
     res.status(500).json({ error: error.message || 'Failed to create booking' });
@@ -272,42 +235,7 @@ export const getBookingById = async (req: PatientAuthRequest, res: Response) => 
       return res.status(404).json({ error: 'Booking not found or access denied' });
     }
 
-    let itemsObj = [];
-    try {
-      itemsObj = typeof booking.items === 'string' ? JSON.parse(booking.items) : booking.items;
-    } catch {
-      itemsObj = [];
-    }
-
-    res.json({
-      id: String(booking.id),
-      bookingId: booking.bookingId,
-      patient: {
-        name: booking.patientName,
-        age: booking.patientAge,
-        gender: booking.patientGender,
-        relationship: booking.patientRelationship,
-      },
-      items: itemsObj,
-      appointmentDate: booking.appointmentDate,
-      appointmentTime: booking.appointmentTime,
-      collectionType: booking.collectionType,
-      address: {
-        street: booking.street || "",
-        city: booking.city || "",
-        pincode: booking.pincode || "",
-      },
-      paymentMethod: booking.paymentMethod,
-      paymentStatus: booking.paymentStatus,
-      bookingStatus: booking.bookingStatus,
-      totalAmount: booking.totalAmount,
-      prescriptionName: booking.prescriptionName || undefined,
-      simulatedReportUrl: booking.simulatedReportUrl || undefined,
-      timestamp: booking.timestamp,
-      doctor: booking.doctor || '',
-      department: booking.department || '',
-      bookingDate: booking.bookingDate,
-    });
+    res.json(formatBookingDoc(booking));
   } catch (error: any) {
     console.error('Error fetching booking details:', error);
     res.status(500).json({ error: error.message || 'Failed to fetch booking details' });

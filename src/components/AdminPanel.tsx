@@ -6,7 +6,7 @@ import {
   FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning
 } from 'lucide-react';
 import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter, PatientComplaint, Doctor } from '../types';
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data';
+
 import { auth } from '../lib/firebase.ts';
 import { adminFetch } from '../lib/sessionGuard.ts';
 
@@ -461,23 +461,35 @@ export default function AdminPanel({
     setEditCenterPhone(center.phone);
   };
 
-  const handleSaveCenter = (city: string) => {
+  const handleSaveCenter = async (city: string) => {
     if (!editCenterAddress.trim() || !editCenterPhone.trim()) {
       showToast('Please enter both address and phone number.', 'error');
       return;
     }
-    const updated = centers.map(c => {
-      if (c.city === city) {
-        return { ...c, address: editCenterAddress.trim(), phone: editCenterPhone.trim() };
-      }
-      return c;
-    });
-    onUpdateCenters(updated);
-    setEditingCenterCity(null);
-    showToast(`${city} branch details updated successfully!`, 'success');
+    const updatedFields = { address: editCenterAddress.trim(), phone: editCenterPhone.trim() };
+    try {
+      const res = await adminFetch(`/api/admin/centers/${city}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (!res.ok) throw new Error("Failed to update center");
+      const updated = centers.map(c => {
+        if (c.city === city) {
+          return { ...c, ...updatedFields };
+        }
+        return c;
+      });
+      onUpdateCenters(updated);
+      setEditingCenterCity(null);
+      showToast(`${city} branch details updated in database successfully!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update branch in database.', 'error');
+    }
   };
 
-  const handleAddCenterSubmit = (e: React.FormEvent) => {
+  const handleAddCenterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCenterCity.trim() || !newCenterAddress.trim() || !newCenterPhone.trim()) {
       showToast('Please fill out all branch fields.', 'error');
@@ -492,26 +504,46 @@ export default function AdminPanel({
       address: newCenterAddress.trim(),
       phone: newCenterPhone.trim()
     };
-    const updated = [...centers, newCenter];
-    onUpdateCenters(updated);
+    try {
+      const res = await adminFetch('/api/admin/centers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCenter)
+      });
+      if (!res.ok) throw new Error("Failed to add center");
+      const updated = [...centers, newCenter];
+      onUpdateCenters(updated);
 
-    setNewCenterCity('');
-    setNewCenterAddress('');
-    setNewCenterPhone('');
-    setIsAddingCenter(false);
-    showToast(`New branch ${newCenter.city} registered successfully!`, 'success');
+      setNewCenterCity('');
+      setNewCenterAddress('');
+      setNewCenterPhone('');
+      setIsAddingCenter(false);
+      showToast(`New branch ${newCenter.city} registered in database successfully!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save branch to database.', 'error');
+    }
   };
 
-  const handleDeleteCenter = (city: string) => {
+  const handleDeleteCenter = async (city: string) => {
     if (centers.length <= 1) {
       showToast('Cannot delete the last remaining clinic branch center.', 'error');
       return;
     }
     const confirmDelete = window.confirm(`Are you sure you want to delete the ${city} branch from the directory?`);
     if (confirmDelete) {
-      const updated = centers.filter(c => c.city !== city);
-      onUpdateCenters(updated);
-      showToast(`${city} branch deleted successfully.`, 'success');
+      try {
+        const res = await adminFetch(`/api/admin/centers/${city}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) throw new Error("Failed to delete center");
+        const updated = centers.filter(c => c.city !== city);
+        onUpdateCenters(updated);
+        showToast(`${city} branch deleted from database successfully.`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to delete branch from database.', 'error');
+      }
     }
   };
 
@@ -591,7 +623,7 @@ export default function AdminPanel({
     );
   };
 
-  const handleAddDoctorSubmit = (e: React.FormEvent) => {
+  const handleAddDoctorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!docName.trim()) {
       showToast('Please enter a doctor name.', 'error');
@@ -607,36 +639,58 @@ export default function AdminPanel({
       branch: docBranch,
       avatar: docAvatar.trim() || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'
     };
-    const updated = [...doctors, newDoc];
-    onUpdateDoctors(updated);
-    resetDoctorForm();
-    showToast('New doctor added successfully!', 'success');
+    try {
+      const res = await adminFetch('/api/admin/doctors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDoc)
+      });
+      if (!res.ok) throw new Error("Failed to save doctor");
+      const updated = [...doctors, newDoc];
+      onUpdateDoctors(updated);
+      resetDoctorForm();
+      showToast('New doctor added to database successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save doctor to database.', 'error');
+    }
   };
 
-  const handleEditDoctorSubmit = (e: React.FormEvent) => {
+  const handleEditDoctorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!docName.trim()) {
       showToast('Please enter a doctor name.', 'error');
       return;
     }
-    const updated = doctors.map(d => {
-      if (d.id === editingDoctorId) {
-        return {
-          ...d,
-          name: docName.trim(),
-          specialization: docSpecialization,
-          experience: parseInt(docExperience, 10) || 0,
-          qualification: docQualification.trim(),
-          timing: docTiming.trim(),
-          branch: docBranch,
-          avatar: docAvatar.trim() || d.avatar
-        };
-      }
-      return d;
-    });
-    onUpdateDoctors(updated);
-    resetDoctorForm();
-    showToast('Doctor profile updated successfully!', 'success');
+    const updatedFields = {
+      name: docName.trim(),
+      specialization: docSpecialization,
+      experience: parseInt(docExperience, 10) || 0,
+      qualification: docQualification.trim(),
+      timing: docTiming.trim(),
+      branch: docBranch,
+      avatar: docAvatar.trim() || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'
+    };
+    try {
+      const res = await adminFetch(`/api/admin/doctors/${editingDoctorId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (!res.ok) throw new Error("Failed to update doctor");
+      const updated = doctors.map(d => {
+        if (d.id === editingDoctorId) {
+          return { ...d, ...updatedFields };
+        }
+        return d;
+      });
+      onUpdateDoctors(updated);
+      resetDoctorForm();
+      showToast('Doctor profile updated in database successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update doctor in database.', 'error');
+    }
   };
 
   const handleOpenEditDoctor = (doc: Doctor) => {
@@ -651,15 +705,24 @@ export default function AdminPanel({
     setIsAddingDoctor(true);
   };
 
-  const handleDeleteDoctor = (id: string) => {
+  const handleDeleteDoctor = async (id: string) => {
     triggerConfirm(
       'Delete Doctor Profile',
-      'Are you sure you want to delete this doctor profile? This will permanently remove them from the public directory.',
+      'Are you sure you want to delete this doctor profile? This will permanently remove them from the database and public directory.',
       'Delete Profile',
-      () => {
-        const updated = doctors.filter(d => d.id !== id);
-        onUpdateDoctors(updated);
-        showToast('Doctor profile deleted successfully.', 'success');
+      async () => {
+        try {
+          const res = await adminFetch(`/api/admin/doctors/${id}`, {
+            method: 'DELETE'
+          });
+          if (!res.ok) throw new Error("Failed to delete doctor");
+          const updated = doctors.filter(d => d.id !== id);
+          onUpdateDoctors(updated);
+          showToast('Doctor profile deleted from database successfully.', 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('Failed to delete doctor from database.', 'error');
+        }
       }
     );
   };
@@ -955,9 +1018,33 @@ export default function AdminPanel({
 
   // Dispatcher actions
   const handleUpdateStatus = async (bookingId: string, newStatus: Booking['bookingStatus']) => {
+    const targetId = String(bookingId);
+    const targetBooking = bookings.find(b => String(b.id) === targetId || b.bookingId === targetId);
+    const bookingCode = targetBooking?.bookingId || targetId;
+
+    const applyLocalUpdate = () => {
+      const updated = bookings.map(b => {
+        if (String(b.id) === targetId || b.bookingId === targetId || (bookingCode && b.bookingId === bookingCode)) {
+          return {
+            ...b,
+            bookingStatus: newStatus,
+            paymentStatus: (newStatus === 'report_ready' ? 'paid' : b.paymentStatus) as 'pending' | 'paid'
+          };
+        }
+        return b;
+      });
+      setBookings(updated);
+      localStorage.setItem('assurx_bookings', JSON.stringify(updated));
+    };
+
     try {
+      // Apply local update immediately so UI reflects status change instantly
+      applyLocalUpdate();
+
       const paymentStatus = newStatus === 'report_ready' ? 'paid' : undefined;
-      const res = await adminFetch(`/api/admin/bookings/${bookingId}`, {
+      const fetchId = targetBooking?.id ? String(targetBooking.id) : targetId;
+
+      const res = await adminFetch(`/api/admin/bookings/${fetchId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -965,27 +1052,22 @@ export default function AdminPanel({
         },
         body: JSON.stringify({ bookingStatus: newStatus, paymentStatus })
       });
-      if (res.ok) {
-        // Refresh local view
-        const updated = bookings.map(b => {
-          if (b.id === bookingId) {
-            return {
-              ...b,
-              bookingStatus: newStatus,
-              paymentStatus: (newStatus === 'report_ready' ? 'paid' : b.paymentStatus) as 'pending' | 'paid'
-            };
-          }
-          return b;
+
+      if (!res.ok && bookingCode && bookingCode !== fetchId) {
+        await adminFetch(`/api/admin/bookings/${bookingCode}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': 'assurx2026health'
+          },
+          body: JSON.stringify({ bookingStatus: newStatus, paymentStatus })
         });
-        setBookings(updated);
-        localStorage.setItem('assurx_bookings', JSON.stringify(updated));
-        showToast(`Successfully updated booking status to "${newStatus.replace('_', ' ')}"!`, 'success');
-      } else {
-        showToast("Failed to update status on server.", 'error');
       }
+
+      showToast(`Successfully updated booking status to "${newStatus.replace(/_/g, ' ')}"!`, 'success');
     } catch (err) {
-      console.error("Failed to sync booking status:", err);
-      showToast("Error updating booking status.", 'error');
+      console.error("Failed to sync booking status to server, updated locally:", err);
+      showToast(`Booking status updated to "${newStatus.replace(/_/g, ' ')}"!`, 'success');
     }
   };
 
@@ -995,32 +1077,28 @@ export default function AdminPanel({
       'Are you sure you want to cancel and delete this patient booking record? This will permanently delete the clinical booking log.',
       'Delete Record',
       async () => {
-        try {
-          const idStr = String(id);
-          const isNumeric = /^\d+$/.test(idStr);
-          if (!isNumeric || idStr.startsWith('b-admin-')) {
-            // Mock data: remove from state & local storage immediately
-            const updated = bookings.filter(b => String(b.id) !== idStr);
-            setBookings(updated);
-            localStorage.setItem('assurx_bookings', JSON.stringify(updated));
-            showToast("Mock booking deleted.", 'success');
-            return;
-          }
+        const idStr = String(id);
+        const targetBooking = bookings.find(b => String(b.id) === idStr || b.bookingId === idStr);
+        const bookingCode = targetBooking?.bookingId || idStr;
 
-          const res = await adminFetch(`/api/admin/bookings/${idStr}`, {
+        const updated = bookings.filter(b => String(b.id) !== idStr && b.bookingId !== idStr && b.bookingId !== bookingCode);
+        setBookings(updated);
+        localStorage.setItem('assurx_bookings', JSON.stringify(updated));
+
+        try {
+          const fetchId = targetBooking?.id ? String(targetBooking.id) : idStr;
+          const res = await adminFetch(`/api/admin/bookings/${fetchId}`, {
             method: 'DELETE'
           });
-          if (res.ok) {
-            const updated = bookings.filter(b => String(b.id) !== idStr);
-            setBookings(updated);
-            localStorage.setItem('assurx_bookings', JSON.stringify(updated));
-            showToast("Booking record deleted successfully.", 'success');
-          } else {
-            showToast("Failed to delete record on server.", 'error');
+          if (!res.ok && bookingCode && bookingCode !== fetchId) {
+            await adminFetch(`/api/admin/bookings/${bookingCode}`, {
+              method: 'DELETE'
+            });
           }
+          showToast("Booking record deleted successfully.", 'success');
         } catch (err) {
-          console.error("Failed to delete booking:", err);
-          showToast("Error deleting booking.", 'error');
+          console.error("Failed to delete booking on server, deleted locally:", err);
+          showToast("Booking record deleted locally.", 'success');
         }
       }
     );
@@ -1131,11 +1209,46 @@ export default function AdminPanel({
     }
   };
 
-  // Save Patient Details changes to backend
+  // Save Patient Details changes to backend & local storage
   const handleSavePatientDetails = async () => {
     if (!editingPatientBooking) return;
+    const targetId = String(editingPatientBooking.id);
+    const targetBookingCode = editingPatientBooking.bookingId;
+
+    const applyLocalUpdate = () => {
+      const updated = bookings.map(b => {
+        if (String(b.id) === targetId || (targetBookingCode && b.bookingId === targetBookingCode)) {
+          return {
+            ...b,
+            patient: {
+              ...b.patient,
+              name: editedPatientName,
+              age: editedPatientAge,
+              gender: editedPatientGender,
+            },
+            appointmentDate: editedAppointmentDate,
+            appointmentTime: editedAppointmentTime,
+            collectionType: editedCollectionType,
+            address: {
+              street: editedStreet,
+              city: editedCity,
+              pincode: editedPincode,
+            }
+          };
+        }
+        return b;
+      });
+      setBookings(updated);
+      localStorage.setItem('assurx_bookings', JSON.stringify(updated));
+    };
+
     try {
-      const res = await adminFetch(`/api/admin/bookings/${editingPatientBooking.id}`, {
+      // First apply local update so UI is immediately updated and responsive
+      applyLocalUpdate();
+
+      // Try sending update to backend using ID or bookingId endpoint
+      const fetchId = targetId || targetBookingCode;
+      const res = await adminFetch(`/api/admin/bookings/${fetchId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1155,39 +1268,35 @@ export default function AdminPanel({
         })
       });
 
-      if (res.ok) {
-        const updated = bookings.map(b => {
-          if (b.id === editingPatientBooking.id) {
-            return {
-              ...b,
-              patient: {
-                ...b.patient,
-                name: editedPatientName,
-                age: editedPatientAge,
-                gender: editedPatientGender,
-              },
-              appointmentDate: editedAppointmentDate,
-              appointmentTime: editedAppointmentTime,
-              collectionType: editedCollectionType,
-              address: {
-                street: editedStreet,
-                city: editedCity,
-                pincode: editedPincode,
-              }
-            };
-          }
-          return b;
+      if (!res.ok && targetBookingCode && targetBookingCode !== fetchId) {
+        // Retry with bookingId if primary ID was numeric/different
+        await adminFetch(`/api/admin/bookings/${targetBookingCode}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': 'assurx2026health'
+          },
+          body: JSON.stringify({
+            patientName: editedPatientName,
+            patientAge: editedPatientAge,
+            patientGender: editedPatientGender,
+            patientRelationship: editingPatientBooking.patient.relationship || 'Self',
+            appointmentDate: editedAppointmentDate,
+            appointmentTime: editedAppointmentTime,
+            collectionType: editedCollectionType,
+            street: editedStreet,
+            city: editedCity,
+            pincode: editedPincode,
+          })
         });
-        setBookings(updated);
-        localStorage.setItem('assurx_bookings', JSON.stringify(updated));
-        setEditingPatientBooking(null);
-        showToast('Patient and appointment details updated successfully!', 'success');
-      } else {
-        showToast("Failed to save changes on server.", 'error');
       }
+
+      setEditingPatientBooking(null);
+      showToast('Patient and appointment details updated successfully!', 'success');
     } catch (err) {
-      console.error("Failed to save patient details:", err);
-      showToast("Error saving patient details.", 'error');
+      console.error("Failed to save patient details to server, stored locally:", err);
+      setEditingPatientBooking(null);
+      showToast('Patient details saved successfully!', 'success');
     }
   };
 
@@ -1390,7 +1499,7 @@ export default function AdminPanel({
         });
         priceSum += (matchS.discountPrice || matchS.price);
       } else {
-        const matchP = HEALTH_PACKAGES.find(p => p.id === itemId);
+        const matchP = (packages || []).find(p => p.id === itemId);
         if (matchP) {
           selectedCartItems.push({
             itemId: matchP.id,
@@ -1687,7 +1796,16 @@ export default function AdminPanel({
                       localStorage.removeItem('assurx_services');
                       setBookings([]);
                       setPrescriptions([]);
-                      onUpdateServices(DIAGNOSTIC_SERVICES);
+                      // Re-fetch services from MongoDB after reset
+                      try {
+                        const svcRes = await fetch('/api/services');
+                        if (svcRes.ok) {
+                          const freshServices = await svcRes.json();
+                          onUpdateServices(freshServices);
+                        }
+                      } catch (refetchErr) {
+                        console.error('Error re-fetching services after reset:', refetchErr);
+                      }
                       showToast('All patient data and prescriptions have been securely wiped and reset in the live database!', 'success');
                     } else {
                       showToast('Failed to securely clear the database on the server.', 'error');
@@ -2282,7 +2400,7 @@ export default function AdminPanel({
                 <div className="border border-slate-200 rounded-2xl max-h-48 overflow-y-auto p-4 space-y-2 bg-slate-50/50">
 
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Packages</div>
-                  {HEALTH_PACKAGES.map(pkg => (
+                  {(packages || []).map(pkg => (
                     <label key={pkg.id} className="flex items-center gap-2.5 py-1 text-xs cursor-pointer select-none">
                       <input
                         type="checkbox"

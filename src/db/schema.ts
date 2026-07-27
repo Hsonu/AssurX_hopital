@@ -279,3 +279,89 @@ export const HealthPackageModel: Model<IHealthPackage> =
   mongoose.models.HealthPackage || mongoose.model<IHealthPackage>('HealthPackage', healthPackageSchema);
 
 
+// ─── TESTIMONIAL ──────────────────────────────────────────────────────────────
+
+export interface ITestimonial extends Document {
+  id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  location: string;
+  date: string;
+}
+
+const testimonialSchema = new Schema<ITestimonial>({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true },
+  location: { type: String, required: true },
+  date: { type: String, required: true },
+});
+
+export const TestimonialModel: Model<ITestimonial> =
+  mongoose.models.Testimonial || mongoose.model<ITestimonial>('Testimonial', testimonialSchema);
+
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+export interface IFAQ extends Document {
+  q: string;
+  a: string;
+}
+
+const faqSchema = new Schema<IFAQ>({
+  q: { type: String, required: true },
+  a: { type: String, required: true },
+});
+
+export const FAQModel: Model<IFAQ> =
+  mongoose.models.FAQ || mongoose.model<IFAQ>('FAQ', faqSchema);
+
+
+// ─── CENTER ───────────────────────────────────────────────────────────────────
+
+export interface ICenter extends Document {
+  city: string;
+  address: string;
+  phone: string;
+}
+
+const centerSchema = new Schema<ICenter>({
+  city: { type: String, required: true },
+  address: { type: String, required: true },
+  phone: { type: String, required: true },
+});
+
+export const CenterModel: Model<ICenter> =
+  mongoose.models.Center || mongoose.model<ICenter>('Center', centerSchema);
+
+
+// ─── DOCTOR ───────────────────────────────────────────────────────────────────
+
+export interface IDoctor extends Document {
+  id: string;
+  name: string;
+  specialization: string;
+  experience: number;
+  qualification: string;
+  timing: string;
+  branch: string;
+  avatar: string;
+}
+
+const doctorSchema = new Schema<IDoctor>({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  specialization: { type: String, required: true },
+  experience: { type: Number, required: true },
+  qualification: { type: String, required: true },
+  timing: { type: String, required: true },
+  branch: { type: String, required: true },
+  avatar: { type: String, required: true },
+});
+
+export const DoctorModel: Model<IDoctor> =
+  mongoose.models.Doctor || mongoose.model<IDoctor>('Doctor', doctorSchema);
+
+

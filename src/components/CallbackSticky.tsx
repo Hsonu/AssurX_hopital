@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { Phone, X, CheckCircle2, Loader2 } from 'lucide-react';
+import { getWhatsAppUrl, getBranchWhatsAppNumber } from '../config/branchConfig.ts';
 
-export default function CallbackSticky() {
+interface CallbackStickyProps {
+  selectedBranch?: string;
+  centers?: any[];
+}
+
+export default function CallbackSticky({ selectedBranch, centers }: CallbackStickyProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+
+  const whatsappUrl = getWhatsAppUrl(selectedBranch, undefined, centers);
+  const whatsappNumber = getBranchWhatsAppNumber(selectedBranch, centers);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,11 +74,11 @@ export default function CallbackSticky() {
     <>
       {/* Permanent Fixed Circular WhatsApp Button - Positioned ABOVE Callback Bar */}
       <a
-        href="https://wa.me/919830678387?text=Hello%20AssurX%20Diagnostics!%20I%20want%20to%20book%20a%20test%20😊"
+        href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Chat on WhatsApp 9830678387"
-        title="Chat on WhatsApp: 9830678387"
+        aria-label={`Chat on WhatsApp ${whatsappNumber}`}
+        title={`Chat on WhatsApp: ${whatsappNumber}`}
         className={`fixed ${!isDismissed ? 'bottom-[105px]' : 'bottom-5'} right-5 z-50 w-14 h-14 md:w-15 md:h-15 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgba(37,211,102,0.55)] transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white cursor-pointer group`}
       >
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-35"></span>

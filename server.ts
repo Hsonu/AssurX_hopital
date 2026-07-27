@@ -10,7 +10,7 @@ import { AdminSessionModel } from "./src/db/schema.ts";
 import authRoutes from "./src/routes/authRoutes.ts";
 import patientRoutes from "./src/routes/patientRoutes.ts";
 import { connectDB } from "./src/db/index.ts";
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from "./src/data.ts";
+
 
 function pingServer(url: string) {
   try {
@@ -49,6 +49,22 @@ import {
   createPackage,
   updatePackage,
   deletePackage,
+  createTestimonial,
+  updateTestimonial,
+  deleteTestimonial,
+  createFAQ,
+  updateFAQ,
+  deleteFAQ,
+  createCenter,
+  updateCenter,
+  deleteCenter,
+  createDoctor,
+  updateDoctor,
+  deleteDoctor,
+  getAllTestimonials,
+  getAllFAQs,
+  getAllCenters,
+  getAllDoctors,
 } from "./src/db/queries.ts";
 
 const DEFAULT_ADMIN_BOOKINGS_SEED = [
@@ -228,11 +244,17 @@ async function startServer() {
 
   // 2. Memory-Based API Rate Limiting Middleware
   const rateLimitWindowMs = 15 * 60 * 1000; // 15 mins window
-  const rateLimitMaxRequests = 300; // max 300 requests per IP per window
+  const rateLimitMaxRequests = 2000; // max 2000 requests per IP per window
   const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
   const rateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown-ip";
+
+    // Bypass strict rate limiting for local development / loopback traffic (localhost, 127.0.0.1, ::1)
+    if (ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1" || ip.includes("127.0.0.1")) {
+      return next();
+    }
+
     const now = Date.now();
     let info = rateLimitMap.get(ip);
 
@@ -253,7 +275,7 @@ async function startServer() {
     next();
   };
 
-  // Apply rate limiting specifically on API endpoints (excluding the health endpoint)
+  // Apply rate limiting specifically on API endpoints (excluding health & local dev)
   app.use("/api/", (req, res, next) => {
     if (req.path === "/health") {
       return next();
@@ -302,7 +324,7 @@ async function startServer() {
         return res.status(400).json({ error: "Invalid amount" });
       }
 
-      const keyId = process.env.VITE_RAZORPAY_KEY_ID || "rzp_live_THjqoa9dwRMlXq";
+      const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "rzp_live_THjqoa9dwRMlXq";
       const keySecret = process.env.RAZORPAY_KEY_SECRET || "0whX8Ck0YxPnbymio2ICyqpk";
 
       const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
@@ -336,7 +358,7 @@ async function startServer() {
               res.json({ orderId: data.id });
             } else {
               console.error("Razorpay order creation failed:", data);
-              res.status(apiRes.statusCode || 400).json({ error: data.error?.description || "Razorpay API error" });
+              res.status(apiRes.statusCode || 400).json({ error: data.error?.description || "Razorpay API authentication or request error" });
             }
           } catch (e: any) {
             console.error("Error parsing Razorpay response:", e);
@@ -355,6 +377,32 @@ async function startServer() {
     } catch (err: any) {
       console.error("Error creating payment order:", err);
       res.status(500).json({ error: err.message || "Failed to create payment order" });
+    }
+  });
+
+  // Verify Razorpay Payment Signature (Bank-Grade Security Verification)
+  app.post("/api/payments/verify", async (req, res) => {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ error: "Missing required payment verification parameters" });
+      }
+
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || "0whX8Ck0YxPnbymio2ICyqpk";
+      const generatedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+
+      if (generatedSignature === razorpay_signature) {
+        res.json({ success: true, verified: true });
+      } else {
+        console.error("Razorpay signature mismatch:", { expected: generatedSignature, received: razorpay_signature });
+        res.status(400).json({ error: "Invalid payment signature. Transaction authentication failed." });
+      }
+    } catch (err: any) {
+      console.error("Error verifying payment signature:", err);
+      res.status(500).json({ error: "Payment verification failed" });
     }
   });
 
@@ -540,45 +588,7 @@ async function startServer() {
         return res.status(400).json({ error: "Unauthorized" });
       }
       const bookingsList = await getUserBookings(uid);
-
-      // Parse items back and nest patient details to match Booking interface exactly
-      const parsedBookings = bookingsList.map((b) => {
-        let itemsObj = [];
-        try {
-          itemsObj = JSON.parse(b.items);
-        } catch {
-          itemsObj = [];
-        }
-
-        return {
-          id: String(b.id),
-          bookingId: b.bookingId,
-          patient: {
-            name: b.patientName,
-            age: b.patientAge,
-            gender: b.patientGender,
-            relationship: b.patientRelationship,
-          },
-          items: itemsObj,
-          appointmentDate: b.appointmentDate,
-          appointmentTime: b.appointmentTime,
-          collectionType: b.collectionType,
-          address: {
-            street: b.street || "",
-            city: b.city || "",
-            pincode: b.pincode || "",
-          },
-          paymentMethod: b.paymentMethod,
-          paymentStatus: b.paymentStatus,
-          bookingStatus: b.bookingStatus,
-          totalAmount: b.totalAmount,
-          prescriptionName: b.prescriptionName || undefined,
-          simulatedReportUrl: b.simulatedReportUrl || undefined,
-          timestamp: b.timestamp,
-        };
-      });
-
-      res.json(parsedBookings);
+      res.json(bookingsList);
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
       res.status(500).json({ error: error.message || "Failed to retrieve bookings" });
@@ -670,39 +680,7 @@ async function startServer() {
         }
       }
 
-      let itemsObj = [];
-      try {
-        itemsObj = JSON.parse(b.items);
-      } catch {
-        itemsObj = [];
-      }
-
-      res.json({
-        id: String(b.id),
-        bookingId: b.bookingId,
-        patient: {
-          name: b.patientName,
-          age: b.patientAge,
-          gender: b.patientGender,
-          relationship: b.patientRelationship,
-        },
-        items: itemsObj,
-        appointmentDate: b.appointmentDate,
-        appointmentTime: b.appointmentTime,
-        collectionType: b.collectionType,
-        address: {
-          street: b.street || "",
-          city: b.city || "",
-          pincode: b.pincode || "",
-        },
-        paymentMethod: b.paymentMethod,
-        paymentStatus: b.paymentStatus,
-        bookingStatus: b.bookingStatus,
-        totalAmount: b.totalAmount,
-        prescriptionName: b.prescriptionName || undefined,
-        simulatedReportUrl: b.simulatedReportUrl || undefined,
-        timestamp: b.timestamp,
-      });
+      res.json(b);
     } catch (error: any) {
       console.error("Error tracking booking:", error);
       res.status(500).json({ error: error.message || "Failed to find booking" });
@@ -1014,50 +992,186 @@ async function startServer() {
     }
   });
 
+  // ─── TESTIMONIALS, FAQS, CENTERS, DOCTORS PUBLIC ENDPOINTS ──────────────────
+
+  // GET: Public - Retrieve all testimonials from MongoDB
+  app.get("/api/testimonials", async (req, res) => {
+    try {
+      const testimonials = await getAllTestimonials();
+      res.json(testimonials);
+    } catch (error: any) {
+      console.error("Error fetching testimonials:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch testimonials" });
+    }
+  });
+
+  // GET: Public - Retrieve all FAQs from MongoDB
+  app.get("/api/faqs", async (req, res) => {
+    try {
+      const faqs = await getAllFAQs();
+      res.json(faqs);
+    } catch (error: any) {
+      console.error("Error fetching FAQs:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch FAQs" });
+    }
+  });
+
+  // GET: Public - Retrieve all centers from MongoDB
+  app.get("/api/centers", async (req, res) => {
+    try {
+      const centers = await getAllCenters();
+      res.json(centers);
+    } catch (error: any) {
+      console.error("Error fetching centers:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch centers" });
+    }
+  });
+
+  // GET: Public - Retrieve all doctors from MongoDB
+  app.get("/api/doctors", async (req, res) => {
+    try {
+      const doctors = await getAllDoctors();
+      res.json(doctors);
+    } catch (error: any) {
+      console.error("Error fetching doctors:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch doctors" });
+    }
+  });
+
+  // ─── ADMIN DOCTORS CRUD ─────────────────────────────────────────────────────
+
+  app.post("/api/admin/doctors", requireAdminAuth, async (req, res) => {
+    try {
+      const doc = await createDoctor(req.body);
+      res.status(201).json(doc);
+    } catch (error: any) {
+      console.error("Error creating doctor:", error);
+      res.status(500).json({ error: error.message || "Failed to create doctor" });
+    }
+  });
+
+  app.put("/api/admin/doctors/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const doc = await updateDoctor(req.params.id, req.body);
+      res.json(doc);
+    } catch (error: any) {
+      console.error("Error updating doctor:", error);
+      res.status(500).json({ error: error.message || "Failed to update doctor" });
+    }
+  });
+
+  app.delete("/api/admin/doctors/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const deleted = await deleteDoctor(req.params.id);
+      res.json(deleted || { success: true });
+    } catch (error: any) {
+      console.error("Error deleting doctor:", error);
+      res.status(500).json({ error: error.message || "Failed to delete doctor" });
+    }
+  });
+
+  // ─── ADMIN CENTERS CRUD ─────────────────────────────────────────────────────
+
+  app.post("/api/admin/centers", requireAdminAuth, async (req, res) => {
+    try {
+      const center = await createCenter(req.body);
+      res.status(201).json(center);
+    } catch (error: any) {
+      console.error("Error creating center:", error);
+      res.status(500).json({ error: error.message || "Failed to create center" });
+    }
+  });
+
+  app.put("/api/admin/centers/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const center = await updateCenter(req.params.id, req.body);
+      res.json(center);
+    } catch (error: any) {
+      console.error("Error updating center:", error);
+      res.status(500).json({ error: error.message || "Failed to update center" });
+    }
+  });
+
+  app.delete("/api/admin/centers/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const deleted = await deleteCenter(req.params.id);
+      res.json(deleted || { success: true });
+    } catch (error: any) {
+      console.error("Error deleting center:", error);
+      res.status(500).json({ error: error.message || "Failed to delete center" });
+    }
+  });
+
+  // ─── ADMIN TESTIMONIALS CRUD ────────────────────────────────────────────────
+
+  app.post("/api/admin/testimonials", requireAdminAuth, async (req, res) => {
+    try {
+      const testimonial = await createTestimonial(req.body);
+      res.status(201).json(testimonial);
+    } catch (error: any) {
+      console.error("Error creating testimonial:", error);
+      res.status(500).json({ error: error.message || "Failed to create testimonial" });
+    }
+  });
+
+  app.put("/api/admin/testimonials/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const testimonial = await updateTestimonial(req.params.id, req.body);
+      res.json(testimonial);
+    } catch (error: any) {
+      console.error("Error updating testimonial:", error);
+      res.status(500).json({ error: error.message || "Failed to update testimonial" });
+    }
+  });
+
+  app.delete("/api/admin/testimonials/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const deleted = await deleteTestimonial(req.params.id);
+      res.json(deleted || { success: true });
+    } catch (error: any) {
+      console.error("Error deleting testimonial:", error);
+      res.status(500).json({ error: error.message || "Failed to delete testimonial" });
+    }
+  });
+
+  // ─── ADMIN FAQS CRUD ────────────────────────────────────────────────────────
+
+  app.post("/api/admin/faqs", requireAdminAuth, async (req, res) => {
+    try {
+      const faq = await createFAQ(req.body);
+      res.status(201).json(faq);
+    } catch (error: any) {
+      console.error("Error creating FAQ:", error);
+      res.status(500).json({ error: error.message || "Failed to create FAQ" });
+    }
+  });
+
+  app.put("/api/admin/faqs/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const faq = await updateFAQ(req.params.id, req.body);
+      res.json(faq);
+    } catch (error: any) {
+      console.error("Error updating FAQ:", error);
+      res.status(500).json({ error: error.message || "Failed to update FAQ" });
+    }
+  });
+
+  app.delete("/api/admin/faqs/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const deleted = await deleteFAQ(req.params.id);
+      res.json(deleted || { success: true });
+    } catch (error: any) {
+      console.error("Error deleting FAQ:", error);
+      res.status(500).json({ error: error.message || "Failed to delete FAQ" });
+    }
+  });
+
+
   // 1. Get all Bookings
   app.get("/api/admin/bookings", requireAdminAuth, async (req, res) => {
     try {
       const bookingsList = await getAllBookings();
-
-      const parsedBookings = bookingsList.map((b) => {
-        try {
-          return {
-            id: String(b.id), // Ensure string-compatible ID for UI React key
-            bookingId: b.bookingId,
-            patient: {
-              name: b.patientName,
-              age: b.patientAge,
-              gender: b.patientGender,
-              relationship: b.patientRelationship,
-            },
-            items: JSON.parse(b.items),
-            appointmentDate: b.appointmentDate,
-            appointmentTime: b.appointmentTime,
-            collectionType: b.collectionType,
-            address: {
-              street: b.street || "",
-              city: b.city || "",
-              pincode: b.pincode || "",
-            },
-            paymentMethod: b.paymentMethod,
-            paymentStatus: b.paymentStatus,
-            bookingStatus: b.bookingStatus,
-            totalAmount: b.totalAmount,
-            timestamp: b.timestamp,
-            simulatedReportUrl: b.simulatedReportUrl,
-            userEmail: b.userEmail,
-          };
-        } catch {
-          return {
-            ...b,
-            id: String(b.id),
-            patient: { name: b.patientName, age: b.patientAge, gender: b.patientGender, relationship: b.patientRelationship },
-            items: [],
-            address: { street: b.street || "", city: b.city || "", pincode: b.pincode || "" },
-          };
-        }
-      });
-      res.json(parsedBookings);
+      res.json(bookingsList);
     } catch (error: any) {
       console.error("Error admin fetching bookings:", error);
       res.status(500).json({ error: error.message || "Failed to retrieve bookings" });
@@ -1067,10 +1181,11 @@ async function startServer() {
   // 2. Update Booking Status, findings or patient details
   app.patch("/api/admin/bookings/:id", requireAdminAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      const rawId = req.params.id;
+      if (!rawId) {
         return res.status(400).json({ error: "Invalid booking ID" });
       }
+      const id = /^\d+$/.test(rawId) ? parseInt(rawId, 10) : rawId;
       const updateData: any = {};
 
       if (req.body.bookingStatus !== undefined) updateData.bookingStatus = sanitizeString(String(req.body.bookingStatus).trim()).substring(0, 50);
@@ -1106,10 +1221,11 @@ async function startServer() {
   // 3. Delete Booking
   app.delete("/api/admin/bookings/:id", requireAdminAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      const rawId = req.params.id;
+      if (!rawId) {
         return res.status(400).json({ error: "Invalid booking ID" });
       }
+      const id = /^\d+$/.test(rawId) ? parseInt(rawId, 10) : rawId;
       const deleted = await deleteBooking(id);
       res.json(deleted || { success: true });
     } catch (error: any) {

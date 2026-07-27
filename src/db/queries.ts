@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { connectDB } from './index.ts';
 import {
   UserModel,
@@ -6,9 +7,20 @@ import {
   JobApplicationModel,
   DiagnosticServiceModel,
   HealthPackageModel,
+  TestimonialModel,
+  FAQModel,
+  CenterModel,
+  DoctorModel,
   getNextId,
 } from './schema.ts';
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES } from '../data.ts';
+import {
+  DIAGNOSTIC_SERVICES,
+  HEALTH_PACKAGES,
+  SEED_TESTIMONIALS,
+  SEED_FAQS,
+  SEED_CENTERS,
+  SEED_DOCTORS,
+} from './seedData.ts';
 
 // Ensure DB is connected before any query
 async function ensureConnected() {
@@ -16,6 +28,59 @@ async function ensureConnected() {
 }
 
 // ─── BOOKINGS ─────────────────────────────────────────────────────────────────
+
+export function formatBookingDoc(doc: any): any {
+  if (!doc) return null;
+  const obj = doc.toObject ? doc.toObject() : { ...doc };
+
+  let itemsObj: any[] = [];
+  if (obj.items) {
+    if (typeof obj.items === 'string') {
+      try {
+        itemsObj = JSON.parse(obj.items);
+      } catch {
+        itemsObj = [];
+      }
+    } else if (Array.isArray(obj.items)) {
+      itemsObj = obj.items;
+    }
+  }
+
+  const patientObj = {
+    name: obj.patientName || (obj.patient && obj.patient.name) || '',
+    age: obj.patientAge !== undefined ? Number(obj.patientAge) : (obj.patient && obj.patient.age) || 0,
+    gender: obj.patientGender || (obj.patient && obj.patient.gender) || 'Male',
+    relationship: obj.patientRelationship || (obj.patient && obj.patient.relationship) || 'Self',
+  };
+
+  const addressObj = {
+    street: obj.street || (obj.address && obj.address.street) || '',
+    city: obj.city || (obj.address && obj.address.city) || '',
+    pincode: obj.pincode || (obj.address && obj.address.pincode) || '',
+  };
+
+  return {
+    id: String(obj.id !== undefined ? obj.id : obj._id),
+    bookingId: obj.bookingId || '',
+    patient: patientObj,
+    items: itemsObj,
+    appointmentDate: obj.appointmentDate || '',
+    appointmentTime: obj.appointmentTime || '',
+    collectionType: obj.collectionType || 'home',
+    address: addressObj,
+    paymentMethod: obj.paymentMethod || 'upi',
+    paymentStatus: obj.paymentStatus || 'pending',
+    bookingStatus: obj.bookingStatus || 'booked',
+    totalAmount: Number(obj.totalAmount) || 0,
+    prescriptionName: obj.prescriptionName || undefined,
+    simulatedReportUrl: obj.simulatedReportUrl || undefined,
+    timestamp: obj.timestamp || new Date().toISOString(),
+    doctor: obj.doctor || '',
+    department: obj.department || '',
+    bookingDate: obj.bookingDate || undefined,
+    userEmail: obj.userEmail || '',
+  };
+}
 
 export async function createBooking(data: {
   bookingId: string;
@@ -44,7 +109,7 @@ export async function createBooking(data: {
     const id = await getNextId('booking');
     const booking = new BookingModel({ ...data, id });
     await booking.save();
-    return mongoDocToPlain(booking);
+    return formatBookingDoc(booking);
   } catch (error) {
     console.error('Failed to create booking:', error);
     throw new Error('Failed to save booking to database.', { cause: error });
@@ -58,7 +123,7 @@ export async function getUserBookings(uid: string) {
     const user = await UserModel.findOne({ uid });
     if (!user) return [];
     const bookings = await BookingModel.find({ userId: user.id }).sort({ id: -1 });
-    return bookings.map(mongoDocToPlain);
+    return bookings.map(formatBookingDoc);
   } catch (error) {
     console.error('Failed to fetch user bookings:', error);
     throw new Error('Failed to retrieve bookings from database.', { cause: error });
@@ -70,7 +135,7 @@ export async function getBookingByBookingId(bookingId: string) {
   try {
     const booking = await BookingModel.findOne({ bookingId });
     if (!booking) return undefined;
-    return mongoDocToPlain(booking);
+    return formatBookingDoc(booking);
   } catch (error) {
     console.error(`Failed to fetch booking by bookingId ${bookingId}:`, error);
     throw new Error('Failed to retrieve booking by ID from database.', { cause: error });
@@ -88,7 +153,7 @@ export async function getAllBookings() {
     const userMap = new Map(users.map((u) => [u.id, u.email]));
 
     return bookings.map((b) => ({
-      ...mongoDocToPlain(b),
+      ...formatBookingDoc(b),
       userEmail: userMap.get(b.userId) || '',
     }));
   } catch (error) {
@@ -97,28 +162,54 @@ export async function getAllBookings() {
   }
 }
 
-export async function updateBooking(id: number, data: Record<string, unknown>) {
+export async function updateBooking(id: number | string, data: Record<string, unknown>) {
   await ensureConnected();
   try {
-    const booking = await BookingModel.findOneAndUpdate(
-      { id },
+    const isNum = typeof id === 'number' || /^\d+$/.test(String(id));
+    const filter: any = isNum ? { id: Number(id) } : { bookingId: String(id) };
+
+    let booking = await BookingModel.findOneAndUpdate(
+      filter,
       { $set: data },
       { returnDocument: 'after' }
     );
+
+    if (!booking && !isNum) {
+      const numId = parseInt(String(id), 10);
+      if (!isNaN(numId)) {
+        booking = await BookingModel.findOneAndUpdate(
+          { id: numId },
+          { $set: data },
+          { returnDocument: 'after' }
+        );
+      }
+    }
+
     if (!booking) throw new Error(`Booking with id ${id} not found`);
-    return mongoDocToPlain(booking);
+    return formatBookingDoc(booking);
   } catch (error) {
     console.error(`Failed to update booking ${id}:`, error);
     throw new Error('Failed to update booking in database.', { cause: error });
   }
 }
 
-export async function deleteBooking(id: number) {
+export async function deleteBooking(id: number | string) {
   await ensureConnected();
   try {
-    const booking = await BookingModel.findOneAndDelete({ id });
+    const isNum = typeof id === 'number' || /^\d+$/.test(String(id));
+    const filter: any = isNum ? { id: Number(id) } : { bookingId: String(id) };
+
+    let booking = await BookingModel.findOneAndDelete(filter);
+
+    if (!booking && !isNum) {
+      const numId = parseInt(String(id), 10);
+      if (!isNaN(numId)) {
+        booking = await BookingModel.findOneAndDelete({ id: numId });
+      }
+    }
+
     if (!booking) return null;
-    return mongoDocToPlain(booking);
+    return formatBookingDoc(booking);
   } catch (error) {
     console.error(`Failed to delete booking ${id}:`, error);
     throw new Error('Failed to delete booking from database.', { cause: error });
@@ -307,9 +398,37 @@ export async function seedCatalog() {
       console.log("🌱 Seeding health packages into MongoDB...");
       await HealthPackageModel.insertMany(HEALTH_PACKAGES);
     }
+    const testimonialCount = await TestimonialModel.countDocuments();
+    if (testimonialCount === 0) {
+      console.log("🌱 Seeding testimonials into MongoDB...");
+      await TestimonialModel.insertMany(SEED_TESTIMONIALS);
+    }
+    const faqCount = await FAQModel.countDocuments();
+    if (faqCount === 0) {
+      console.log("🌱 Seeding FAQs into MongoDB...");
+      await FAQModel.insertMany(SEED_FAQS);
+    }
+    const centerCount = await CenterModel.countDocuments();
+    if (centerCount === 0) {
+      console.log("🌱 Seeding centers into MongoDB...");
+      await CenterModel.insertMany(SEED_CENTERS);
+    }
+    const doctorCount = await DoctorModel.countDocuments();
+    if (doctorCount === 0) {
+      console.log("🌱 Seeding doctors into MongoDB...");
+      await DoctorModel.insertMany(SEED_DOCTORS);
+    }
   } catch (error) {
     console.error("Failed to seed catalog data:", error);
   }
+}
+
+// Helper to create flexible query filter for custom id OR Mongo _id
+function buildIdFilter(identifier: string, alternativeKey: string = 'id') {
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    return { $or: [{ [alternativeKey]: identifier }, { _id: identifier }] };
+  }
+  return { [alternativeKey]: identifier };
 }
 
 // Diagnostic Services Queries
@@ -339,8 +458,9 @@ export async function createService(serviceData: any) {
 export async function updateService(id: string, serviceData: any) {
   await ensureConnected();
   try {
+    const filter = buildIdFilter(id, 'id');
     const service = await DiagnosticServiceModel.findOneAndUpdate(
-      { id },
+      filter,
       { $set: serviceData },
       { returnDocument: 'after' }
     );
@@ -355,7 +475,8 @@ export async function updateService(id: string, serviceData: any) {
 export async function deleteService(id: string) {
   await ensureConnected();
   try {
-    const service = await DiagnosticServiceModel.findOneAndDelete({ id });
+    const filter = buildIdFilter(id, 'id');
+    const service = await DiagnosticServiceModel.findOneAndDelete(filter);
     if (!service) return null;
     return mongoDocToPlain(service);
   } catch (error) {
@@ -391,8 +512,9 @@ export async function createPackage(packageData: any) {
 export async function updatePackage(id: string, packageData: any) {
   await ensureConnected();
   try {
+    const filter = buildIdFilter(id, 'id');
     const pkg = await HealthPackageModel.findOneAndUpdate(
-      { id },
+      filter,
       { $set: packageData },
       { returnDocument: 'after' }
     );
@@ -407,12 +529,241 @@ export async function updatePackage(id: string, packageData: any) {
 export async function deletePackage(id: string) {
   await ensureConnected();
   try {
-    const pkg = await HealthPackageModel.findOneAndDelete({ id });
+    const filter = buildIdFilter(id, 'id');
+    const pkg = await HealthPackageModel.findOneAndDelete(filter);
     if (!pkg) return null;
     return mongoDocToPlain(pkg);
   } catch (error) {
     console.error(`Failed to delete package ${id}:`, error);
     throw new Error('Failed to delete health package from database.', { cause: error });
+  }
+}
+
+
+// ─── TESTIMONIALS CRUD ────────────────────────────────────────────────────────
+
+export async function getAllTestimonials() {
+  await ensureConnected();
+  try {
+    const testimonials = await TestimonialModel.find({});
+    return testimonials.map(mongoDocToPlain);
+  } catch (error) {
+    console.error('Failed to fetch testimonials:', error);
+    throw new Error('Failed to retrieve testimonials from database.', { cause: error });
+  }
+}
+
+export async function createTestimonial(data: any) {
+  await ensureConnected();
+  try {
+    const testimonial = new TestimonialModel(data);
+    await testimonial.save();
+    return mongoDocToPlain(testimonial);
+  } catch (error) {
+    console.error('Failed to create testimonial:', error);
+    throw new Error('Failed to create testimonial in database.', { cause: error });
+  }
+}
+
+export async function updateTestimonial(id: string, data: any) {
+  await ensureConnected();
+  try {
+    const filter = buildIdFilter(id, 'id');
+    const testimonial = await TestimonialModel.findOneAndUpdate(
+      filter,
+      { $set: data },
+      { returnDocument: 'after' }
+    );
+    if (!testimonial) throw new Error(`Testimonial ${id} not found`);
+    return mongoDocToPlain(testimonial);
+  } catch (error) {
+    console.error(`Failed to update testimonial ${id}:`, error);
+    throw new Error('Failed to update testimonial in database.', { cause: error });
+  }
+}
+
+export async function deleteTestimonial(id: string) {
+  await ensureConnected();
+  try {
+    const filter = buildIdFilter(id, 'id');
+    const testimonial = await TestimonialModel.findOneAndDelete(filter);
+    if (!testimonial) return null;
+    return mongoDocToPlain(testimonial);
+  } catch (error) {
+    console.error(`Failed to delete testimonial ${id}:`, error);
+    throw new Error('Failed to delete testimonial from database.', { cause: error });
+  }
+}
+
+
+// ─── FAQS CRUD ────────────────────────────────────────────────────────────────
+
+export async function getAllFAQs() {
+  await ensureConnected();
+  try {
+    const faqs = await FAQModel.find({});
+    return faqs.map(mongoDocToPlain);
+  } catch (error) {
+    console.error('Failed to fetch FAQs:', error);
+    throw new Error('Failed to retrieve FAQs from database.', { cause: error });
+  }
+}
+
+export async function createFAQ(data: any) {
+  await ensureConnected();
+  try {
+    const faq = new FAQModel(data);
+    await faq.save();
+    return mongoDocToPlain(faq);
+  } catch (error) {
+    console.error('Failed to create FAQ:', error);
+    throw new Error('Failed to create FAQ in database.', { cause: error });
+  }
+}
+
+export async function updateFAQ(identifier: string, data: any) {
+  await ensureConnected();
+  try {
+    const filter = mongoose.Types.ObjectId.isValid(identifier)
+      ? { _id: identifier }
+      : { q: identifier };
+    const faq = await FAQModel.findOneAndUpdate(
+      filter,
+      { $set: data },
+      { returnDocument: 'after' }
+    );
+    if (!faq) throw new Error(`FAQ ${identifier} not found`);
+    return mongoDocToPlain(faq);
+  } catch (error) {
+    console.error(`Failed to update FAQ ${identifier}:`, error);
+    throw new Error('Failed to update FAQ in database.', { cause: error });
+  }
+}
+
+export async function deleteFAQ(identifier: string) {
+  await ensureConnected();
+  try {
+    const filter = mongoose.Types.ObjectId.isValid(identifier)
+      ? { _id: identifier }
+      : { q: identifier };
+    const faq = await FAQModel.findOneAndDelete(filter);
+    if (!faq) return null;
+    return mongoDocToPlain(faq);
+  } catch (error) {
+    console.error(`Failed to delete FAQ ${identifier}:`, error);
+    throw new Error('Failed to delete FAQ from database.', { cause: error });
+  }
+}
+
+
+// ─── CENTERS CRUD ─────────────────────────────────────────────────────────────
+
+export async function getAllCenters() {
+  await ensureConnected();
+  try {
+    const centers = await CenterModel.find({});
+    return centers.map(mongoDocToPlain);
+  } catch (error) {
+    console.error('Failed to fetch centers:', error);
+    throw new Error('Failed to retrieve centers from database.', { cause: error });
+  }
+}
+
+export async function createCenter(data: any) {
+  await ensureConnected();
+  try {
+    const center = new CenterModel(data);
+    await center.save();
+    return mongoDocToPlain(center);
+  } catch (error) {
+    console.error('Failed to create center:', error);
+    throw new Error('Failed to create center in database.', { cause: error });
+  }
+}
+
+export async function updateCenter(identifier: string, data: any) {
+  await ensureConnected();
+  try {
+    const filter = buildIdFilter(identifier, 'city');
+    const center = await CenterModel.findOneAndUpdate(
+      filter,
+      { $set: data },
+      { returnDocument: 'after' }
+    );
+    if (!center) throw new Error(`Center ${identifier} not found`);
+    return mongoDocToPlain(center);
+  } catch (error) {
+    console.error(`Failed to update center ${identifier}:`, error);
+    throw new Error('Failed to update center in database.', { cause: error });
+  }
+}
+
+export async function deleteCenter(identifier: string) {
+  await ensureConnected();
+  try {
+    const filter = buildIdFilter(identifier, 'city');
+    const center = await CenterModel.findOneAndDelete(filter);
+    if (!center) return null;
+    return mongoDocToPlain(center);
+  } catch (error) {
+    console.error(`Failed to delete center ${identifier}:`, error);
+    throw new Error('Failed to delete center from database.', { cause: error });
+  }
+}
+
+
+// ─── DOCTORS CRUD ─────────────────────────────────────────────────────────────
+
+export async function getAllDoctors() {
+  await ensureConnected();
+  try {
+    const doctors = await DoctorModel.find({});
+    return doctors.map(mongoDocToPlain);
+  } catch (error) {
+    console.error('Failed to fetch doctors:', error);
+    throw new Error('Failed to retrieve doctors from database.', { cause: error });
+  }
+}
+
+export async function createDoctor(data: any) {
+  await ensureConnected();
+  try {
+    const doctor = new DoctorModel(data);
+    await doctor.save();
+    return mongoDocToPlain(doctor);
+  } catch (error) {
+    console.error('Failed to create doctor:', error);
+    throw new Error('Failed to create doctor in database.', { cause: error });
+  }
+}
+
+export async function updateDoctor(id: string, data: any) {
+  await ensureConnected();
+  try {
+    const filter = buildIdFilter(id, 'id');
+    const doctor = await DoctorModel.findOneAndUpdate(
+      filter,
+      { $set: data },
+      { returnDocument: 'after' }
+    );
+    if (!doctor) throw new Error(`Doctor ${id} not found`);
+    return mongoDocToPlain(doctor);
+  } catch (error) {
+    console.error(`Failed to update doctor ${id}:`, error);
+    throw new Error('Failed to update doctor in database.', { cause: error });
+  }
+}
+
+export async function deleteDoctor(id: string) {
+  await ensureConnected();
+  try {
+    const filter = buildIdFilter(id, 'id');
+    const doctor = await DoctorModel.findOneAndDelete(filter);
+    if (!doctor) return null;
+    return mongoDocToPlain(doctor);
+  } catch (error) {
+    console.error(`Failed to delete doctor ${id}:`, error);
+    throw new Error('Failed to delete doctor from database.', { cause: error });
   }
 }
 

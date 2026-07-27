@@ -48,8 +48,8 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                   key={sec.id}
                   onClick={() => onSectionChange(sec.id)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex-shrink-0 cursor-pointer w-auto lg:w-full ${isActive
-                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />

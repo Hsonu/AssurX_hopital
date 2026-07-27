@@ -4,6 +4,7 @@ import { CartItem } from '../types';
 import { useAuth } from '../lib/auth.ts';
 import PatientBookingsModal from './PatientBookingsModal.tsx';
 import logoImg from '../../logo.jpeg';
+import { getAllBranches, getBranchInfo } from '../config/branchConfig.ts';
 
 interface HeaderProps {
   currentTab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us';
@@ -41,7 +42,8 @@ export default function Header({
       setLoginError('');
     }
   }, [isLoginModalOpen]);
-  const branches = centers.length > 0 ? centers.map(c => c.city) : ['Malad', 'Goregaon'];
+  const branchList = getAllBranches(centers);
+  const currentBranchInfo = getBranchInfo(selectedBranch, centers);
 
   const handleTabClick = (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us') => {
     setCurrentTab(tab);
@@ -62,9 +64,9 @@ export default function Header({
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <a href="tel:+919830678387" className="flex items-center gap-1 hover:text-white transition-colors">
+          <a href={`tel:${currentBranchInfo.phone}`} className="flex items-center gap-1 hover:text-white transition-colors">
             <PhoneCall className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-            <span className="font-bold text-red-200">Call: +91 9830678387</span>
+            <span className="font-bold text-red-200">Call: {currentBranchInfo.phone}</span>
           </a>
         </div>
       </div>
@@ -92,9 +94,9 @@ export default function Header({
               onChange={(e) => setSelectedBranch(e.target.value)}
               className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer pr-0.5"
             >
-              {branches.map((branch) => (
-                <option key={branch} value={branch} className="text-slate-800 bg-white">
-                  {branch}
+              {branchList.map((branch) => (
+                <option key={branch.code} value={branch.code} className="text-slate-800 bg-white">
+                  {branch.name}
                 </option>
               ))}
             </select>
@@ -320,9 +322,9 @@ export default function Header({
                 onChange={(e) => setSelectedBranch(e.target.value)}
                 className="bg-transparent text-[11px] font-extrabold text-white focus:outline-none cursor-pointer pr-1 truncate w-full"
               >
-                {branches.map((branch) => (
-                  <option key={branch} value={branch} className="text-slate-800 bg-white">
-                    {branch}
+                {branchList.map((branch) => (
+                  <option key={branch.code} value={branch.code} className="text-slate-800 bg-white">
+                    {branch.name}
                   </option>
                 ))}
               </select>

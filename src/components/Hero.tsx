@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Check, Sparkles, ChevronDown, CheckCircle2 } from 'lucide-react';
-import { HEALTH_PACKAGES } from '../data';
-import { DiagnosticService } from '../types';
+import { DiagnosticService, HealthPackage } from '../types';
 import smilingSpecialist from '@/assets/smiling_specialist.png';
+
+import { getAllBranches } from '../config/branchConfig.ts';
 
 interface HeroProps {
   onNavigate: (tab: 'home' | 'scans' | 'labs' | 'packages' | 'admin') => void;
@@ -12,6 +13,8 @@ interface HeroProps {
   onAddToCart: (item: any, type: 'service' | 'package') => void;
   onDirectBook: (item: any) => void;
   services: DiagnosticService[];
+  packages: HealthPackage[];
+  centers?: any[];
 }
 
 export default function Hero({
@@ -21,7 +24,9 @@ export default function Hero({
   setSelectedBranch,
   onAddToCart,
   onDirectBook,
-  services
+  services,
+  packages,
+  centers = []
 }: HeroProps) {
   const [testSearch, setTestSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -44,7 +49,7 @@ export default function Hero({
     if (!testSearch.trim()) {
       // Show popular items by default when search is empty
       const popularServices = services.filter(s => s.popular).map(s => ({ ...s, type: 'service' as const }));
-      const popularPackages = HEALTH_PACKAGES.filter(p => p.popular).map(p => ({ ...p, type: 'package' as const }));
+      const popularPackages = packages.filter(p => p.popular).map(p => ({ ...p, type: 'package' as const }));
       return [...popularServices, ...popularPackages].slice(0, 5);
     }
     const query = testSearch.toLowerCase();
@@ -54,7 +59,7 @@ export default function Hero({
       (s.subCategory && s.subCategory.toLowerCase().includes(query))
     ).map(s => ({ ...s, type: 'service' as const }));
 
-    const matchedPackages = HEALTH_PACKAGES.filter(p =>
+    const matchedPackages = packages.filter(p =>
       p.name.toLowerCase().includes(query)
     ).map(p => ({ ...p, type: 'package' as const }));
 
@@ -74,7 +79,7 @@ export default function Hero({
       setSelectedItem(null);
     } else if (testSearch.trim()) {
       // Fallback search trigger
-      const exactMatch = [...services, ...HEALTH_PACKAGES].find(
+      const exactMatch = [...services, ...packages].find(
         item => item.name.toLowerCase().includes(testSearch.toLowerCase())
       );
       if (exactMatch) {
@@ -94,10 +99,7 @@ export default function Hero({
     }
   };
 
-  const indianCities = [
-    { code: 'Malad', name: 'Mumbai (Malad)' },
-    { code: 'Goregaon', name: 'Mumbai (Goregaon)' }
-  ];
+  const indianCities = getAllBranches(centers);
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-[#F5F0FA]/90 via-[#F7FAFC]/80 to-[#FEF2F2]/30 py-10 md:py-16 px-4 md:px-6" id="hero-section">

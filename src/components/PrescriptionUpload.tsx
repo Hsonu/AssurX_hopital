@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, CheckCircle2, Loader2, AlertCircle, ShoppingBag, ArrowRight, PhoneCall, User } from 'lucide-react';
 import { DiagnosticService, CartItem } from '../types';
-import { DIAGNOSTIC_SERVICES } from '../data';
 
 interface PrescriptionUploadProps {
   onAddItemsToCart: (items: CartItem[]) => void;

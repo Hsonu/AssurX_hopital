@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, ShoppingBag, ShieldCheck, Calendar, MapPin, Trash2, Plus, UserPlus, Info, Home, Building } from 'lucide-react';
 import { CartItem, Patient } from '../types';
-import { ASSURX_CENTERS } from '../data';
+
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -413,7 +413,7 @@ export default function CartDrawer({
                           onChange={(e) => setAddress({ ...address, city: e.target.value })}
                           className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-semibold focus:ring-1 focus:ring-teal-500 focus:outline-none cursor-pointer"
                         >
-                          {(centers.length > 0 ? centers : ASSURX_CENTERS).map((c) => (
+                          {centers.map((c) => (
                             <option key={c.city} value={c.city}>{c.city} Branch</option>
                           ))}
                         </select>

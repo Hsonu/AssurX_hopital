@@ -258,8 +258,27 @@ export default function CheckoutModal({
       name: "AssurX Scans & Labs",
       description: `Diagnostic Booking - ${bookingDetails.patient.name}`,
       image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=120&auto=format&fit=crop",
-      handler: function (response: any) {
-        executeDatabaseBooking(paymentMethod, 'paid');
+      handler: async function (response: any) {
+        try {
+          setPayStep("Verifying payment signature with bank server...");
+          const verifyRes = await userFetch('/api/payments/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          if (!verifyRes.ok) {
+            throw new Error("Payment signature verification failed");
+          }
+          executeDatabaseBooking(paymentMethod, 'paid');
+        } catch (verifyErr: any) {
+          console.error("Payment verification error:", verifyErr);
+          alert("Payment verification failed! Please contact support if amount was deducted.");
+          setIsPaying(false);
+        }
       },
       prefill: {
         name: bookingDetails.patient.name,

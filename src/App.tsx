@@ -9,8 +9,7 @@ import {
   Check, HelpCircle, Star, Sparkle, AlertTriangle, AlertCircle, ExternalLink
 } from 'lucide-react';
 
-import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter, Doctor } from './types';
-import { DIAGNOSTIC_SERVICES, HEALTH_PACKAGES, FREQUENT_QUESTIONS, CUSTOMER_TESTIMONIALS, ASSURX_CENTERS, DEFAULT_DOCTORS } from './data';
+import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter, Doctor, Testimonial } from './types';
 import { auth } from './lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuth } from './lib/auth.ts';
@@ -143,7 +142,6 @@ export default function App() {
       .then(data => setServices(data))
       .catch(err => {
         console.error("Error fetching services:", err);
-        setServices(DIAGNOSTIC_SERVICES); // Fallback to local static copy on error
       });
 
     // Fetch packages
@@ -155,53 +153,72 @@ export default function App() {
       .then(data => setPackages(data))
       .catch(err => {
         console.error("Error fetching packages:", err);
-        setPackages(HEALTH_PACKAGES); // Fallback to local static copy on error
       });
   }, []);
 
-  // Dynamic clinic centers loaded from localStorage (synced with admin branch manager)
-  const [centers, setCenters] = useState<ClinicCenter[]>(() => {
-    const cached = localStorage.getItem('assurx_centers');
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch (e) {
-        // use default if parse failed
-      }
-    }
-    return ASSURX_CENTERS;
-  });
+  // Dynamic clinic centers loaded from MongoDB
+  const [centers, setCenters] = useState<ClinicCenter[]>([]);
 
-  // Sync centers to localStorage
+  // Fetch centers from API
   useEffect(() => {
-    localStorage.setItem('assurx_centers', JSON.stringify(centers));
-  }, [centers]);
+    fetch('/api/centers')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load centers");
+        return res.json();
+      })
+      .then(data => setCenters(data))
+      .catch(err => {
+        console.error("Error fetching centers:", err);
+      });
+  }, []);
 
-  // Dynamic doctors directory loaded from localStorage
-  const [doctors, setDoctors] = useState<Doctor[]>(() => {
-    const cached = localStorage.getItem('assurx_doctors');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached) as Doctor[];
-        const parsedIds = new Set(parsed.map(d => d.id));
-        const missing = DEFAULT_DOCTORS.filter(d => !parsedIds.has(d.id));
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing];
-          localStorage.setItem('assurx_doctors', JSON.stringify(merged));
-          return merged;
-        }
-        return parsed;
-      } catch (e) {
-        // use default if parse failed
-      }
-    }
-    return DEFAULT_DOCTORS;
-  });
+  // Dynamic doctors directory loaded from MongoDB
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
 
-  // Sync doctors to localStorage
+  // Fetch doctors from API
   useEffect(() => {
-    localStorage.setItem('assurx_doctors', JSON.stringify(doctors));
-  }, [doctors]);
+    fetch('/api/doctors')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load doctors");
+        return res.json();
+      })
+      .then(data => setDoctors(data))
+      .catch(err => {
+        console.error("Error fetching doctors:", err);
+      });
+  }, []);
+
+  // Dynamic testimonials loaded from MongoDB
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+
+  // Fetch testimonials from API
+  useEffect(() => {
+    fetch('/api/testimonials')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load testimonials");
+        return res.json();
+      })
+      .then(data => setTestimonials(data))
+      .catch(err => {
+        console.error("Error fetching testimonials:", err);
+      });
+  }, []);
+
+  // Dynamic FAQs loaded from MongoDB
+  const [faqs, setFaqs] = useState<{ q: string; a: string }[]>([]);
+
+  // Fetch FAQs from API
+  useEffect(() => {
+    fetch('/api/faqs')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load FAQs");
+        return res.json();
+      })
+      .then(data => setFaqs(data))
+      .catch(err => {
+        console.error("Error fetching FAQs:", err);
+      });
+  }, []);
 
   const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
   const [doctorSpecialtyFilter, setDoctorSpecialtyFilter] = useState('All');
@@ -235,7 +252,15 @@ export default function App() {
     setDirectBookingItem(item);
   };
 
-  const [selectedBranch, setSelectedBranch] = useState('Malad');
+  const [selectedBranch, setSelectedBranchState] = useState<string>(() => {
+    return localStorage.getItem('assurx_selected_branch') || 'Malad';
+  });
+
+  const setSelectedBranch = (branch: string) => {
+    setSelectedBranchState(branch);
+    localStorage.setItem('assurx_selected_branch', branch);
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
 
   // Tab-specific filters
@@ -562,6 +587,8 @@ export default function App() {
               onAddToCart={handleAddToCart}
               onDirectBook={handleDirectBook}
               services={services}
+              packages={packages}
+              centers={centers}
             />
 
             {/* SEGMENTED TEST CATALOG EXPLORER */}
@@ -946,7 +973,7 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {CUSTOMER_TESTIMONIALS.map((testimonial) => (
+                {testimonials.map((testimonial) => (
                   <a
                     key={testimonial.id}
                     href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
@@ -981,7 +1008,7 @@ export default function App() {
             <section className="max-w-4xl mx-auto px-4 md:px-6 text-left space-y-6">
               <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl text-center tracking-tight">Frequently Asked <span className="italic font-medium text-[#2D006B]">Questions</span></h3>
               <div className="space-y-3 border border-gray-205 rounded-3xl bg-white p-6 md:p-8 divide-y divide-gray-100 shadow-sm">
-                {FREQUENT_QUESTIONS.map((faq, idx) => (
+                {faqs.map((faq, idx) => (
                   <div key={idx} className="py-4 first:pt-0 last:pb-0 space-y-1.5">
                     <h4 className="font-bold text-slate-850 text-sm md:text-base flex items-start gap-2 leading-snug">
                       <HelpCircle className="w-4.5 h-4.5 text-[#AD1457] mt-0.5 flex-shrink-0" />
@@ -1344,7 +1371,7 @@ export default function App() {
       </main>
 
       {/* Footer element */}
-      <Footer onNavigate={setCurrentTab} centers={centers} />
+      <Footer onNavigate={setCurrentTab} centers={centers} selectedBranch={selectedBranch} />
 
       {/* --- FLOATING PRESCRIPTION DIALOG / PORTAL OVERLAY --- */}
       {isPrescriptionOpen && (
@@ -1400,7 +1427,7 @@ export default function App() {
       )}
 
       {/* --- FLOATING PERSISTENT BOTTOM CALLBACK WIDGET --- */}
-      <CallbackSticky />
+      <CallbackSticky selectedBranch={selectedBranch} centers={centers} />
 
     </div>
   );
