@@ -11,18 +11,11 @@ export default function WindingStats() {
       side: 'right', // Content is on the right, circle is on the left
     },
     {
-      id: 2,
-      value: '~5,000',
-      label: 'Total No. of Test and Panels',
-      icon: HeartPulse,
-      side: 'left', // Content is on the left, circle is on the right
-    },
-    {
       id: 4,
       value: '12,300+',
       label: 'Pick-up Points',
       icon: Stethoscope,
-      side: 'right', // Content is on the right, circle is on the left
+      side: 'left', // Content is on the left, circle is on the right
     }
   ];
 
@@ -46,13 +39,11 @@ export default function WindingStats() {
         {/* SERPENTINE SVG BACKGROUND PATH - Responsive connecting road */}
         {/* On desktop/tablet, this draws a beautiful wavy serpentine road in the background */}
         <div className="absolute inset-0 z-0 pointer-events-none hidden sm:block">
-          <svg className="w-full h-full stroke-[#B2DFDB]" fill="none" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 400 600" preserveAspectRatio="none">
+          <svg className="w-full h-full stroke-[#B2DFDB]" fill="none" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 400 380" preserveAspectRatio="none">
             {/* Smooth curvy path from circle to circle */}
             <path d="
               M 110,95 
               C 250,95 310,210 290,285
-              C 270,360 150,420 110,475
-              C 90,500 200,560 200,600
             " />
           </svg>
         </div>

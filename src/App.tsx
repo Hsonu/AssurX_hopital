@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search, MapPin, PhoneCall, ShoppingCart, User, Menu, X,
   ShieldCheck, ClipboardCheck, Users, Calendar, ArrowRight,
@@ -6,7 +6,8 @@ import {
   Info, Home, Building, QrCode, CreditCard, Laptop, Landmark,
   CheckCircle2, Loader2, Printer, Clock, Download, Eye,
   LogOut, ArrowLeft, Award, HeartPulse, Sparkles, Filter,
-  Check, HelpCircle, Star, Sparkle, AlertTriangle, AlertCircle, ExternalLink
+  Check, HelpCircle, Star, Sparkle, AlertTriangle, AlertCircle, ExternalLink,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter, Doctor, Testimonial } from './types';
@@ -22,7 +23,6 @@ import CheckoutModal from './components/CheckoutModal';
 import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 import CallbackSticky from './components/CallbackSticky';
-import WindingStats from './components/WindingStats';
 import DirectBookModal from './components/DirectBookModal';
 import { TrackOrderSection, HiringCareersSection } from './components/HearingAndTracking';
 import MyBookingsSection from './components/MyBookingsSection';
@@ -131,6 +131,45 @@ export default function App() {
   const [services, setServices] = useState<DiagnosticService[]>([]);
   // Dynamic health packages loaded from database
   const [packages, setPackages] = useState<HealthPackage[]>([]);
+
+  // Ref and states for packages horizontal scrolling
+  const packagesScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScrollPosition = useCallback(() => {
+    if (packagesScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = packagesScrollRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = packagesScrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScrollPosition, { passive: true });
+      window.addEventListener('resize', checkScrollPosition, { passive: true });
+      // Check initial position
+      const timer = setTimeout(checkScrollPosition, 200);
+      return () => {
+        el.removeEventListener('scroll', checkScrollPosition);
+        window.removeEventListener('resize', checkScrollPosition);
+        clearTimeout(timer);
+      };
+    }
+  }, [packages, checkScrollPosition]);
+
+  const scrollPackages = (direction: 'left' | 'right') => {
+    if (packagesScrollRef.current) {
+      const { scrollLeft, clientWidth } = packagesScrollRef.current;
+      const scrollAmount = Math.min(420, clientWidth - 24);
+      packagesScrollRef.current.scrollTo({
+        left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     // Fetch services
@@ -731,90 +770,127 @@ export default function App() {
                     <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
                   </div>
 
-                  {/* Horizontal slider of packages */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                    {packages.map((pkg) => {
-                      const inCart = cart.some(ci => ci.itemId === pkg.id);
-                      return (
-                        <div
-                          key={pkg.id}
-                          className="bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all"
-                        >
-                          {/* Package Thumbnail Image */}
-                          <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
-                            <img
-                              src={getPackageImage(pkg.id)}
-                              alt={pkg.name}
-                              className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
-                            {pkg.popular && (
-                              <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
-                                Best Value
-                              </span>
-                            )}
-                          </div>
+                  {/* Horizontal slider container wrapper */}
+                  <div className="relative group/slider px-2">
+                    {/* Left Scroll Button */}
+                    <button
+                      onClick={() => scrollPackages('left')}
+                      disabled={!canScrollLeft}
+                      className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
+                        canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      }`}
+                      aria-label="Scroll Left"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
 
-                          <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
-                            <div className="space-y-4">
-                              <div>
-                                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
-                                <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
-                                <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
-                              </div>
+                    {/* Right Scroll Button */}
+                    <button
+                      onClick={() => scrollPackages('right')}
+                      disabled={!canScrollRight}
+                      className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
+                        canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      }`}
+                      aria-label="Scroll Right"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
 
-                              {/* list of subset tests included */}
-                              <div className="space-y-1.5 border-t border-gray-800 pt-4">
-                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
-                                <div className="space-y-1 text-[11px] text-slate-400">
-                                  {pkg.includedTests.slice(0, 4).map((test, idx) => (
-                                    <div key={idx} className="flex items-center gap-1.5">
-                                      <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
-                                      <span className="truncate">{test}</span>
-                                    </div>
-                                  ))}
-                                  {pkg.includedTests.length > 4 && (
-                                    <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
-                                  )}
-                                </div>
-                              </div>
+                    {/* Horizontal slider of packages */}
+                    <div
+                      ref={packagesScrollRef}
+                      className="flex flex-nowrap overflow-x-auto gap-6 text-left scroll-smooth pb-6 pt-2 snap-x snap-mandatory no-scrollbar"
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'nowrap',
+                        overflowX: 'auto',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}
+                    >
+                      {packages.map((pkg) => {
+                        const inCart = cart.some(ci => ci.itemId === pkg.id);
+                        return (
+                          <div
+                            key={pkg.id}
+                            className="w-[85vw] sm:w-[380px] md:w-[400px] flex-shrink-0 bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all snap-start"
+                          >
+                            {/* Package Thumbnail Image */}
+                            <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
+                              <img
+                                src={getPackageImage(pkg.id)}
+                                alt={pkg.name}
+                                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
+                              {pkg.popular && (
+                                <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
+                                  Best Value
+                                </span>
+                              )}
                             </div>
 
-                            <div className="space-y-4 pt-4 border-t border-gray-800">
-                              <div className="flex justify-between items-end">
+                            <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
+                              <div className="space-y-4">
                                 <div>
-                                  <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
-                                  <div className="flex items-baseline gap-1.5">
-                                    <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
-                                    <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
+                                  <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
+                                  <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
+                                  <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
+                                </div>
+
+                                {/* list of subset tests included */}
+                                <div className="space-y-1.5 border-t border-gray-800 pt-4">
+                                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
+                                  <div className="space-y-1 text-[11px] text-slate-400">
+                                    {pkg.includedTests.slice(0, 4).map((test, idx) => (
+                                      <div key={idx} className="flex items-center gap-1.5">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                        <span className="truncate">{test}</span>
+                                      </div>
+                                    ))}
+                                    {pkg.includedTests.length > 4 && (
+                                      <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
+                                    )}
                                   </div>
                                 </div>
-                                <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
                               </div>
 
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleDirectBook(pkg)}
-                                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
-                                >
-                                  Book Now (Pay at Lab)
-                                </button>
-                                <button
-                                  onClick={() => handleAddToCart(pkg, 'package')}
-                                  className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
-                                    ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
-                                    : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
-                                    }`}
-                                >
-                                  {inCart ? 'Added' : '+ Cart'}
-                                </button>
+                              <div className="space-y-4 pt-4 border-t border-gray-800">
+                                <div className="flex justify-between items-end">
+                                  <div>
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
+                                      <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleDirectBook(pkg)}
+                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
+                                  >
+                                    Book Now (Pay at Lab)
+                                  </button>
+                                  <button
+                                    onClick={() => handleAddToCart(pkg, 'package')}
+                                    className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                      ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
+                                      : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
+                                      }`}
+                                  >
+                                    {inCart ? 'Added' : '+ Cart'}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="text-center pt-2">
@@ -945,9 +1021,6 @@ export default function App() {
                 )}
               </section>
             )}
-
-            {/* TRUST ELEMENTS SECTION (SERPENTINE DESIGN) */}
-            <WindingStats />
 
             {/* TESTIMONIALS */}
             <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8">

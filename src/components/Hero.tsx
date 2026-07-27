@@ -124,7 +124,28 @@ export default function Hero({
             <span className="italic font-medium text-[#2D006B]">Scans & Blood tests</span>
           </h1>
 
-
+          {/* Floating Trust Badge - Absolute horizontally and vertically centered relative to display on desktop, flow inline on mobile */}
+          <div className="lg:absolute lg:left-1/2 lg:top-[42%] lg:-translate-x-1/2 lg:-translate-y-1/2 z-25 mt-6 lg:mt-0 w-full lg:w-auto flex justify-center pointer-events-none">
+            <div className="bg-white/95 backdrop-blur-sm border border-slate-200/60 shadow-lg rounded-2xl p-4 flex flex-col items-center justify-center text-center w-[250px] sm:w-[280px]">
+              <div className="flex gap-1.5 mb-2.5">
+                <div className="w-7 h-7 rounded-full bg-[#F5F0FA] border border-[#E8DEFF] flex items-center justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2D006B]" />
+                </div>
+                <div className="w-7 h-7 rounded-full bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-[#DC2626]" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[10px] sm:text-[11px] font-black text-slate-800 leading-snug">
+                  ISO 9001 Certified Lab
+                </p>
+                <div className="w-12 h-[1px] bg-slate-200 mx-auto my-1"></div>
+                <p className="text-[10px] sm:text-[11px] font-black text-[#2D006B] leading-snug">
+                  5 Lakh+ Smiling Indians in 10 Months
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Dynamic Portrait + Floating Interactive Card Form */}
