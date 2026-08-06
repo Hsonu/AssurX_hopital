@@ -139,9 +139,6 @@ export function useAuth() {
       return result.user;
     } catch (error: any) {
       console.error('Error signing in with Google:', error);
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        alert('Google Sign-In Error: ' + (error.message || error));
-      }
       throw error;
     }
   };

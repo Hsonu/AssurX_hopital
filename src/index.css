@@ -104,6 +104,16 @@ input:focus, select:focus, textarea:focus {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Infinite horizontal scroll animation for test cards */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 
 @media print {
   /* Hides default page backgrounds, overlays, and centered positioning */
@@ -117,7 +127,7 @@ input:focus, select:focus, textarea:focus {
   }
 
   /* Completely hide main document containers that consume space to prevent blank pages */
-  header, main, footer, 
+  header, footer, 
   #callback-sticky-widget, 
   #cart-drawer-container,
   .no-print {
@@ -127,16 +137,21 @@ input:focus, select:focus, textarea:focus {
     visibility: hidden !important;
   }
 
+  main {
+    background: transparent !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    max-width: 100% !important;
+  }
+
   /* Hide every element on the page */
   body * {
     visibility: hidden;
-  }
-  
-  /* Selectively make the printable area and all of its inner elements visible */
-  #printable-receipt-panel, #printable-receipt-panel *,
-  #printable-receipt-panel-direct, #printable-receipt-panel-direct *,
-  #printable-report-area, #printable-report-area * {
-    visibility: visible !important;
   }
   
   /* Reset all modal containers/dialog wrappers to print in standard page flow */
@@ -154,8 +169,12 @@ input:focus, select:focus, textarea:focus {
     background: transparent !important;
   }
 
-  /* Reset layout of the printed block to use the full page paper canvas nicely */
+  /* Force the printable blocks to top of page 1 */
   #printable-receipt-panel, #printable-receipt-panel-direct, #printable-report-area {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 9999999 !important;
     display: block !important;
     visibility: visible !important;
     background: white !important;
@@ -166,5 +185,12 @@ input:focus, select:focus, textarea:focus {
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
+  }
+
+  /* Selectively make the inner elements of the printable area visible */
+  #printable-receipt-panel *,
+  #printable-receipt-panel-direct *,
+  #printable-report-area * {
+    visibility: visible !important;
   }
 }

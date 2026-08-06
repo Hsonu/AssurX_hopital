@@ -77,6 +77,23 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [activeBanner, setActiveBanner] = useState(0);
+
+  const homeBanners = React.useMemo(() => [
+    { src: '/fever_sugar_profile.png', alt: 'Fever and Sugar Profile Offer', tab: 'packages' as const },
+    { src: '/sonography_equipment.png', alt: 'Sonography Scan Equipment Features', tab: 'scans' as const },
+    { src: '/family_health_offer.png', alt: 'Family Health Offer - Save up to 50% Off', tab: 'packages' as const },
+    { src: '/promo_code_offers.png', alt: 'Tests & Health Packages Promo Codes and Deals', tab: 'packages' as const },
+  ], []);
+
+  useEffect(() => {
+    if (currentTab === 'home') {
+      const interval = setInterval(() => {
+        setActiveBanner((prev) => (prev + 1) % homeBanners.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [currentTab, homeBanners.length]);
 
   // Dynamic homepage offerings sections
   const [sections, setSections] = useState<HomepageSection[]>(() => {
@@ -630,6 +647,90 @@ export default function App() {
               centers={centers}
             />
 
+            {/* ====== OUR SERVICES SECTION ====== */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-4 mb-3">
+                  <div className="h-[3px] w-20 md:w-32 bg-[#009688] rounded-full"></div>
+                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider text-slate-900">OUR SERVICES</h2>
+                  <div className="h-[3px] w-20 md:w-32 bg-[#009688] rounded-full"></div>
+                </div>
+              </div>
+
+              <div className="border-t-[3px] border-[#009688] pt-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8">
+                  {/* Pathology */}
+                  <div className="flex flex-col items-center text-center group cursor-pointer" onClick={() => setCurrentTab('labs')}>
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#F5F0FA] flex items-center justify-center mb-3 group-hover:bg-[#2D006B] transition-colors">
+                      <svg className="w-7 h-7 md:w-8 md:h-8 text-[#2D006B] group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm md:text-base font-bold text-slate-900 mb-1.5">Pathology</h3>
+                    <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed font-medium mb-3 px-1">COMPREHENSIVE LAB TESTING AND DIAGNOSTIC PATHOLOGY SERVICES.</p>
+                    <span className="text-xs font-bold text-[#009688] group-hover:text-[#2D006B] transition-colors flex items-center gap-1">
+                      Learn More <span className="text-sm">→</span>
+                    </span>
+                  </div>
+
+                  {/* Sonography */}
+                  <div className="flex flex-col items-center text-center group cursor-pointer" onClick={() => setCurrentTab('scans')}>
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#F5F0FA] flex items-center justify-center mb-3 group-hover:bg-[#2D006B] transition-colors">
+                      <svg className="w-7 h-7 md:w-8 md:h-8 text-[#2D006B] group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.652a3.75 3.75 0 0 1 0-5.304m5.304 0a3.75 3.75 0 0 1 0 5.304m-7.425 2.121a6.75 6.75 0 0 1 0-9.546m9.546 0a6.75 6.75 0 0 1 0 9.546M5.106 18.894c-3.808-3.807-3.808-9.98 0-13.788m13.788 0c3.808 3.807 3.808 9.98 0 13.788M12 12h.008v.008H12V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm md:text-base font-bold text-slate-900 mb-1.5">Sonography</h3>
+                    <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed font-medium mb-3 px-1">ADVANCED ULTRASOUND IMAGING FOR ACCURATE DIAGNOSTICS.</p>
+                    <span className="text-xs font-bold text-[#009688] group-hover:text-[#2D006B] transition-colors flex items-center gap-1">
+                      Learn More <span className="text-sm">→</span>
+                    </span>
+                  </div>
+
+                  {/* OBG Care */}
+                  <div className="flex flex-col items-center text-center group cursor-pointer" onClick={() => setCurrentTab('scans')}>
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#F5F0FA] flex items-center justify-center mb-3 group-hover:bg-[#2D006B] transition-colors">
+                      <svg className="w-7 h-7 md:w-8 md:h-8 text-[#2D006B] group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm md:text-base font-bold text-slate-900 mb-1.5">OBG Care</h3>
+                    <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed font-medium mb-3 px-1">COMPLETE OBSTETRIC AND GYNECOLOGICAL HEALTH SERVICES.</p>
+                    <span className="text-xs font-bold text-[#009688] group-hover:text-[#2D006B] transition-colors flex items-center gap-1">
+                      Learn More <span className="text-sm">→</span>
+                    </span>
+                  </div>
+
+                  {/* General Health */}
+                  <div className="flex flex-col items-center text-center group cursor-pointer" onClick={() => setCurrentTab('packages')}>
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#F5F0FA] flex items-center justify-center mb-3 group-hover:bg-[#2D006B] transition-colors">
+                      <HeartPulse className="w-7 h-7 md:w-8 md:h-8 text-[#2D006B] group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="text-sm md:text-base font-bold text-slate-900 mb-1.5">General Health</h3>
+                    <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed font-medium mb-3 px-1">PREVENTIVE CARE, CHECKUPS, AND HEALTH PACKAGES.</p>
+                    <span className="text-xs font-bold text-[#009688] group-hover:text-[#2D006B] transition-colors flex items-center gap-1">
+                      Learn More <span className="text-sm">→</span>
+                    </span>
+                  </div>
+
+                  {/* Cardio Care */}
+                  <div className="flex flex-col items-center text-center group cursor-pointer" onClick={() => setCurrentTab('scans')}>
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#F5F0FA] flex items-center justify-center mb-3 group-hover:bg-[#2D006B] transition-colors">
+                      <Activity className="w-7 h-7 md:w-8 md:h-8 text-[#2D006B] group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="text-sm md:text-base font-bold text-slate-900 mb-1.5">Cardio Care</h3>
+                    <p className="text-[10px] md:text-[11px] text-slate-500 leading-relaxed font-medium mb-3 px-1">EMERGENCY, ESSENTIAL WITH RANGE OF MARKERS.</p>
+                    <span className="text-xs font-bold text-[#009688] group-hover:text-[#2D006B] transition-colors flex items-center gap-1">
+                      Learn More <span className="text-sm">→</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="h-[3px] w-full bg-[#009688] rounded-full mt-8"></div>
+            </section>
+
+
+
             {/* SEGMENTED TEST CATALOG EXPLORER */}
             {services.length > 0 && (
               <section className="max-w-7xl mx-auto px-4 md:px-6">
@@ -754,6 +855,139 @@ export default function App() {
                 </div>
               </section>
             )}
+
+
+
+
+            {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
+              {/* Decorative background patterns */}
+              <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat'}}></div>
+
+              <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+                {/* Title Section */}
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold italic text-[#3d2b1f] tracking-tight">
+                    Precision Testing for Your Complete Health
+                  </h2>
+                  <p className="text-xs md:text-sm text-[#6b5744] font-semibold mt-2 tracking-wider">
+                    ISO CERTIFIED • Digital Reports in 24 Hours • Free Home Sample Pickup
+                  </p>
+                </div>
+
+                {/* Scrolling Test Cards */}
+                <div className="relative overflow-hidden mb-8">
+                  <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{width: 'max-content'}}>
+                    {/* Card Set 1 (original) */}
+                    {[
+                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
+                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
+                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
+                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
+                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
+                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
+                    ].map((test, i) => (
+                      <div key={`a-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
+                            <Award className="w-4 h-4 text-[#8B4513]" />
+                          </div>
+                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
+                        </div>
+                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
+                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
+                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentTab('labs');
+                          }}
+                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                        >
+                          <ShoppingCart className="w-3 h-3" />
+                          ADD TO CART
+                        </button>
+                      </div>
+                    ))}
+                    {/* Card Set 2 (duplicate for seamless loop) */}
+                    {[
+                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
+                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
+                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
+                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
+                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
+                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
+                    ].map((test, i) => (
+                      <div key={`b-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
+                            <Award className="w-4 h-4 text-[#8B4513]" />
+                          </div>
+                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
+                        </div>
+                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
+                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
+                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentTab('labs');
+                          }}
+                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                        >
+                          <ShoppingCart className="w-3 h-3" />
+                          ADD TO CART
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom: SHOW ALL TESTS + Trust Badges */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <button
+                    onClick={() => setCurrentTab('labs')}
+                    className="px-8 py-3 bg-[#009688] hover:bg-[#00796B] text-white rounded-lg text-sm font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer hover:shadow-xl"
+                  >
+                    SHOW ALL TESTS <span className="text-lg">→</span>
+                  </button>
+
+                  <div className="flex items-center gap-6 md:gap-8">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
+                        <Home className="w-5 h-5 text-[#009688]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Free Home</p>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Collection</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-[#009688]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Same-Day</p>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Digital Reports</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* POPULAR DIAGNOSTIC TESTS badge */}
+                  <div className="hidden lg:flex items-center">
+                    <div className="bg-[#d4870a] text-white px-4 py-2.5 rounded-lg shadow-lg">
+                      <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br/>DIAGNOSTIC<br/>TESTS</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
             {packages.length > 0 && (
@@ -905,6 +1139,9 @@ export default function App() {
                 </div>
               </section>
             )}
+
+
+
 
 
 
@@ -1090,6 +1327,86 @@ export default function App() {
                     <p className="text-xs text-slate-550 pl-6 leading-relaxed">{faq.a}</p>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            {/* ====== HOME ROTATING BANNER CAROUSEL ====== */}
+            <section className="max-w-5xl mx-auto px-4 md:px-6 py-10 border-t border-gray-150">
+              <div className="text-center mb-6">
+                <span className="inline-block px-3 py-1 bg-[#F5F0FA] border border-[#E8DEFF] text-[#2D006B] text-[10px] font-black uppercase tracking-wider rounded-full mb-1">
+                  Exclusive Offers & Clinical Highlights
+                </span>
+                <h3 className="text-2xl md:text-3xl font-serif font-light text-slate-900 tracking-tight">
+                  Our Special <span className="italic font-medium text-[#2D006B]">Offers & Highlights</span>
+                </h3>
+              </div>
+
+              <div className="relative group overflow-hidden rounded-3xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all">
+                {/* Banner Image wrapper */}
+                <div 
+                  className="w-full cursor-pointer relative overflow-hidden"
+                  onClick={() => {
+                    const banner = homeBanners[activeBanner];
+                    if (banner.tab === 'callback') {
+                      const callbackWidget = document.getElementById('callback-sticky-widget');
+                      if (callbackWidget) {
+                        callbackWidget.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    } else {
+                      setCurrentTab(banner.tab);
+                    }
+                  }}
+                >
+                  <img 
+                    src={homeBanners[activeBanner].src} 
+                    alt={homeBanners[activeBanner].alt} 
+                    className="w-full h-auto block select-none transition-all duration-700 ease-in-out hover:scale-[1.005]"
+                    referrerPolicy="no-referrer"
+                  />
+                  {/* Subtle gradient overlay to make buttons pop */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none"></div>
+                </div>
+
+                {/* Left/Right controls (visible on hover) */}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveBanner((prev) => (prev - 1 + homeBanners.length) % homeBanners.length);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95 z-20 opacity-0 group-hover:opacity-100 cursor-pointer"
+                  aria-label="Previous Offer"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveBanner((prev) => (prev + 1) % homeBanners.length);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95 z-20 opacity-0 group-hover:opacity-100 cursor-pointer"
+                  aria-label="Next Offer"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Navigation Dots */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                  {homeBanners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveBanner(idx);
+                      }}
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                        activeBanner === idx 
+                          ? 'bg-[#2D006B] w-6 shadow-sm' 
+                          : 'bg-white/60 hover:bg-white'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
             </section>
           </div>
