@@ -751,7 +751,415 @@ export default function App() {
                   </div>
                 </div>
               </div>
+              <div className="h-[3px] w-full bg-[#009688] rounded-full mt-8"></div>
             </section>
+
+            {/* SEGMENTED TEST CATALOG EXPLORER */}
+            {services.length > 0 && (
+              <section className="max-w-7xl mx-auto px-4 md:px-6">
+                <div className="text-center space-y-2 mb-10">
+                  <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
+                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
+                </div>
+
+                {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                  {sections.map((section) => {
+                    // Determine tests to display
+                    let displayServices: DiagnosticService[] = [];
+                    if (section.serviceIds && section.serviceIds.length > 0) {
+                      displayServices = section.serviceIds
+                        .map(id => services.find(s => s.id === id))
+                        .filter((s): s is DiagnosticService => !!s);
+                    } else {
+                      displayServices = services
+                        .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
+                        .slice(0, 4);
+                    }
+
+                    const totalCount = section.serviceIds && section.serviceIds.length > 0
+                      ? section.serviceIds.length
+                      : services.filter(s => section.category === 'all' || s.category === section.category).length;
+
+                    return (
+                      <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
+                        <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                          <div>
+                            <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
+                              {section.category === 'scan' ? (
+                                <Activity className="w-4 h-4 text-[#AD1457]" />
+                              ) : (
+                                <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
+                              )}
+                              {section.title}
+                            </h3>
+                            <span className="text-[10px] text-slate-400">{section.subtitle}</span>
+                          </div>
+                          <button
+                            onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
+                            className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>View All ({totalCount})</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Section banner */}
+                        <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
+                          <img
+                            src={resolveBannerImage(section.bannerImage)}
+                            alt={section.title}
+                            className="w-full h-full object-cover select-none"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                          <div className="absolute bottom-3 left-3 right-3 text-left">
+                            <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
+                              {section.bannerTag}
+                            </span>
+                            <p className="text-white text-[10.5px] font-bold leading-tight">
+                              {section.bannerTitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Services list inside this panel */}
+                        <div className="space-y-3.5">
+                          {displayServices.map((service) => {
+                            const inCart = cart.some(ci => ci.itemId === service.id);
+                            return (
+                              <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1 text-left flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
+                                    {service.parametersCount && (
+                                      <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
+                                        {service.parametersCount} params
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
+                                  <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
+                                    {service.category === 'scan'
+                                      ? `Prep: ${service.preparation.split('.')[0]}`
+                                      : `Turnaround: ${service.reportDelivery}`}
+                                  </span>
+                                </div>
+                                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
+                                  <div className="text-left sm:text-right">
+                                    <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
+                                    {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      onClick={() => handleDirectBook(service)}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
+                                    >
+                                      Book Now
+                                    </button>
+                                    <button
+                                      onClick={() => handleAddToCart(service, 'service')}
+                                      className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : 'border border-slate-200 hover:bg-slate-50 text-slate-655 bg-white'
+                                        }`}
+                                    >
+                                      {inCart ? 'Added' : '+ Cart'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
+              {/* Decorative background patterns */}
+              <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat'}}></div>
+
+              <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+                {/* Title Section */}
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold italic text-[#3d2b1f] tracking-tight">
+                    Precision Testing for Your Complete Health
+                  </h2>
+                  <p className="text-xs md:text-sm text-[#6b5744] font-semibold mt-2 tracking-wider">
+                    ISO CERTIFIED • Digital Reports in 24 Hours • Free Home Sample Pickup
+                  </p>
+                </div>
+
+                {/* Scrolling Test Cards */}
+                <div className="relative overflow-hidden mb-8">
+                  <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{width: 'max-content'}}>
+                    {/* Card Set 1 (original) */}
+                    {[
+                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
+                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
+                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
+                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
+                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
+                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
+                    ].map((test, i) => (
+                      <div key={`a-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
+                            <Award className="w-4 h-4 text-[#8B4513]" />
+                          </div>
+                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
+                        </div>
+                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
+                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
+                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentTab('labs');
+                          }}
+                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                        >
+                          <ShoppingCart className="w-3 h-3" />
+                          ADD TO CART
+                        </button>
+                      </div>
+                    ))}
+                    {/* Card Set 2 (duplicate for seamless loop) */}
+                    {[
+                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
+                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
+                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
+                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
+                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
+                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
+                    ].map((test, i) => (
+                      <div key={`b-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
+                            <Award className="w-4 h-4 text-[#8B4513]" />
+                          </div>
+                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
+                        </div>
+                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
+                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
+                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentTab('labs');
+                          }}
+                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                        >
+                          <ShoppingCart className="w-3 h-3" />
+                          ADD TO CART
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom: SHOW ALL TESTS + Trust Badges */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <button
+                    onClick={() => setCurrentTab('labs')}
+                    className="px-8 py-3 bg-[#009688] hover:bg-[#00796B] text-white rounded-lg text-sm font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer hover:shadow-xl"
+                  >
+                    SHOW ALL TESTS <span className="text-lg">→</span>
+                  </button>
+
+                  <div className="flex items-center gap-6 md:gap-8">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
+                        <Home className="w-5 h-5 text-[#009688]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Free Home</p>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Collection</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-[#009688]" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Same-Day</p>
+                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Digital Reports</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* POPULAR DIAGNOSTIC TESTS badge */}
+                  <div className="hidden lg:flex items-center">
+                    <div className="bg-[#d4870a] text-white px-4 py-2.5 rounded-lg shadow-lg">
+                      <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br/>DIAGNOSTIC<br/>TESTS</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
+            {packages.length > 0 && (
+              <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
+                {/* background ambient blur dots */}
+                <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
+
+                <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+                  <div className="text-center space-y-3">
+                    <span className="inline-block px-3 py-1 bg-[#16181d] border border-gray-800 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                      Recommended Preventive Screening
+                    </span>
+                    <h2 className="text-3xl md:text-4xl font-serif font-light text-white tracking-tight">Popular <span className="italic font-medium text-emerald-400">Health Checkup Packages</span></h2>
+                    <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
+                  </div>
+
+                  {/* Horizontal slider container wrapper */}
+                  <div className="relative group/slider px-2">
+                    {/* Left Scroll Button */}
+                    <button
+                      onClick={() => scrollPackages('left')}
+                      disabled={!canScrollLeft}
+                      className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
+                        canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      }`}
+                      aria-label="Scroll Left"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+
+                    {/* Right Scroll Button */}
+                    <button
+                      onClick={() => scrollPackages('right')}
+                      disabled={!canScrollRight}
+                      className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
+                        canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      }`}
+                      aria-label="Scroll Right"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+
+                    {/* Horizontal slider of packages */}
+                    <div
+                      ref={packagesScrollRef}
+                      className="flex flex-nowrap overflow-x-auto gap-6 text-left scroll-smooth pb-6 pt-2 snap-x snap-mandatory no-scrollbar"
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'nowrap',
+                        overflowX: 'auto',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}
+                    >
+                      {packages.map((pkg) => {
+                        const inCart = cart.some(ci => ci.itemId === pkg.id);
+                        return (
+                          <div
+                            key={pkg.id}
+                            className="w-[85vw] sm:w-[380px] md:w-[400px] flex-shrink-0 bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all snap-start"
+                          >
+                            {/* Package Thumbnail Image */}
+                            <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
+                              <img
+                                src={getPackageImage(pkg.id)}
+                                alt={pkg.name}
+                                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
+                              {pkg.popular && (
+                                <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
+                                  Best Value
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
+                              <div className="space-y-4">
+                                <div>
+                                  <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
+                                  <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
+                                  <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
+                                </div>
+
+                                {/* list of subset tests included */}
+                                <div className="space-y-1.5 border-t border-gray-800 pt-4">
+                                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
+                                  <div className="space-y-1 text-[11px] text-slate-400">
+                                    {pkg.includedTests.slice(0, 4).map((test, idx) => (
+                                      <div key={idx} className="flex items-center gap-1.5">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                        <span className="truncate">{test}</span>
+                                      </div>
+                                    ))}
+                                    {pkg.includedTests.length > 4 && (
+                                      <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-4 pt-4 border-t border-gray-800">
+                                <div className="flex justify-between items-end">
+                                  <div>
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
+                                      <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleDirectBook(pkg)}
+                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
+                                  >
+                                    Book Now (Pay at Lab)
+                                  </button>
+                                  <button
+                                    onClick={() => handleAddToCart(pkg, 'package')}
+                                    className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                      ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
+                                      : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
+                                      }`}
+                                  >
+                                    {inCart ? 'Added' : '+ Cart'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={() => setCurrentTab('packages')}
+                      className="px-6 py-3 border border-gray-800 hover:border-gray-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <span>View All Health Packages</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* MEET OUR EXPERT DOCTORS (Item 8) */}
             {doctors.length > 0 && (
               <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left space-y-8 animate-fade-in" id="doctors-section">
