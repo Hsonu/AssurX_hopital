@@ -398,16 +398,17 @@ export async function seedCatalog() {
       console.log("🌱 Seeding health packages into MongoDB...");
       await HealthPackageModel.insertMany(HEALTH_PACKAGES);
     }
-    const testimonialCount = await TestimonialModel.countDocuments();
-    if (testimonialCount === 0) {
-      console.log("🌱 Seeding testimonials into MongoDB...");
-      await TestimonialModel.insertMany(SEED_TESTIMONIALS);
+    console.log("🌱 Seeding/updating testimonials in MongoDB...");
+    for (const test of SEED_TESTIMONIALS) {
+      await TestimonialModel.updateOne(
+        { id: test.id },
+        { $set: test },
+        { upsert: true }
+      );
     }
-    const faqCount = await FAQModel.countDocuments();
-    if (faqCount === 0) {
-      console.log("🌱 Seeding FAQs into MongoDB...");
-      await FAQModel.insertMany(SEED_FAQS);
-    }
+    console.log("🌱 Seeding/updating FAQs in MongoDB...");
+    await FAQModel.deleteMany({});
+    await FAQModel.insertMany(SEED_FAQS);
     const centerCount = await CenterModel.countDocuments();
     if (centerCount === 0) {
       console.log("🌱 Seeding centers into MongoDB...");

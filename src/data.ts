@@ -2695,6 +2695,22 @@ export const FREQUENT_QUESTIONS = [
 export const CUSTOMER_TESTIMONIALS: Testimonial[] = [
   {
     id: 't-1',
+    name: "Varun Dubey",
+    rating: 5,
+    comment: "I recently had the pleasure of using the services provided by AssurX, and I must say I was thoroughly satisfied.",
+    location: "Mumbai",
+    date: "15 May 2023"
+  },
+  {
+    id: 't-2',
+    name: "Arti Shrivastva",
+    rating: 5,
+    comment: "Prompt service and they perform only things they want to test. More comparative with other peers online in price.",
+    location: "Mumbai",
+    date: "16 Jun 2023"
+  },
+  {
+    id: 't-3',
     name: "Rajesh Kumar",
     rating: 5,
     comment: "Excellent experience. Booked an USG scan for my father. Staff was very polite and supportive. MD Radiologist report was ready within 2 hours. Best diagnostic center in Malad with affordable rates!",
@@ -2702,7 +2718,7 @@ export const CUSTOMER_TESTIMONIALS: Testimonial[] = [
     date: "12 days ago"
   },
   {
-    id: 't-2',
+    id: 't-4',
     name: "Sneha Deshmukh",
     rating: 5,
     comment: "The Phlebotomist arrived right on time for the Home Blood Collection. He was highly skilled, used sterile sealed equipment, and took the sample painless. Got accurate digital reports on WhatsApp the same evening!",
@@ -2710,7 +2726,7 @@ export const CUSTOMER_TESTIMONIALS: Testimonial[] = [
     date: "1 week ago"
   },
   {
-    id: 't-3',
+    id: 't-5',
     name: "Amit Patel",
     rating: 5,
     comment: "Very neat, clean, and modern diagnostic center with high-tech equipment. Extremely polite staff and seamless online booking. Highly recommended for all ultrasound scans and blood checkups!",

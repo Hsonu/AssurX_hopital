@@ -167,64 +167,104 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
       {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 grid grid-cols-1 md:grid-cols-12 gap-8 text-left">
         
-        {/* Col 1: About - md:col-span-4 */}
-        <div className="md:col-span-4 space-y-4">
+        {/* Col 1: About Logo & Socials - md:col-span-4 */}
+        <div className="md:col-span-4 space-y-5">
           <div className="flex items-center gap-2 select-none cursor-pointer" onClick={() => onNavigate('home')}>
-            <img src={logoImg} alt="AssurX Diagnostics" className="h-10 w-auto rounded-lg object-contain bg-white/10 px-1.5 py-0.5" />
+            <img src={logoImg} alt="AssurX Diagnostics" className="h-14 w-auto rounded-lg object-contain bg-white/10 px-1.5 py-0.5" />
           </div>
-          <p className="text-[11px] leading-relaxed text-slate-400">
-            AssurX Scans & Labs is India's premier diagnostics and advanced medical imaging network. Bridging clinical expertise with futuristic diagnostic technology, we make high-end MRI, CT scans, and complete laboratory blood analyses affordable and accessible for every citizen.
+          <p className="text-[11px] font-bold tracking-wider text-slate-400">
+            <span className="text-[#0288d1]">Pathology</span> | <span className="text-[#d32f2f]">Biochemistry</span> | <span className="text-[#303f9f]">Microbiology</span>
           </p>
-          <div className="space-y-2 text-[11px]">
-            <a href={`tel:${branchInfo.phone}`} className="flex items-center gap-1.5 hover:text-white transition-colors">
-              <PhoneCall className="w-3.5 h-3.5 text-[#009688]" />
-              <span className="text-[#80CBC4] font-bold">Helpline: {branchInfo.phone}</span>
-            </a>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-white font-bold hover:text-emerald-300 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5 fill-[#25D366]" viewBox="0 0 24 24">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          <div className="flex items-center gap-3.5 pt-2">
+            {/* Instagram */}
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" viewBox="0 0 24 24">
+                <defs>
+                  <radialGradient id="ig-grad" cx="30%" cy="107%" r="130%">
+                    <stop offset="0%" stopColor="#fdf497" />
+                    <stop offset="5%" stopColor="#fdf497" />
+                    <stop offset="45%" stopColor="#fd5949" />
+                    <stop offset="60%" stopColor="#d6249f" />
+                    <stop offset="100%" stopColor="#285AEB" />
+                  </radialGradient>
+                </defs>
+                <rect width="20" height="20" x="2" y="2" rx="5" fill="url(#ig-grad)" />
+                <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm4.9-8.3a.85.85 0 1 0 0-1.7.85.85 0 0 0 0 1.7z" fill="white" />
               </svg>
-              <span>WhatsApp Us: {whatsappNumber} 😊</span>
             </a>
-            <a href="mailto:assurxdiagonistics@gmail.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
-              <Mail className="w-3.5 h-3.5 text-[#009688]" />
-              <span className="text-[#80CBC4]">Care: assurxdiagonistics@gmail.com</span>
+            {/* WhatsApp */}
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="12" fill="#25D366" />
+                <path d="M12.003 21.002a8.995 8.995 0 0 1-4.582-1.258l-.328-.195-3.414.896.911-3.327-.214-.34a8.973 8.973 0 0 1-1.378-4.783c0-4.962 4.037-9 9-9 4.962 0 9.001 4.038 9.001 9s-4.039 9-9 9zm5.59-4.148c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" fill="white" />
+              </svg>
+            </a>
+            {/* YouTube */}
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" viewBox="0 0 24 24">
+                <rect width="24" height="24" rx="6" fill="#FF0000" />
+                <polygon points="9.5,7.5 16,12 9.5,16.5" fill="white" />
+              </svg>
+            </a>
+            {/* Facebook */}
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="12" fill="#1877F2" />
+                <path d="M13.5 18v-7H15V9.5h-1.5V8.2c0-.5.2-.7.6-.7h.9V6h-1.4c-1.5 0-2.1.8-2.1 2v1.5H10v1.5h1.5v7h2z" fill="white" />
+              </svg>
             </a>
           </div>
         </div>
 
+        {/* Col 2: Company & Complaint - md:col-span-2 */}
+        <div className="md:col-span-2 space-y-6">
+          <div className="space-y-3">
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">Company</h4>
+            <ul className="space-y-2.5 text-[11px]">
+              <li><button onClick={() => onNavigate('about-us')} className="hover:text-white hover:underline transition-colors cursor-pointer text-left">About Us</button></li>
+              <li><button onClick={() => onNavigate('contact-us')} className="hover:text-white hover:underline transition-colors cursor-pointer text-left">Locate Us</button></li>
+              <li><button onClick={() => onNavigate('hiring')} className="hover:text-white hover:underline transition-colors cursor-pointer text-left">Careers</button></li>
+            </ul>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">Complaint</h4>
+            <ul className="space-y-2.5 text-[11px]">
+              <li><button onClick={() => setIsComplaintOpen(true)} className="hover:text-[#80CBC4] hover:underline transition-colors cursor-pointer text-left font-semibold text-[#009688]">File Complaint</button></li>
+              <li><button onClick={() => onNavigate('contact-us')} className="hover:text-white hover:underline transition-colors cursor-pointer text-left">Contact Us</button></li>
+            </ul>
+          </div>
+        </div>
 
-
-        {/* Col 3: Lab Tests Index - md:col-span-2.5 */}
-        <div className="md:col-span-2.5 space-y-3">
-          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Laboratory Diagnostics</h4>
-          <ul className="space-y-2 text-[11px]">
-            <li><button onClick={() => onNavigate('labs')} className="hover:text-white hover:underline transition-colors cursor-pointer">Complete Blood Count (CBC)</button></li>
-            <li><button onClick={() => onNavigate('labs')} className="hover:text-white hover:underline transition-colors cursor-pointer">Thyroid Profiles (T3, T4, TSH)</button></li>
-            <li><button onClick={() => onNavigate('labs')} className="hover:text-white hover:underline transition-colors cursor-pointer">Diabetes Glycated HbA1c</button></li>
-            <li><button onClick={() => onNavigate('labs')} className="hover:text-white hover:underline transition-colors cursor-pointer">Cardiovascular Lipid Panel</button></li>
-            <li><button onClick={() => onNavigate('labs')} className="hover:text-white hover:underline transition-colors cursor-pointer">Liver Function Tests (LFT)</button></li>
-            <li><button onClick={() => onNavigate('labs')} className="hover:text-white hover:underline transition-colors cursor-pointer">Vitamin D & B12 screening</button></li>
+        {/* Col 3: Partners - md:col-span-2 */}
+        <div className="md:col-span-2 space-y-3">
+          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Partners</h4>
+          <ul className="space-y-2.5 text-[11px]">
+            <li><span className="text-slate-400 block cursor-default">For Consultant</span></li>
+            <li><span className="text-slate-400 block cursor-default">For General Practitioner</span></li>
+            <li><span className="text-slate-400 block cursor-default">For Gym Facilities</span></li>
+            <li><span className="text-slate-400 block cursor-default">For Corporates</span></li>
           </ul>
         </div>
 
-        {/* Col 4: Top Centers - md:col-span-3 */}
-        <div className="md:col-span-3 space-y-3">
-          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Top Mumbai Branches</h4>
-          <div className="space-y-2 text-[11px] max-h-48 overflow-y-auto pr-1 text-slate-400">
-            {displayCenters.map((center, idx) => (
-              <div key={idx} className="border-b border-slate-800/60 pb-1.5 last:border-b-0 last:pb-0">
-                <span className="font-bold text-slate-300 block">{center.city} Branch</span>
-                <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{center.address}</p>
-                <span className="text-[10px] text-[#009688] font-semibold block mt-0.5">Ph: {center.phone}</span>
-              </div>
-            ))}
-          </div>
+        {/* Col 4: Certification - md:col-span-2 */}
+        <div className="md:col-span-2 space-y-3">
+          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Certification</h4>
+          <ul className="space-y-2.5 text-[11px]">
+            <li><span className="text-slate-400 block cursor-default">BMC Certification</span></li>
+            <li><span className="text-slate-400 block cursor-default">BMW Certification</span></li>
+            <li><span className="text-slate-400 block cursor-default">ISO Certification</span></li>
+            <li><span className="text-slate-400 block cursor-default">Others</span></li>
+          </ul>
+        </div>
+
+        {/* Col 5: Society - md:col-span-2 */}
+        <div className="md:col-span-2 space-y-3">
+          <h4 className="font-bold text-white text-xs uppercase tracking-wider">Society</h4>
+          <ul className="space-y-2.5 text-[11px]">
+            <li><span className="text-slate-400 block cursor-default">Blood Sugar Camps</span></li>
+            <li><span className="text-slate-400 block cursor-default">Women Pregnancy Awareness Camp</span></li>
+            <li><span className="text-slate-400 block cursor-default">Lifestyle Modification Camp</span></li>
+          </ul>
         </div>
 
       </div>
@@ -232,21 +272,11 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
       {/* Copywrite legal info footer */}
       <div className="bg-slate-950 text-slate-550 border-t border-slate-900 py-6 px-4 md:px-6 text-[10px] md:text-xs">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p>© 2026 AssurX Scans & Laboratories Pvt. Ltd. All medical rights reserved.</p>
-          <div className="flex flex-wrap justify-center sm:justify-end gap-x-6 gap-y-2">
-            <button onClick={() => onNavigate('about-us')} className="hover:text-slate-300 transition-colors cursor-pointer">About Us</button>
-            <button onClick={() => onNavigate('contact-us')} className="hover:text-slate-300 transition-colors cursor-pointer">Contact Us</button>
+          <p>© 2024 AssurRx Diagnostics Pvt. Ltd. All rights reserved.</p>
+          <div className="flex flex-wrap justify-center sm:justify-end gap-x-6 gap-y-2 uppercase tracking-wider font-semibold">
+            <button onClick={() => onNavigate('terms-of-use')} className="hover:text-slate-300 transition-colors cursor-pointer">Terms</button>
+            <span className="text-slate-700">|</span>
             <button onClick={() => onNavigate('privacy-policy')} className="hover:text-slate-300 transition-colors cursor-pointer">Privacy Policy</button>
-            <button onClick={() => onNavigate('terms-of-use')} className="hover:text-slate-300 transition-colors cursor-pointer font-semibold">Terms of Use</button>
-            <button onClick={() => onNavigate('refund-policy')} className="hover:text-slate-300 transition-colors cursor-pointer">Cancellation & Refund</button>
-            <button onClick={() => onNavigate('shipping-policy')} className="hover:text-slate-300 transition-colors cursor-pointer">Service Delivery</button>
-            <button
-              onClick={() => setIsComplaintOpen(true)}
-              className="hover:text-[#80CBC4] transition-colors cursor-pointer flex items-center gap-1 text-[#009688] font-semibold"
-            >
-              <MessageSquareWarning className="w-3 h-3" />
-              Patient Complaint
-            </button>
           </div>
         </div>
       </div>

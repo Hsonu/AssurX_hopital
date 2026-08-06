@@ -28,6 +28,7 @@ import { TrackOrderSection, HiringCareersSection } from './components/HearingAnd
 import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
 import LegalPages from './components/LegalPages';
+import { CUSTOMER_TESTIMONIALS } from './data';
 
 const getPackageImage = (id: string) => {
   switch (id) {
@@ -104,7 +105,11 @@ export default function App() {
         if (Array.isArray(parsed)) {
           return parsed.map((sec: any) => {
             if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging' || sec.title === 'Popular Sonography & Scan' || sec.title === 'Popular Sonography & USG Scans') {
-              return { ...sec, title: 'Popular Sonography' };
+              return { 
+                ...sec, 
+                title: 'Popular Sonography',
+                bannerImage: '/sonography_equipment.png'
+              };
             }
             return sec;
           });
@@ -120,7 +125,7 @@ export default function App() {
         subtitle: 'Read by MD Radiologists • Same Day Reports',
         category: 'scan',
         viewAllTab: 'scans',
-        bannerImage: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop',
+        bannerImage: '/sonography_equipment.png',
         bannerTag: 'Advanced Sonography Center',
         bannerTitle: 'High-Resolution 3D/4D Sonography (USG) & Advanced Scans',
         serviceIds: []
@@ -246,6 +251,19 @@ export default function App() {
 
   // Dynamic testimonials loaded from MongoDB
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const testimonialScrollRef = useRef<HTMLDivElement>(null);
+  const [expandedTestimonialId, setExpandedTestimonialId] = useState<string | null>(null);
+
+  const scrollTestimonials = (direction: 'left' | 'right') => {
+    if (testimonialScrollRef.current) {
+      const { scrollLeft } = testimonialScrollRef.current;
+      const cardWidth = 360; // Card width + gap
+      const scrollTo = direction === 'left' 
+        ? scrollLeft - cardWidth 
+        : scrollLeft + cardWidth;
+      testimonialScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    }
+  };
 
   // Fetch testimonials from API
   useEffect(() => {
@@ -254,9 +272,16 @@ export default function App() {
         if (!res.ok) throw new Error("Failed to load testimonials");
         return res.json();
       })
-      .then(data => setTestimonials(data))
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTestimonials(data);
+        } else {
+          setTestimonials(CUSTOMER_TESTIMONIALS);
+        }
+      })
       .catch(err => {
-        console.error("Error fetching testimonials:", err);
+        console.error("Error fetching testimonials, falling back to local copy:", err);
+        setTestimonials(CUSTOMER_TESTIMONIALS);
       });
   }, []);
 
@@ -726,486 +751,31 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div className="h-[3px] w-full bg-[#009688] rounded-full mt-8"></div>
             </section>
-
-
-
-            {/* SEGMENTED TEST CATALOG EXPLORER */}
-            {services.length > 0 && (
-              <section className="max-w-7xl mx-auto px-4 md:px-6">
-                <div className="text-center space-y-2 mb-10">
-                  <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
-                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
-                </div>
-
-                {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                  {sections.map((section) => {
-                    // Determine tests to display
-                    let displayServices: DiagnosticService[] = [];
-                    if (section.serviceIds && section.serviceIds.length > 0) {
-                      displayServices = section.serviceIds
-                        .map(id => services.find(s => s.id === id))
-                        .filter((s): s is DiagnosticService => !!s);
-                    } else {
-                      displayServices = services
-                        .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
-                        .slice(0, 4);
-                    }
-
-                    const totalCount = section.serviceIds && section.serviceIds.length > 0
-                      ? section.serviceIds.length
-                      : services.filter(s => section.category === 'all' || s.category === section.category).length;
-
-                    return (
-                      <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
-                        <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                          <div>
-                            <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
-                              {section.category === 'scan' ? (
-                                <Activity className="w-4 h-4 text-[#AD1457]" />
-                              ) : (
-                                <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
-                              )}
-                              {section.title}
-                            </h3>
-                            <span className="text-[10px] text-slate-400">{section.subtitle}</span>
-                          </div>
-                          <button
-                            onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
-                            className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
-                          >
-                            <span>View All ({totalCount})</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        {/* Section banner */}
-                        <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
-                          <img
-                            src={resolveBannerImage(section.bannerImage)}
-                            alt={section.title}
-                            className="w-full h-full object-cover select-none"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-                          <div className="absolute bottom-3 left-3 right-3 text-left">
-                            <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
-                              {section.bannerTag}
-                            </span>
-                            <p className="text-white text-[10.5px] font-bold leading-tight">
-                              {section.bannerTitle}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Services list inside this panel */}
-                        <div className="space-y-3.5">
-                          {displayServices.map((service) => {
-                            const inCart = cart.some(ci => ci.itemId === service.id);
-                            return (
-                              <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="space-y-1 text-left flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
-                                    {service.parametersCount && (
-                                      <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
-                                        {service.parametersCount} params
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
-                                  <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
-                                    {service.category === 'scan'
-                                      ? `Prep: ${service.preparation.split('.')[0]}`
-                                      : `Turnaround: ${service.reportDelivery}`}
-                                  </span>
-                                </div>
-                                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
-                                  <div className="text-left sm:text-right">
-                                    <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
-                                    {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
-                                  </div>
-                                  <div className="flex gap-1.5">
-                                    <button
-                                      onClick={() => handleDirectBook(service)}
-                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
-                                    >
-                                      Book Now
-                                    </button>
-                                    <button
-                                      onClick={() => handleAddToCart(service, 'service')}
-                                      className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${inCart
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                        : 'border border-slate-200 hover:bg-slate-50 text-slate-650 bg-white'
-                                        }`}
-                                    >
-                                      {inCart ? 'Added' : '+ Cart'}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-
-
-
-            {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
-              {/* Decorative background patterns */}
-              <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat'}}></div>
-
-              <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
-                {/* Title Section */}
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold italic text-[#3d2b1f] tracking-tight">
-                    Precision Testing for Your Complete Health
+            {/* MEET OUR EXPERT DOCTORS (Item 8) */}
+            {doctors.length > 0 && (
+              <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left space-y-8 animate-fade-in" id="doctors-section">
+                {/* Header title block */}
+                <div className="space-y-2 text-center pb-4">
+                  <span className="inline-block px-3 py-1 bg-teal-50 border border-teal-200/60 rounded-full text-teal-800 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                    Consult Top Medical Experts
+                  </span>
+                  <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">
+                    Meet Our <span className="italic font-medium text-[#2D006B]">Specialist Doctors</span>
                   </h2>
-                  <p className="text-xs md:text-sm text-[#6b5744] font-semibold mt-2 tracking-wider">
-                    ISO CERTIFIED • Digital Reports in 24 Hours • Free Home Sample Pickup
+                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
+                    Book slots or request callbacks for evaluations with our verified specialist team.
                   </p>
                 </div>
 
-                {/* Scrolling Test Cards */}
-                <div className="relative overflow-hidden mb-8">
-                  <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{width: 'max-content'}}>
-                    {/* Card Set 1 (original) */}
-                    {[
-                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
-                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
-                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
-                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
-                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
-                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
-                    ].map((test, i) => (
-                      <div key={`a-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
-                            <Award className="w-4 h-4 text-[#8B4513]" />
-                          </div>
-                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
-                        </div>
-                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
-                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
-                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentTab('labs');
-                          }}
-                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                        >
-                          <ShoppingCart className="w-3 h-3" />
-                          ADD TO CART
-                        </button>
-                      </div>
-                    ))}
-                    {/* Card Set 2 (duplicate for seamless loop) */}
-                    {[
-                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
-                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
-                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
-                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
-                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
-                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
-                    ].map((test, i) => (
-                      <div key={`b-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
-                            <Award className="w-4 h-4 text-[#8B4513]" />
-                          </div>
-                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
-                        </div>
-                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
-                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
-                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentTab('labs');
-                          }}
-                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                        >
-                          <ShoppingCart className="w-3 h-3" />
-                          ADD TO CART
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom: SHOW ALL TESTS + Trust Badges */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <button
-                    onClick={() => setCurrentTab('labs')}
-                    className="px-8 py-3 bg-[#009688] hover:bg-[#00796B] text-white rounded-lg text-sm font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer hover:shadow-xl"
-                  >
-                    SHOW ALL TESTS <span className="text-lg">→</span>
-                  </button>
-
-                  <div className="flex items-center gap-6 md:gap-8">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
-                        <Home className="w-5 h-5 text-[#009688]" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Free Home</p>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Collection</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-[#009688]" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Same-Day</p>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Digital Reports</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* POPULAR DIAGNOSTIC TESTS badge */}
-                  <div className="hidden lg:flex items-center">
-                    <div className="bg-[#d4870a] text-white px-4 py-2.5 rounded-lg shadow-lg">
-                      <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br/>DIAGNOSTIC<br/>TESTS</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
-            {packages.length > 0 && (
-              <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
-                {/* background ambient blur dots */}
-                <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
-
-                <div className="max-w-7xl mx-auto space-y-10 relative z-10">
-                  <div className="text-center space-y-3">
-                    <span className="inline-block px-3 py-1 bg-[#16181d] border border-gray-800 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
-                      Recommended Preventive Screening
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-serif font-light text-white tracking-tight">Popular <span className="italic font-medium text-emerald-400">Health Checkup Packages</span></h2>
-                    <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
-                  </div>
-
-                  {/* Horizontal slider container wrapper */}
-                  <div className="relative group/slider px-2">
-                    {/* Left Scroll Button */}
-                    <button
-                      onClick={() => scrollPackages('left')}
-                      disabled={!canScrollLeft}
-                      className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
-                        canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                      }`}
-                      aria-label="Scroll Left"
-                    >
-                      <ChevronLeft className="w-6 h-6" />
-                    </button>
-
-                    {/* Right Scroll Button */}
-                    <button
-                      onClick={() => scrollPackages('right')}
-                      disabled={!canScrollRight}
-                      className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
-                        canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                      }`}
-                      aria-label="Scroll Right"
-                    >
-                      <ChevronRight className="w-6 h-6" />
-                    </button>
-
-                    {/* Horizontal slider of packages */}
-                    <div
-                      ref={packagesScrollRef}
-                      className="flex flex-nowrap overflow-x-auto gap-6 text-left scroll-smooth pb-6 pt-2 snap-x snap-mandatory no-scrollbar"
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'nowrap',
-                        overflowX: 'auto',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none'
-                      }}
-                    >
-                      {packages.map((pkg) => {
-                        const inCart = cart.some(ci => ci.itemId === pkg.id);
-                        return (
-                          <div
-                            key={pkg.id}
-                            className="w-[85vw] sm:w-[380px] md:w-[400px] flex-shrink-0 bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all snap-start"
-                          >
-                            {/* Package Thumbnail Image */}
-                            <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
-                              <img
-                                src={getPackageImage(pkg.id)}
-                                alt={pkg.name}
-                                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
-                              {pkg.popular && (
-                                <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
-                                  Best Value
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
-                              <div className="space-y-4">
-                                <div>
-                                  <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
-                                  <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
-                                  <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
-                                </div>
-
-                                {/* list of subset tests included */}
-                                <div className="space-y-1.5 border-t border-gray-800 pt-4">
-                                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
-                                  <div className="space-y-1 text-[11px] text-slate-400">
-                                    {pkg.includedTests.slice(0, 4).map((test, idx) => (
-                                      <div key={idx} className="flex items-center gap-1.5">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
-                                        <span className="truncate">{test}</span>
-                                      </div>
-                                    ))}
-                                    {pkg.includedTests.length > 4 && (
-                                      <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4 pt-4 border-t border-gray-800">
-                                <div className="flex justify-between items-end">
-                                  <div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
-                                    <div className="flex items-baseline gap-1.5">
-                                      <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
-                                      <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
-                                    </div>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
-                                </div>
-
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleDirectBook(pkg)}
-                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
-                                  >
-                                    Book Now (Pay at Lab)
-                                  </button>
-                                  <button
-                                    onClick={() => handleAddToCart(pkg, 'package')}
-                                    className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
-                                      ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
-                                      : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
-                                      }`}
-                                  >
-                                    {inCart ? 'Added' : '+ Cart'}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="text-center pt-2">
-                    <button
-                      onClick={() => setCurrentTab('packages')}
-                      className="px-6 py-3 border border-gray-800 hover:border-gray-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <span>View All Health Packages</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </section>
-            )}
-
-
-
-
-
-
-            {/* MEET OUR EXPERT DOCTORS SECTION */}
-            {doctors.length > 0 && (
-              <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-10 animate-fade-in" id="doctors-section">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-gray-100 pb-6">
-                  <div className="space-y-2">
-                    <span className="inline-block px-3 py-1 bg-teal-50 border border-teal-200/60 rounded-full text-teal-800 text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                      Consult Top Medical Experts
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">
-                      Meet Our <span className="italic font-medium text-[#2D006B]">Expert Doctors</span>
-                    </h2>
-                    <p className="text-xs md:text-sm text-slate-500 max-w-xl">
-                      Book direct slots or request callbacks for clinical diagnostics evaluation with our certified specialists.
-                    </p>
-                  </div>
-
-                  {/* Filters and search row */}
-                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                    {/* Search */}
-                    <div className="relative w-full sm:w-64">
-                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Search doctors..."
-                        value={doctorSearchQuery}
-                        onChange={(e) => setDoctorSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
-                      />
-                    </div>
-                    {/* Specialty filter */}
-                    <select
-                      value={doctorSpecialtyFilter}
-                      onChange={(e) => setDoctorSpecialtyFilter(e.target.value)}
-                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-full text-xs focus:outline-none bg-white font-medium text-slate-700 cursor-pointer"
-                    >
-                      <option value="All">All Specialties</option>
-                      {Array.from(new Set(doctors.map(d => d.specialization))).map(spec => (
-                        <option key={spec} value={spec}>{spec}</option>
-                      ))}
-                    </select>
-                    {/* Branch filter */}
-                    <select
-                      value={doctorBranchFilter}
-                      onChange={(e) => setDoctorBranchFilter(e.target.value)}
-                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-full text-xs focus:outline-none bg-white font-medium text-slate-700 cursor-pointer"
-                    >
-                      <option value="All">All Branches</option>
-                      {Array.from(new Set(doctors.map(d => d.branch))).map(br => (
-                        <option key={br} value={br}>{br} Branch</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
                 {filteredDoctors.length === 0 ? (
-                  <div className="text-center py-12 bg-slate-50/50 border border-dashed border-gray-200 rounded-3xl">
+                  <div className="text-center py-12 bg-slate-50/50 border border-dashed border-gray-200 rounded-3xl w-full">
                     <AlertCircle className="w-8 h-8 text-slate-350 mx-auto mb-2" />
                     <p className="text-sm font-medium text-slate-500">No doctors match your query or filters.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
                     {filteredDoctors.map((doc) => (
                       <div
                         key={doc.id}
@@ -1250,8 +820,6 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-
-
                       </div>
                     ))}
                   </div>
@@ -1259,16 +827,154 @@ export default function App() {
               </section>
             )}
 
-            {/* TESTIMONIALS */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            {/* SONOGRAPHY SHOWCASE (Item 9) */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left" id="sonography-showcase">
+              <div 
+                onClick={() => setCurrentTab('scans')}
+                className="rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500 transition-all duration-300 border border-gray-250 cursor-pointer"
+              >
+                <img
+                  src="/sonography_equipment.png"
+                  alt="Sonography & Ultrasound Scans Features"
+                  className="w-full h-auto block select-none"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </section>
+
+            {/* WHY ASSURX & BOOKING GUIDE (Item 10) */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left" id="why-assurx">
+              <div 
+                onClick={() => setCurrentTab('packages')}
+                className="rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500 transition-all duration-300 border border-gray-250 cursor-pointer"
+              >
+                <img
+                  src="/family_health_offer.png"
+                  alt="Why AssurRx and 4 Steps Booking Guide"
+                  className="w-full h-auto block select-none"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </section>
+
+            {/* PROMO CODES & DEALS (Item 11) */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left" id="promos-section">
+              <div 
+                onClick={() => setCurrentTab('packages')}
+                className="rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500 transition-all duration-300 border border-gray-250 cursor-pointer"
+              >
+                <img
+                  src="/promo_code_offers.png"
+                  alt="Tests and Health Packages Promo Codes"
+                  className="w-full h-auto block select-none"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </section>
+
+            {/* SOCIAL & SOCIETY HEALTH CAMPS (Item 12) */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-8">
+              <div className="space-y-2">
+                <span className="inline-block px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                  Community Initiative
+                </span>
+                <h3 className="text-3xl font-serif font-light text-slate-900 tracking-tight">
+                  Social & Society <span className="italic font-medium text-[#2D006B]">Health Camps</span>
+                </h3>
+                <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
+                  Bringing quality, subsidised, and free diagnostic checkups directly to your neighborhood or housing society.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                {/* Camp Card 1 */}
+                <div className="bg-[#FFF8F8] border border-red-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
+                  <h4 className="text-sm font-black text-red-800 uppercase tracking-wider border-b border-red-100 pb-2">
+                    Free Health Check-ups
+                  </h4>
+                  <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                      <span>Blood Pressure & Blood Sugar</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                      <span>BMI & Weight Evaluation</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                      <span>General Physician Consultation</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                      <span>Personalized Health Advice</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Camp Card 2 */}
+                <div className="bg-[#F0FAF7] border border-emerald-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
+                  <h4 className="text-sm font-black text-emerald-800 uppercase tracking-wider border-b border-emerald-100 pb-2">
+                    Diagnostic Camps
+                  </h4>
+                  <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                      <span>ECG & Cardiac Screening</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                      <span>Subsidised Lipid & Thyroid Profile</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                      <span>Kidney & Liver Function Panels</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                      <span>Sterile Blood Sample Collection</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Camp Card 3 */}
+                <div className="bg-[#F4F2FA] border border-purple-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
+                  <h4 className="text-sm font-black text-[#2D006B] uppercase tracking-wider border-b border-purple-100 pb-2">
+                    Awareness Programs
+                  </h4>
+                  <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                      <span>Diabetes & Hypertension Seminars</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                      <span>Women's Health & Wellness Guidance</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                      <span>Pediatric Care & Nutrition Advice</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                      <span>Healthy Lifestyle Workshops</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* TESTIMONIALS (PATIENT SUCCESS STORIES) */}
+            <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8 py-6">
+              {/* Header */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-100 pb-6">
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/60 rounded-full text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-1">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>5.0 Star Rated on Google Maps</span>
                   </div>
                   <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-[#2D006B]">Success Stories</span></h3>
-                  <p className="text-xs text-slate-500">Read authentic positive experiences from our satisfied health patrons.</p>
+                  <p className="text-sm text-slate-500">Read authentic positive experiences from our satisfied health patrons.</p>
                 </div>
                 <a
                   href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
@@ -1282,35 +988,101 @@ export default function App() {
                 </a>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {testimonials.map((testimonial) => (
-                  <a
-                    key={testimonial.id}
-                    href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-[#fafafa]/50 border border-gray-200 p-6 rounded-3xl shadow-xs space-y-4 hover:bg-white hover:border-emerald-400 hover:shadow-md transition-all block group cursor-pointer"
+              {/* Layout for rating and carousel */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-2">
+                {/* Left Column: Rating Info & Controls */}
+                <div className="lg:col-span-4 bg-slate-50 border border-gray-150 p-8 rounded-3xl flex flex-col justify-between space-y-6">
+                  <div className="space-y-4">
+                    {/* Stars */}
+                    <div className="flex gap-1 text-amber-500">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className="w-6 h-6 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    {/* Big Rating text */}
+                    <div>
+                      <h4 className="text-5xl font-black text-slate-900 tracking-tight leading-none">
+                        4.7
+                      </h4>
+                      <p className="text-lg font-bold text-slate-800 mt-2">
+                        Google Rating
+                      </p>
+                    </div>
+                    {/* Trusted text */}
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                      Trusted Over 10,000+ Doctors
+                    </p>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => scrollTestimonials('left')}
+                      className="w-11 h-11 rounded-full border border-gray-250 hover:border-emerald-500 hover:text-emerald-700 text-slate-600 flex items-center justify-center bg-white shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                      aria-label="Scroll testimonials left"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => scrollTestimonials('right')}
+                      className="w-11 h-11 rounded-full border border-gray-250 hover:border-emerald-500 hover:text-emerald-700 text-slate-600 flex items-center justify-center bg-white shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                      aria-label="Scroll testimonials right"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Column: Sliding Carousel */}
+                <div className="lg:col-span-8 overflow-hidden relative flex items-center">
+                  <div
+                    ref={testimonialScrollRef}
+                    className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x pb-4 w-full"
                   >
-                    <div className="flex justify-between items-center">
-                      <div className="flex gap-0.5 text-amber-500">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                      <span className="text-[9px] font-black text-emerald-700 uppercase bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
-                        Google Review <ExternalLink className="w-2.5 h-2.5" />
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-655 leading-relaxed italic group-hover:text-slate-900 transition-colors">"{testimonial.comment}"</p>
-                    <div className="border-t border-gray-100 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold">
-                      <div>
-                        <span className="text-slate-800 font-bold block">{testimonial.name}</span>
-                        <span>{testimonial.location}</span>
-                      </div>
-                      <span>{testimonial.date}</span>
-                    </div>
-                  </a>
-                ))}
+                    {testimonials.map((testimonial) => {
+                      const isExpanded = expandedTestimonialId === testimonial.id;
+                      const comment = testimonial.comment || "";
+                      const isLong = comment.length > 100;
+                      
+                      return (
+                        <div
+                          key={testimonial.id}
+                          className="min-w-[290px] md:min-w-[340px] w-[290px] md:w-[340px] snap-start bg-white border border-gray-200 p-6 rounded-3xl shadow-sm hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between group"
+                        >
+                          <div className="space-y-3">
+                            <p className="text-xs text-slate-600 leading-relaxed italic group-hover:text-slate-900 transition-colors">
+                              "{isLong && !isExpanded ? `${comment.substring(0, 100)}...` : comment}"
+                            </p>
+                            {isLong && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setExpandedTestimonialId(isExpanded ? null : testimonial.id);
+                                }}
+                                className="text-[11px] font-bold text-teal-600 hover:text-[#2D006B] block transition-colors cursor-pointer text-left"
+                              >
+                                {isExpanded ? "Read Less" : "Read More"}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="border-t border-gray-100 pt-4 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-bold">
+                            <div>
+                              <span className="text-slate-800 font-bold block text-xs">{testimonial.name}</span>
+                              <span className="text-slate-400 font-medium">{testimonial.date} - {testimonial.location}</span>
+                            </div>
+                            
+                            {/* Rating badge pill (5 ★) */}
+                            <div className="bg-amber-500 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] flex items-center gap-0.5 shadow-sm">
+                              <span>{testimonial.rating || 5}</span>
+                              <Star className="w-2.5 h-2.5 fill-white text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -1327,86 +1099,6 @@ export default function App() {
                     <p className="text-xs text-slate-550 pl-6 leading-relaxed">{faq.a}</p>
                   </div>
                 ))}
-              </div>
-            </section>
-
-            {/* ====== HOME ROTATING BANNER CAROUSEL ====== */}
-            <section className="max-w-5xl mx-auto px-4 md:px-6 py-10 border-t border-gray-150">
-              <div className="text-center mb-6">
-                <span className="inline-block px-3 py-1 bg-[#F5F0FA] border border-[#E8DEFF] text-[#2D006B] text-[10px] font-black uppercase tracking-wider rounded-full mb-1">
-                  Exclusive Offers & Clinical Highlights
-                </span>
-                <h3 className="text-2xl md:text-3xl font-serif font-light text-slate-900 tracking-tight">
-                  Our Special <span className="italic font-medium text-[#2D006B]">Offers & Highlights</span>
-                </h3>
-              </div>
-
-              <div className="relative group overflow-hidden rounded-3xl border border-gray-200/80 shadow-lg hover:shadow-xl transition-all">
-                {/* Banner Image wrapper */}
-                <div 
-                  className="w-full cursor-pointer relative overflow-hidden"
-                  onClick={() => {
-                    const banner = homeBanners[activeBanner];
-                    if (banner.tab === 'callback') {
-                      const callbackWidget = document.getElementById('callback-sticky-widget');
-                      if (callbackWidget) {
-                        callbackWidget.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    } else {
-                      setCurrentTab(banner.tab);
-                    }
-                  }}
-                >
-                  <img 
-                    src={homeBanners[activeBanner].src} 
-                    alt={homeBanners[activeBanner].alt} 
-                    className="w-full h-auto block select-none transition-all duration-700 ease-in-out hover:scale-[1.005]"
-                    referrerPolicy="no-referrer"
-                  />
-                  {/* Subtle gradient overlay to make buttons pop */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none"></div>
-                </div>
-
-                {/* Left/Right controls (visible on hover) */}
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveBanner((prev) => (prev - 1 + homeBanners.length) % homeBanners.length);
-                  }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95 z-20 opacity-0 group-hover:opacity-100 cursor-pointer"
-                  aria-label="Previous Offer"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveBanner((prev) => (prev + 1) % homeBanners.length);
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95 z-20 opacity-0 group-hover:opacity-100 cursor-pointer"
-                  aria-label="Next Offer"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-                {/* Navigation Dots */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                  {homeBanners.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveBanner(idx);
-                      }}
-                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                        activeBanner === idx 
-                          ? 'bg-[#2D006B] w-6 shadow-sm' 
-                          : 'bg-white/60 hover:bg-white'
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
               </div>
             </section>
           </div>

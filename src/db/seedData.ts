@@ -21,6 +21,22 @@ export interface SeedCenter {
 export const SEED_TESTIMONIALS: Testimonial[] = [
   {
     id: 't-1',
+    name: "Varun Dubey",
+    rating: 5,
+    comment: "I recently had the pleasure of using the services provided by AssurX, and I must say I was thoroughly satisfied.",
+    location: "Mumbai",
+    date: "15 May 2023"
+  },
+  {
+    id: 't-2',
+    name: "Arti Shrivastva",
+    rating: 5,
+    comment: "Prompt service and they perform only things they want to test. More comparative with other peers online in price.",
+    location: "Mumbai",
+    date: "16 Jun 2023"
+  },
+  {
+    id: 't-3',
     name: "Rajesh Kumar",
     rating: 5,
     comment: "Excellent experience. Booked an USG scan for my father. Staff was very polite and supportive. MD Radiologist report was ready within 2 hours. Best diagnostic center in Malad with affordable rates!",
@@ -28,7 +44,7 @@ export const SEED_TESTIMONIALS: Testimonial[] = [
     date: "12 days ago"
   },
   {
-    id: 't-2',
+    id: 't-4',
     name: "Sneha Deshmukh",
     rating: 5,
     comment: "The Phlebotomist arrived right on time for the Home Blood Collection. He was highly skilled, used sterile sealed equipment, and took the sample painless. Got accurate digital reports on WhatsApp the same evening!",
@@ -36,7 +52,7 @@ export const SEED_TESTIMONIALS: Testimonial[] = [
     date: "1 week ago"
   },
   {
-    id: 't-3',
+    id: 't-5',
     name: "Amit Patel",
     rating: 5,
     comment: "Very neat, clean, and modern diagnostic center with high-tech equipment. Extremely polite staff and seamless online booking. Highly recommended for all ultrasound scans and blood checkups!",
@@ -47,24 +63,36 @@ export const SEED_TESTIMONIALS: Testimonial[] = [
 
 export const SEED_FAQS: SeedFAQ[] = [
   {
-    q: "Why are your rates significantly lower than other diagnostic centers?",
-    a: "At AssurX, our mission is to make high-quality, trusted diagnostics affordable for every Indian. By utilizing high-throughput, state-of-the-art robotic machines in our centralized NABL labs and reducing administrative overheads, we pass 100% of the cost savings directly to our patients. We offer the exact same diagnostic accuracy and technology at up to 50% lower prices."
+    q: "Do I need an appointment, or can I walk in?",
+    a: "Walk-ins are welcome for routine blood and urine tests. However, we strongly recommend booking an appointment in advance for imaging procedures ECHO, Ultrasounds, and Mammograms to minimize your wait time and ensure proper preparation."
   },
   {
-    q: "How does the Home Sample Collection service work?",
-    a: "Once you book a blood test or health package and choose 'Home Collection', a certified, experienced medical Phlebotomist is assigned to your booking. They will visit your home at your chosen time slot, extract samples using sterile vacuum tubes, store them immediately in cold-chain transport boxes, and safely deliver them to our laboratory. Home collection is free or has a very nominal charge depending on your booking."
+    q: "What are your operating hours and report pickup timings?",
+    a: "Our sample collection counter is open Monday – Sunday: 7:30 AM – 10:00 PM. Reports can be collected physically during working hours or downloaded 24/7 via our e-reports Services."
   },
   {
-    q: "How and when will I get my diagnostic reports?",
-    a: "Our diagnostic lab systems are highly automated. As soon as your report is ready, certified, and digitally signed by our doctors, you will receive an SMS and WhatsApp notification with a link. You can also view and download all historical reports instantly by logging into your Patient Portal/Dashboard on this website using your registered mobile number."
+    q: "How do I know if I need to fast before my blood test?",
+    a: "Tests such as Fasting Blood Sugar (FBS), Lipid Profile, Liver Function Test (LFT), and Metabolic Panels typically require 8 to 12 hours of overnight fasting. Only plain water is allowed during this period. Do not consume tea, coffee, juice, or food until your blood is drawn."
   },
   {
-    q: "Are AssurX Scans and Lab reports valid in all hospitals?",
-    a: "Absolutely! All AssurX laboratory reports are generated from NABL-accredited, state-of-the-art facilities and comply strictly with ISO standards. All scan images (MRI, CT, Ultrasound) are read and reported by highly experienced MD Radiologists. Our reports are 100% trusted and accepted by all major hospitals, clinicians, and health insurance providers across India."
+    q: "Can I take my regular medications before a test?",
+    a: "In most cases, yes—you may take daily prescription medications with water unless specifically instructed otherwise by your doctor (e.g., thyroid medication or insulin before fasting tests). Always inform our phlebotomist/technician about any medications you have taken."
   },
   {
-    q: "What is the preparation required for an MRI or CT Scan?",
-    a: "For general MRI, ensure no metal accessories are worn. For CT Whole Abdomen/Contrast scans or Whole Abdomen Ultrasounds, fasting for 6 hours is mandatory. For contrast CT scans, a recent Serum Creatinine lab report is required to verify kidney safety. Specific instructions for your booked test are shown clearly on your digital booking confirmation."
+    q: "What preparation is required for an Ultrasound or Imaging scan?",
+    a: "Preparation depends on the body region. Abdominal Ultrasound: Requires 6–8 hours of fasting. Pelvic/OB Ultrasound: Requires a full bladder (drink 3–4 glasses of water 1 hour before and do not empty your bladder)."
+  },
+  {
+    q: "Do you offer home sample collection services?",
+    a: "Yes. We offer home blood collection for all. You can schedule a home visit by calling our helpline or booking through our website. We are at your doorsteps just 60 Minutes."
+  },
+  {
+    q: "Is home ECG as accurate as taking it in the diagnostic center?",
+    a: "Yes. We use hospital-grade, 12-lead portable digital ECG machines that offer identical accuracy and precision to stationary clinical devices."
+  },
+  {
+    q: "What does ISO certification mean for a diagnostic center?",
+    a: "ISO certification is an official endorsement that a laboratory follows strict global standards for test accuracy, equipment calibration, hygiene, sample handling, and patient data confidentiality. It assures patients and doctors that test results are accurate and reproducible."
   }
 ];
 
