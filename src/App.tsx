@@ -24,6 +24,7 @@ import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 import CallbackSticky from './components/CallbackSticky';
 import DirectBookModal from './components/DirectBookModal';
+import DoctorAppointmentModal from './components/DoctorAppointmentModal';
 import { TrackOrderSection, HiringCareersSection } from './components/HearingAndTracking';
 import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
@@ -79,6 +80,9 @@ export default function App() {
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
+  const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
+  const [selectedDoctorForModal, setSelectedDoctorForModal] = useState<Doctor | null>(null);
+  const [activePromoIndex, setActivePromoIndex] = useState(0);
 
   const homeBanners = React.useMemo(() => [
     { src: '/fever_sugar_profile.png', alt: 'Fever and Sugar Profile Offer', tab: 'packages' as const },
@@ -95,6 +99,31 @@ export default function App() {
       return () => clearInterval(interval);
     }
   }, [currentTab, homeBanners.length]);
+
+  useEffect(() => {
+    if (currentTab === 'home') {
+      const interval = setInterval(() => {
+        setActivePromoIndex((prev) => (prev + 1) % 3);
+      }, 4000); // Autoplay slide transition every 4 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentTab]);
+
+  useEffect(() => {
+    if (currentTab === 'home') {
+      const interval = setInterval(() => {
+        if (mediaBoothScrollRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = mediaBoothScrollRef.current;
+          if (scrollLeft + clientWidth >= scrollWidth - 10) {
+            mediaBoothScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            mediaBoothScrollRef.current.scrollTo({ left: scrollLeft + 320, behavior: 'smooth' });
+          }
+        }
+      }, 5000); // Auto-scroll Media Booth every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentTab]);
 
   // Dynamic homepage offerings sections
   const [sections, setSections] = useState<HomepageSection[]>(() => {
@@ -262,6 +291,30 @@ export default function App() {
         ? scrollLeft - cardWidth 
         : scrollLeft + cardWidth;
       testimonialScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    }
+  };
+
+  const doctorScrollRef = useRef<HTMLDivElement>(null);
+  const scrollDoctors = (direction: 'left' | 'right') => {
+    if (doctorScrollRef.current) {
+      const { scrollLeft } = doctorScrollRef.current;
+      const cardWidth = 300; // Card width + gap
+      const scrollTo = direction === 'left' 
+        ? scrollLeft - cardWidth 
+        : scrollLeft + cardWidth;
+      doctorScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    }
+  };
+
+  const mediaBoothScrollRef = useRef<HTMLDivElement>(null);
+  const scrollMediaBooth = (direction: 'left' | 'right') => {
+    if (mediaBoothScrollRef.current) {
+      const { scrollLeft } = mediaBoothScrollRef.current;
+      const cardWidth = 320; // Card width + gap
+      const scrollTo = direction === 'left' 
+        ? scrollLeft - cardWidth 
+        : scrollLeft + cardWidth;
+      mediaBoothScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
   };
 
@@ -1162,121 +1215,187 @@ export default function App() {
 
             {/* MEET OUR EXPERT DOCTORS (Item 8) */}
             {doctors.length > 0 && (
-              <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left space-y-8 animate-fade-in" id="doctors-section">
+              <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="doctors-section">
                 {/* Header title block */}
-                <div className="space-y-2 text-center pb-4">
-                  <span className="inline-block px-3 py-1 bg-teal-50 border border-teal-200/60 rounded-full text-teal-800 text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                    Consult Top Medical Experts
-                  </span>
-                  <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">
-                    Meet Our <span className="italic font-medium text-[#2D006B]">Specialist Doctors</span>
+                <div className="space-y-4 text-center">
+                  <h2 className="text-3xl md:text-5xl font-extrabold text-[#111827] tracking-tight">
+                    Meet Our Specialist Doctors
                   </h2>
-                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
-                    Book slots or request callbacks for evaluations with our verified specialist team.
+                  <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wider max-w-4xl mx-auto leading-relaxed">
+                    OUR BOARD-CERTIFIED RADIOLOGISTS, PATHOLOGISTS, AND CLINICAL SPECIALISTS BRING DECADES OF EXPERIENCE, ADVANCED AI-ASSISTED TECHNOLOGY, AND COMPASSIONATE CARE TO EVERY DIAGNOSTIC RESULT.
                   </p>
                 </div>
 
+                {/* Appointment Button and Label */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-2">
+                  <button
+                    onClick={() => {
+                      setSelectedDoctorForModal(null);
+                      setIsDoctorModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 bg-[#E54848] hover:bg-[#d43f3f] text-white font-black text-xs uppercase tracking-widest rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>APPOINTMENT NOW</span>
+                  </button>
+                  <span className="text-xs text-slate-650 font-bold tracking-wide">
+                    Form for appointments and server confirmation
+                  </span>
+                </div>
 
+                {/* Carousel with side arrows */}
                 {filteredDoctors.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50/50 border border-dashed border-gray-200 rounded-3xl w-full">
                     <AlertCircle className="w-8 h-8 text-slate-350 mx-auto mb-2" />
                     <p className="text-sm font-medium text-slate-500">No doctors match your query or filters.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-                    {filteredDoctors.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="bg-white border border-gray-200/80 rounded-3xl shadow-xs hover:shadow-md hover:border-teal-500/50 transition-all duration-300 p-5 flex flex-col justify-between group overflow-hidden"
-                      >
-                        <div className="space-y-4">
-                          {/* Doctor Image / Avatar with dynamic effect */}
-                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 shadow-inner">
-                            <img
-                              src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
-                              alt={doc.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="absolute bottom-2 left-2 flex gap-1.5 flex-wrap">
-                              <span className="bg-teal-700 text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded shadow-sm">
-                                {doc.specialization}
-                              </span>
-                            </div>
-                          </div>
+                  <div className="relative group max-w-4xl mx-auto px-12">
+                    {/* Left Scroll Button */}
+                    <button
+                      onClick={() => scrollDoctors('left')}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                    >
+                      <ArrowLeft className="w-9 h-9 stroke-[3]" />
+                    </button>
 
-                          <div className="space-y-1">
-                            <h3 className="font-serif font-bold text-slate-900 text-sm md:text-base leading-snug group-hover:text-teal-700 transition-colors">
-                              {doc.name}
-                            </h3>
-                            <p className="text-[10px] text-teal-600 font-bold uppercase tracking-wider">
-                              {doc.qualification}
-                            </p>
-                            <p className="text-[11px] text-slate-500 font-semibold">
-                              {doc.experience} Years Experience
-                            </p>
-                          </div>
+                    {/* Right Scroll Button */}
+                    <button
+                      onClick={() => scrollDoctors('right')}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                    >
+                      <ArrowRight className="w-9 h-9 stroke-[3]" />
+                    </button>
 
-                          <div className="space-y-1.5 border-t border-gray-100 pt-3 text-[11px] text-slate-500">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3.5 h-3.5 text-teal-650 flex-shrink-0" />
-                              <span>{doc.timing}</span>
+                    {/* Horizontal scroll container */}
+                    <div
+                      ref={doctorScrollRef}
+                      className="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth px-2"
+                    >
+                      {filteredDoctors.map((doc) => (
+                        <div
+                          key={doc.id}
+                          onClick={() => {
+                            setSelectedDoctorForModal(doc);
+                            setIsDoctorModalOpen(true);
+                          }}
+                          className="flex-shrink-0 w-[240px] sm:w-[260px] bg-[#FFE57F] border-4 border-black rounded-xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 p-5 flex flex-col justify-between cursor-pointer group overflow-hidden"
+                        >
+                          <div className="space-y-4">
+                            {/* Doctor Image / Avatar with dynamic effect */}
+                            <div className="relative aspect-square rounded-xl overflow-hidden bg-white border-2 border-black shadow-inner">
+                              <img
+                                src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
+                                alt={doc.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute bottom-2 left-2 flex gap-1.5 flex-wrap">
+                                <span className="bg-black text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-black shadow-xs">
+                                  {doc.specialization}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                              <span className="font-bold text-slate-600">{doc.branch} Branch</span>
+
+                            <div className="space-y-1 text-left text-black">
+                              <h3 className="font-serif font-black text-black text-sm md:text-base leading-snug group-hover:text-red-750 transition-colors">
+                                {doc.name}
+                              </h3>
+                              <p className="text-[10px] text-teal-800 font-extrabold uppercase tracking-wider">
+                                {doc.qualification}
+                              </p>
+                              <p className="text-[11px] text-slate-800 font-bold">
+                                {doc.experience} Years Experience
+                              </p>
+                            </div>
+
+                            <div className="space-y-1.5 border-t-2 border-black/10 pt-3 text-[11px] text-slate-800 text-left font-bold">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5 text-black flex-shrink-0" />
+                                <span>{doc.timing}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                                <span className="text-slate-900">{doc.branch} Branch</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </section>
             )}
 
-            {/* SONOGRAPHY SHOWCASE (Item 9) */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left" id="sonography-showcase">
-              <div 
-                onClick={() => setCurrentTab('scans')}
-                className="rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500 transition-all duration-300 border border-gray-250 cursor-pointer"
-              >
-                <img
-                  src="/sonography_equipment.png"
-                  alt="Sonography & Ultrasound Scans Features"
-                  className="w-full h-auto block select-none"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            </section>
+            {/* AUTOPLAY PROMO SLIDER SECTION (Items 9, 10, 11 merged) */}
+            <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">
+              <div className="relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-350 border border-gray-250 group">
+                
+                {/* Horizontal Sliding container */}
+                <div 
+                  className="flex transition-transform duration-700 ease-in-out"
+                  style={{ transform: `translate3d(-${activePromoIndex * 100}%, 0, 0)` }}
+                >
+                  {[
+                    { src: '/sonography_equipment.png', alt: 'Sonography & Ultrasound Scans Features', tab: 'scans' },
+                    { src: '/family_health_offer.png', alt: 'Why AssurRx and 4 Steps Booking Guide', tab: 'packages' },
+                    { src: '/promo_code_offers.png', alt: 'Tests and Health Packages Promo Codes', tab: 'packages' }
+                  ].map((banner, index) => (
+                    <div 
+                      key={index}
+                      onClick={() => setCurrentTab(banner.tab as any)}
+                      className="w-full flex-shrink-0 cursor-pointer"
+                    >
+                      <img
+                        src={banner.src}
+                        alt={banner.alt}
+                        className="w-full h-auto object-contain block select-none"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  ))}
+                </div>
 
-            {/* WHY ASSURX & BOOKING GUIDE (Item 10) */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left" id="why-assurx">
-              <div 
-                onClick={() => setCurrentTab('packages')}
-                className="rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500 transition-all duration-300 border border-gray-250 cursor-pointer"
-              >
-                <img
-                  src="/family_health_offer.png"
-                  alt="Why AssurRx and 4 Steps Booking Guide"
-                  className="w-full h-auto block select-none"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            </section>
+                {/* Left navigation arrow */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActivePromoIndex((prev) => (prev - 1 + 3) % 3);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer border-0"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
 
-            {/* PROMO CODES & DEALS (Item 11) */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6 py-6 text-left" id="promos-section">
-              <div 
-                onClick={() => setCurrentTab('packages')}
-                className="rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500 transition-all duration-300 border border-gray-250 cursor-pointer"
-              >
-                <img
-                  src="/promo_code_offers.png"
-                  alt="Tests and Health Packages Promo Codes"
-                  className="w-full h-auto block select-none"
-                  referrerPolicy="no-referrer"
-                />
+                {/* Right navigation arrow */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActivePromoIndex((prev) => (prev + 1) % 3);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer border-0"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+
+                {/* Pagination Dots */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                  {[0, 1, 2].map((index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActivePromoIndex(index);
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all cursor-pointer border-0 ${
+                        activePromoIndex === index ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70'
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    ></button>
+                  ))}
+                </div>
+
               </div>
             </section>
 
@@ -1490,6 +1609,85 @@ export default function App() {
                       );
                     })}
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* MEDIA BOOTH SECTION (Item 14) */}
+            <section className="max-w-4xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="media-booth-section">
+              <div className="space-y-1">
+                <h3 className="font-serif font-black text-[#2D006B] text-3xl md:text-4xl tracking-wider uppercase">
+                  MEDIA BOOTH
+                </h3>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                  Glimpses of our certified laboratories, community camps, and diagnostics checkups
+                </p>
+              </div>
+
+              {/* Slider Wrapper */}
+              <div className="relative group px-12">
+                {/* Left Scroll Button */}
+                <button
+                  onClick={() => scrollMediaBooth('left')}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer border-0 bg-transparent"
+                >
+                  <ArrowLeft className="w-9 h-9 stroke-[3]" />
+                </button>
+
+                {/* Right Scroll Button */}
+                <button
+                  onClick={() => scrollMediaBooth('right')}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer border-0 bg-transparent"
+                >
+                  <ArrowRight className="w-9 h-9 stroke-[3]" />
+                </button>
+
+                {/* Horizontal scroll container of film strips */}
+                <div
+                  ref={mediaBoothScrollRef}
+                  className="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth snap-x snap-mandatory px-2"
+                >
+                  {[
+                    { src: '/1.mp4', alt: 'Diagnostic Lab Facility Tour' },
+                    { src: '/2.mp4', alt: 'Pathology Testing & Machinery' },
+                    { src: '/3.mp4', alt: 'Emergency Diagnostics Response' }
+                  ].map((video, index) => (
+                    <div
+                      key={index}
+                      className="flex-shrink-0 w-[260px] sm:w-[300px] bg-black p-0 border border-slate-800 rounded-2xl overflow-hidden shadow-lg select-none snap-start group"
+                    >
+                      {/* Top Sprocket Bar */}
+                      <div className="flex justify-between bg-black px-3 py-1.5 border-b border-black">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                          <div key={i} className="w-2.5 h-3 bg-white rounded-xs opacity-90"></div>
+                        ))}
+                      </div>
+
+                      {/* Media Area */}
+                      <div className="relative aspect-[4/3] bg-black overflow-hidden border-x-[10px] border-black">
+                        <video
+                          src={video.src}
+                          controls
+                          autoPlay
+                          muted
+                          loop
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                          playsInline
+                        />
+                        <div className="absolute top-2 left-2 bg-[#E54848] text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-black shadow-xs pointer-events-none z-10">
+                          VIDEO
+                        </div>
+                      </div>
+
+                      {/* Bottom Sprocket Bar */}
+                      <div className="flex justify-between bg-black px-3 py-1.5 border-t border-black">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                          <div key={i} className="w-2.5 h-3 bg-white rounded-xs opacity-90"></div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </section>
@@ -1912,6 +2110,25 @@ export default function App() {
             setDirectBookingItem(null);
             setBookingRefreshKey(prev => prev + 1); // Keep AdminPanel data fresh for next admin visit
             setCurrentTab('home');
+          }}
+        />
+      )}
+
+      {/* --- DOCTOR APPOINTMENT MODAL --- */}
+      {isDoctorModalOpen && (
+        <DoctorAppointmentModal
+          isOpen={isDoctorModalOpen}
+          onClose={() => {
+            setIsDoctorModalOpen(false);
+            setSelectedDoctorForModal(null);
+          }}
+          doctors={doctors}
+          selectedDoctor={selectedDoctorForModal}
+          onBookingSuccess={() => {
+            setIsDoctorModalOpen(false);
+            setSelectedDoctorForModal(null);
+            setBookingRefreshKey(prev => prev + 1);
+            setCurrentTab('bookings'); // Redirect to bookings page to see confirmed slot
           }}
         />
       )}

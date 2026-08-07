@@ -152,6 +152,10 @@ export const createBooking = async (req: PatientAuthRequest, res: Response) => {
       const dbServices = await getAllServices();
       const dbPackages = await getAllPackages();
       for (const item of items) {
+        if (item.itemId === 'doctor-consultation') {
+          itemsTotal += (item.discountPrice !== undefined ? item.discountPrice : (item.price || 0));
+          continue;
+        }
         const matchedService = dbServices.find((s: any) => s.id === item.itemId);
         const matchedPackage = dbPackages.find((p: any) => p.id === item.itemId);
         const catalogItem = matchedService || matchedPackage;

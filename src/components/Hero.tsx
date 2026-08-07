@@ -33,6 +33,49 @@ export default function Hero({
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const suggestionRef = useRef<HTMLDivElement>(null);
 
+  const [pincode, setPincode] = useState('');
+  const [isFranchiseModalOpen, setIsFranchiseModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    investment: '5-10',
+    experience: 'no'
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleApplyPincode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pincode || pincode.length !== 6) {
+      alert('Please enter a valid 6-digit Pincode.');
+      return;
+    }
+    setIsFranchiseModalOpen(true);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/franchise/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pincode, ...formData })
+      });
+      if (response.ok) {
+        setIsSuccess(true);
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Close suggestions on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -164,97 +207,179 @@ export default function Hero({
             />
           </div>
 
-          {/* Overlapping Booking Interactive Form Card */}
-          <div className="w-full max-w-[380px] bg-white border border-slate-200 shadow-xl rounded-2xl md:rounded-3xl p-5 md:p-6 relative lg:absolute lg:-bottom-12 lg:-right-2 z-20 transition-all hover:shadow-2xl">
-
-            <div className="space-y-4">
-              {/* Box 1: Test / Scan input field */}
-              <div className="space-y-1 text-left" ref={suggestionRef}>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Test / Scan Name</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-slate-400" />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="e.g. MRI Brain, CBC, Thyroid, Lipid"
-                    value={testSearch}
-                    onChange={(e) => {
-                      setTestSearch(e.target.value);
-                      setShowSuggestions(true);
-                      if (selectedItem && e.target.value !== selectedItem.name) {
-                        setSelectedItem(null);
-                      }
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D006B]/10 focus:border-[#2D006B] font-bold transition-all placeholder:text-slate-400 text-slate-800"
-                  />
-
-                  {/* Autocomplete Suggestions Panel - Positioned relative to the input box */}
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100 py-1">
-                      {suggestions.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(item)}
-                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex justify-between items-center gap-2 border-0 bg-transparent outline-none focus:outline-none"
-                        >
-                          <div className="min-w-0">
-                            <span className="text-[8px] font-black uppercase tracking-wide bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded">
-                              {item.type === 'package' ? 'Package' : (item as any).category === 'scan' ? 'Scan' : 'Blood Test'}
-                            </span>
-                            <p className="text-xs font-bold text-slate-800 mt-1 truncate">{item.name}</p>
-                          </div>
-                          <span className="text-xs font-black text-[#2D006B] flex-shrink-0 font-mono">₹{item.discountPrice || item.price}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Box 2: City Select Dropdown */}
-              <div className="space-y-1 text-left">
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Select City</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <MapPin className="h-4 w-4 text-slate-400" />
-                  </span>
-                  <select
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D006B]/10 focus:border-[#2D006B] font-extrabold text-slate-800 transition-all appearance-none cursor-pointer"
-                  >
-                    {indianCities.map((city) => (
-                      <option key={city.code} value={city.code}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
-                  </span>
-                </div>
-              </div>
-
-              {/* Box 3: Book Your Test/Scan CTA Button */}
-              <button
-                type="button"
-                onClick={handleBookNow}
-                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-100 flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01] active:scale-[0.98]"
-              >
-                <span>Book Now (Pay at Lab)</span>
-              </button>
-
+          {/* Overlapping Franchise Partner Form Card */}
+          <form 
+            onSubmit={handleApplyPincode}
+            className="w-full max-w-[380px] bg-[#111827] border-2 border-slate-800 shadow-2xl rounded-2xl md:rounded-3xl p-6 relative lg:absolute lg:-bottom-12 lg:-right-2 z-20 transition-all hover:shadow-2xl text-white space-y-5"
+          >
+            <div className="space-y-3">
+              <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#BFA15F] uppercase text-center block">
+                Partner With AssurRx
+              </span>
+              <p className="text-xs sm:text-sm font-black tracking-wider text-slate-100 uppercase leading-relaxed text-center block">
+                APPLY FOR A FREE FRANCHISE-PARTNER OPPORTUNITY AND GROW WITH US
+              </p>
             </div>
 
-          </div>
+            {/* Brutalist Gold/Beige Pincode Input */}
+            <div className="flex border-2 border-black rounded-lg overflow-hidden h-11 shadow-sm">
+              <div className="bg-[#BFA15F] px-4 flex items-center justify-center border-r-2 border-black">
+                <Search className="w-4 h-4 text-black" />
+              </div>
+              <input
+                type="text"
+                placeholder="PINCODE"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                className="flex-1 bg-[#E3D4B6] px-4 text-sm font-black text-[#C2410C] placeholder:text-[#C2410C]/60 focus:outline-none tracking-widest text-center"
+                maxLength={6}
+                required
+              />
+            </div>
+
+            {/* Brutalist Red Apply Now Button */}
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] border-2 border-black text-white font-extrabold text-xs uppercase tracking-widest rounded-lg transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] cursor-pointer border-0"
+            >
+              APPLY NOW
+            </button>
+          </form>
 
         </div>
 
       </div>
 
+      {/* FRANCHISE APPLICATION MODAL */}
+      {isFranchiseModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#111827] border-4 border-black text-white rounded-3xl p-6 md:p-8 max-w-md w-full relative shadow-[8px_8px_0px_0px_rgba(191,161,95,1)]">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setIsFranchiseModalOpen(false);
+                setIsSuccess(false);
+                setFormData({ name: '', phone: '', email: '', investment: '5-10', experience: 'no' });
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white font-black text-lg cursor-pointer border-0 bg-transparent"
+            >
+              ✕
+            </button>
+
+            {!isSuccess ? (
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-serif font-black text-[#BFA15F] uppercase">
+                    Franchise Application
+                  </h3>
+                  <p className="text-xs text-slate-350 font-semibold">
+                    Apply for Pincode: <span className="text-white font-black tracking-widest">{pincode}</span>
+                  </p>
+                </div>
+
+                <div className="space-y-3 text-left">
+                  {/* Name field */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Full Name</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Phone field */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+
+                  {/* Email field */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Email Address</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Investment dropdown */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Investment Budget</label>
+                    <select
+                      value={formData.investment}
+                      onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-850 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white bg-slate-900"
+                    >
+                      <option value="5-10">₹5 Lakhs - ₹10 Lakhs</option>
+                      <option value="10-20">₹10 Lakhs - ₹20 Lakhs</option>
+                      <option value="above-20">Above ₹20 Lakhs</option>
+                    </select>
+                  </div>
+
+                  {/* Experience checkbox */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Healthcare Experience</label>
+                    <select
+                      value={formData.experience}
+                      onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-855 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white bg-slate-900"
+                    >
+                      <option value="yes">Yes, I have prior experience</option>
+                      <option value="no">No, I am new to healthcare</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 bg-[#BFA15F] hover:bg-[#a88d4c] text-black font-extrabold text-xs uppercase tracking-widest rounded-lg transition-all border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Submitting...' : 'SUBMIT APPLICATION'}
+                </button>
+              </form>
+            ) : (
+              <div className="text-center py-8 space-y-4">
+                <div className="w-16 h-16 bg-[#BFA15F]/20 text-[#BFA15F] border-2 border-[#BFA15F] rounded-full flex items-center justify-center mx-auto shadow-md">
+                  <Check className="w-8 h-8 stroke-[3]" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-xl font-serif font-black text-white uppercase">
+                    Application Received!
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed font-semibold max-w-sm mx-auto">
+                    Thank you for applying. Our franchise development team will verify the availability for Pincode <span className="text-[#BFA15F] font-black">{pincode}</span> and contact you within 24 hours.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsFranchiseModalOpen(false);
+                    setIsSuccess(false);
+                    setFormData({ name: '', phone: '', email: '', investment: '5-10', experience: 'no' });
+                    setPincode('');
+                  }}
+                  className="px-6 py-2 bg-[#BFA15F] text-black font-extrabold text-xs uppercase tracking-wider rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+                >
+                  Close Window
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

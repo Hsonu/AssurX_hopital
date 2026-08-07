@@ -228,6 +228,10 @@ async function startServer() {
     const dbServices = await getAllServices();
     const dbPackages = await getAllPackages();
     for (const item of items) {
+      if (item.itemId === 'doctor-consultation') {
+        itemsTotal += (item.discountPrice !== undefined ? item.discountPrice : (item.price || 0));
+        continue;
+      }
       const matchedService = dbServices.find((s: any) => s.id === item.itemId);
       const matchedPackage = dbPackages.find((p: any) => p.id === item.itemId);
       const catalogItem = matchedService || matchedPackage;
@@ -411,6 +415,49 @@ async function startServer() {
   app.use("/auth", authRoutes);
   app.use("/api", patientRoutes);
   app.use("/", patientRoutes);
+
+  // Franchise application submission endpoint
+  app.post("/api/franchise/apply", express.json(), async (req, res) => {
+    try {
+      const { pincode, name, phone, email, investment, experience } = req.body;
+      if (!pincode || !name || !phone || !email) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const fs = await import("fs");
+      const filePath = path.join(process.cwd(), "franchise_applications.json");
+      
+      let applications = [];
+      if (fs.existsSync(filePath)) {
+        try {
+          const content = fs.readFileSync(filePath, "utf-8");
+          applications = JSON.parse(content);
+        } catch (e) {
+          applications = [];
+        }
+      }
+      
+      const newApplication = {
+        id: Date.now(),
+        pincode,
+        name,
+        phone,
+        email,
+        investment,
+        experience,
+        createdAt: new Date().toISOString()
+      };
+      
+      applications.push(newApplication);
+      fs.writeFileSync(filePath, JSON.stringify(applications, null, 2));
+      
+      console.log(`[Franchise] New application received for Pincode ${pincode} from ${name}`);
+      res.json({ success: true, application: newApplication });
+    } catch (err: any) {
+      console.error("Error saving franchise application:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // 1. Sync User / Get Surrogate DB ID
   app.post("/api/users/sync", requireAuth, async (req: AuthRequest, res) => {
