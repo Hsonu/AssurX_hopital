@@ -136,8 +136,8 @@ export default function App() {
           if (filtered.length > 0) {
             return filtered.map((sec: any) => {
               if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging' || sec.title === 'Popular Sonography & Scan' || sec.title === 'Popular Sonography & USG Scans') {
-                return { 
-                  ...sec, 
+                return {
+                  ...sec,
                   title: 'Popular Sonography',
                   bannerImage: '/sonography_equipment.png'
                 };
@@ -279,8 +279,8 @@ export default function App() {
     if (testimonialScrollRef.current) {
       const { scrollLeft } = testimonialScrollRef.current;
       const cardWidth = 360; // Card width + gap
-      const scrollTo = direction === 'left' 
-        ? scrollLeft - cardWidth 
+      const scrollTo = direction === 'left'
+        ? scrollLeft - cardWidth
         : scrollLeft + cardWidth;
       testimonialScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
@@ -291,8 +291,8 @@ export default function App() {
     if (doctorScrollRef.current) {
       const { scrollLeft } = doctorScrollRef.current;
       const cardWidth = 300; // Card width + gap
-      const scrollTo = direction === 'left' 
-        ? scrollLeft - cardWidth 
+      const scrollTo = direction === 'left'
+        ? scrollLeft - cardWidth
         : scrollLeft + cardWidth;
       doctorScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
@@ -303,8 +303,8 @@ export default function App() {
     if (mediaBoothScrollRef.current) {
       const { scrollLeft } = mediaBoothScrollRef.current;
       const cardWidth = 320; // Card width + gap
-      const scrollTo = direction === 'left' 
-        ? scrollLeft - cardWidth 
+      const scrollTo = direction === 'left'
+        ? scrollLeft - cardWidth
         : scrollLeft + cardWidth;
       mediaBoothScrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
@@ -588,12 +588,12 @@ export default function App() {
 
   const filteredDoctors = doctors.filter(doc => {
     const matchesSearch = doc.name.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
-                          doc.specialization.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
-                          doc.qualification.toLowerCase().includes(doctorSearchQuery.toLowerCase());
-                          
+      doc.specialization.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
+      doc.qualification.toLowerCase().includes(doctorSearchQuery.toLowerCase());
+
     const matchesSpecialty = doctorSpecialtyFilter === 'All' || doc.specialization === doctorSpecialtyFilter;
     const matchesBranch = doctorBranchFilter === 'All' || doc.branch === doctorBranchFilter;
-    
+
     return matchesSearch && matchesSpecialty && matchesBranch;
   });
 
@@ -927,7 +927,7 @@ export default function App() {
             {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
             <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
               {/* Decorative background patterns */}
-              <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat'}}></div>
+              <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }}></div>
 
               <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
                 {/* Title Section */}
@@ -942,7 +942,7 @@ export default function App() {
 
                 {/* Scrolling Test Cards */}
                 <div className="relative overflow-hidden mb-8">
-                  <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{width: 'max-content'}}>
+                  <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{ width: 'max-content' }}>
                     {/* Card Set 1 (original) */}
                     {[
                       { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
@@ -1047,7 +1047,7 @@ export default function App() {
                   {/* POPULAR DIAGNOSTIC TESTS badge */}
                   <div className="hidden lg:flex items-center">
                     <div className="bg-[#d4870a] text-white px-4 py-2.5 rounded-lg shadow-lg">
-                      <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br/>DIAGNOSTIC<br/>TESTS</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br />DIAGNOSTIC<br />TESTS</p>
                     </div>
                   </div>
                 </div>
@@ -1075,9 +1075,8 @@ export default function App() {
                     <button
                       onClick={() => scrollPackages('left')}
                       disabled={!canScrollLeft}
-                      className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
-                        canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                      }`}
+                      className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                        }`}
                       aria-label="Scroll Left"
                     >
                       <ChevronLeft className="w-6 h-6" />
@@ -1087,9 +1086,8 @@ export default function App() {
                     <button
                       onClick={() => scrollPackages('right')}
                       disabled={!canScrollRight}
-                      className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${
-                        canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                      }`}
+                      className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                        }`}
                       aria-label="Scroll Right"
                     >
                       <ChevronRight className="w-6 h-6" />
@@ -1323,9 +1321,9 @@ export default function App() {
             {/* AUTOPLAY PROMO SLIDER SECTION (Items 9, 10, 11 merged) */}
             <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">
               <div className="relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-350 border border-gray-250 group">
-                
+
                 {/* Horizontal Sliding container */}
-                <div 
+                <div
                   className="flex transition-transform duration-700 ease-in-out"
                   style={{ transform: `translate3d(-${activePromoIndex * 100}%, 0, 0)` }}
                 >
@@ -1334,7 +1332,7 @@ export default function App() {
                     { src: '/family_health_offer.png', alt: 'Why AssurRx and 4 Steps Booking Guide', tab: 'packages' },
                     { src: '/promo_code_offers.png', alt: 'Tests and Health Packages Promo Codes', tab: 'packages' }
                   ].map((banner, index) => (
-                    <div 
+                    <div
                       key={index}
                       onClick={() => setCurrentTab(banner.tab as any)}
                       className="w-full flex-shrink-0 cursor-pointer"
@@ -1380,9 +1378,8 @@ export default function App() {
                         e.stopPropagation();
                         setActivePromoIndex(index);
                       }}
-                      className={`w-2 h-2 rounded-full transition-all cursor-pointer border-0 ${
-                        activePromoIndex === index ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70'
-                      }`}
+                      className={`w-2 h-2 rounded-full transition-all cursor-pointer border-0 ${activePromoIndex === index ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70'
+                        }`}
                       aria-label={`Go to slide ${index + 1}`}
                     ></button>
                   ))}
@@ -1562,7 +1559,7 @@ export default function App() {
                       const isExpanded = expandedTestimonialId === testimonial.id;
                       const comment = testimonial.comment || "";
                       const isLong = comment.length > 100;
-                      
+
                       return (
                         <div
                           key={testimonial.id}
@@ -1590,7 +1587,7 @@ export default function App() {
                               <span className="text-slate-800 font-bold block text-xs">{testimonial.name}</span>
                               <span className="text-slate-400 font-medium">{testimonial.date} - {testimonial.location}</span>
                             </div>
-                            
+
                             {/* Rating badge pill (5 ★) */}
                             <div className="bg-amber-500 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] flex items-center gap-0.5 shadow-sm">
                               <span>{testimonial.rating || 5}</span>
