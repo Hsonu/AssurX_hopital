@@ -102,9 +102,6 @@ export default function Header({
             className="flex items-center gap-2.5 cursor-pointer select-none flex-shrink-0"
           >
             <img src={logoImg} alt="AssurX Diagnostics" className="h-9 w-auto rounded-lg object-contain bg-white/95 px-1.5 py-0.5" />
-            <div className="border-l border-white/30 h-5 pl-2.5">
-              <span className="text-[9px] font-bold text-[#80CBC4] tracking-widest uppercase block leading-none">Scans & Labs</span>
-            </div>
           </div>
 
           {/* Hamburger Menu Button */}
