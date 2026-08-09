@@ -1724,14 +1724,6 @@ export default function App() {
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-150 hover:shadow-xl transition-shadow duration-300 bg-white">
-                  <img
-                    src="/specialist_doctors.png"
-                    alt="Social & Society Health Camps"
-                    className="w-full h-auto object-contain block"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
               </div>
             </section>
           </div>
