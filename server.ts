@@ -183,7 +183,9 @@ async function startServer() {
   const PORT = 3000;
 
   // JSON parsing middleware
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
 
 
   // --- SECURITY ENHANCEMENTS: SECURITY HEADERS & RATE LIMITER ---
@@ -417,16 +419,16 @@ async function startServer() {
   app.use("/", patientRoutes);
 
   // Franchise application submission endpoint
-  app.post("/api/franchise/apply", express.json(), async (req, res) => {
+  app.post("/api/franchise/apply", async (req, res) => {
     try {
       const { pincode, name, phone, email, investment, experience } = req.body;
       if (!pincode || !name || !phone || !email) {
         return res.status(400).json({ error: "Missing required fields" });
       }
-      
+
       const fs = await import("fs");
       const filePath = path.join(process.cwd(), "franchise_applications.json");
-      
+
       let applications = [];
       if (fs.existsSync(filePath)) {
         try {
@@ -436,7 +438,7 @@ async function startServer() {
           applications = [];
         }
       }
-      
+
       const newApplication = {
         id: Date.now(),
         pincode,
@@ -447,10 +449,10 @@ async function startServer() {
         experience,
         createdAt: new Date().toISOString()
       };
-      
+
       applications.push(newApplication);
       fs.writeFileSync(filePath, JSON.stringify(applications, null, 2));
-      
+
       console.log(`[Franchise] New application received for Pincode ${pincode} from ${name}`);
       res.json({ success: true, application: newApplication });
     } catch (err: any) {
