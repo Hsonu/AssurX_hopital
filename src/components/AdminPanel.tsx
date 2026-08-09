@@ -4436,6 +4436,8 @@ export default function AdminPanel({
                         <option value="Dermatologist">Dermatologist</option>
                         <option value="Radiologist">Radiologist</option>
                         <option value="Oncologist">Oncologist</option>
+                        <option value="Pathology">Pathology</option>
+                        <option value="Pathologist">Pathologist</option>
                       </select>
                     </div>
 
