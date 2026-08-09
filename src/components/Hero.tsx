@@ -166,29 +166,6 @@ export default function Hero({
             <span className="font-extrabold text-red-600">Save 60%</span> <span className="font-normal">on</span> <br />
             <span className="italic font-medium text-[#2D006B]">Scans & Blood tests</span>
           </h1>
-
-          {/* Floating Trust Badge - Absolute horizontally and vertically centered relative to display on desktop, flow inline on mobile */}
-          <div className="lg:absolute lg:left-1/2 lg:top-[42%] lg:-translate-x-1/2 lg:-translate-y-1/2 z-25 mt-6 lg:mt-0 w-full lg:w-auto flex justify-center pointer-events-none">
-            <div className="bg-white/95 backdrop-blur-sm border border-slate-200/60 shadow-lg rounded-2xl p-4 flex flex-col items-center justify-center text-center w-[250px] sm:w-[280px]">
-              <div className="flex gap-1.5 mb-2.5">
-                <div className="w-7 h-7 rounded-full bg-[#F5F0FA] border border-[#E8DEFF] flex items-center justify-center">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2D006B]" />
-                </div>
-                <div className="w-7 h-7 rounded-full bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-[#DC2626]" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] sm:text-[11px] font-black text-slate-800 leading-snug">
-                  ISO 9001 Certified Lab
-                </p>
-                <div className="w-12 h-[1px] bg-slate-200 mx-auto my-1"></div>
-                <p className="text-[10px] sm:text-[11px] font-black text-[#2D006B] leading-snug">
-                  5 Lakh+ Smiling Indians in 10 Months
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Right Column: Dynamic Portrait + Floating Interactive Card Form */}
@@ -210,7 +187,7 @@ export default function Hero({
           {/* Overlapping Franchise Partner Form Card */}
           <form 
             onSubmit={handleApplyPincode}
-            className="w-full max-w-[380px] bg-[#111827] border-2 border-slate-800 shadow-2xl rounded-2xl md:rounded-3xl p-6 relative lg:absolute lg:-bottom-12 lg:-right-2 z-20 transition-all hover:shadow-2xl text-white space-y-5"
+            className="w-full max-w-[380px] bg-[#2D006B] border-2 border-[#4A0E99] shadow-2xl rounded-2xl md:rounded-3xl p-6 relative lg:absolute lg:-bottom-12 lg:-right-2 z-20 transition-all hover:shadow-2xl text-white space-y-5"
           >
             <div className="space-y-3">
               <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#BFA15F] uppercase text-center block">
@@ -253,7 +230,7 @@ export default function Hero({
       {/* FRANCHISE APPLICATION MODAL */}
       {isFranchiseModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#111827] border-4 border-black text-white rounded-3xl p-6 md:p-8 max-w-md w-full relative shadow-[8px_8px_0px_0px_rgba(191,161,95,1)]">
+          <div className="bg-[#2D006B] border-4 border-black text-white rounded-3xl p-6 md:p-8 max-w-md w-full relative shadow-[8px_8px_0px_0px_rgba(191,161,95,1)]">
             {/* Close Button */}
             <button
               onClick={() => {
@@ -261,7 +238,7 @@ export default function Hero({
                 setIsSuccess(false);
                 setFormData({ name: '', phone: '', email: '', investment: '5-10', experience: 'no' });
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white font-black text-lg cursor-pointer border-0 bg-transparent"
+              className="absolute top-4 right-4 text-slate-300 hover:text-white font-black text-lg cursor-pointer border-0 bg-transparent"
             >
               ✕
             </button>
@@ -272,7 +249,7 @@ export default function Hero({
                   <h3 className="text-xl font-serif font-black text-[#BFA15F] uppercase">
                     Franchise Application
                   </h3>
-                  <p className="text-xs text-slate-350 font-semibold">
+                  <p className="text-xs text-purple-200 font-semibold">
                     Apply for Pincode: <span className="text-white font-black tracking-widest">{pincode}</span>
                   </p>
                 </div>
@@ -280,24 +257,24 @@ export default function Hero({
                 <div className="space-y-3 text-left">
                   {/* Name field */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Full Name</label>
+                    <label className="text-[10px] font-black uppercase text-purple-200">Full Name</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
+                      className="w-full px-3 py-2 bg-[#1A0040] border border-purple-800/60 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
                       required
                     />
                   </div>
 
                   {/* Phone field */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Phone Number</label>
+                    <label className="text-[10px] font-black uppercase text-purple-200">Phone Number</label>
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
+                      className="w-full px-3 py-2 bg-[#1A0040] border border-purple-800/60 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
                       maxLength={10}
                       required
                     />
@@ -305,23 +282,23 @@ export default function Hero({
 
                   {/* Email field */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Email Address</label>
+                    <label className="text-[10px] font-black uppercase text-purple-200">Email Address</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
+                      className="w-full px-3 py-2 bg-[#1A0040] border border-purple-800/60 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
                       required
                     />
                   </div>
 
                   {/* Investment dropdown */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Investment Budget</label>
+                    <label className="text-[10px] font-black uppercase text-purple-200">Investment Budget</label>
                     <select
                       value={formData.investment}
                       onChange={(e) => setFormData({ ...formData, investment: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-850 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white bg-slate-900"
+                      className="w-full px-3 py-2 bg-[#1A0040] border border-purple-800/60 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
                     >
                       <option value="5-10">₹5 Lakhs - ₹10 Lakhs</option>
                       <option value="10-20">₹10 Lakhs - ₹20 Lakhs</option>
@@ -331,11 +308,11 @@ export default function Hero({
 
                   {/* Experience checkbox */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Healthcare Experience</label>
+                    <label className="text-[10px] font-black uppercase text-purple-200">Healthcare Experience</label>
                     <select
                       value={formData.experience}
                       onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-855 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white bg-slate-900"
+                      className="w-full px-3 py-2 bg-[#1A0040] border border-purple-800/60 rounded-xl text-xs focus:outline-none focus:border-[#BFA15F] text-white"
                     >
                       <option value="yes">Yes, I have prior experience</option>
                       <option value="no">No, I am new to healthcare</option>

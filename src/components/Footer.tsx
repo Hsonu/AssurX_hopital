@@ -130,40 +130,6 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
   return (
     <footer className="bg-slate-900 text-slate-400 text-xs md:text-sm border-t border-slate-800" id="main-footer">
       
-      {/* Brand Trust Bar */}
-      <div className="bg-slate-950 border-b border-slate-900 py-8 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 items-center">
-          <div className="flex items-center gap-3">
-            <Award className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
-            <div className="text-left">
-              <h4 className="font-bold text-white text-xs uppercase tracking-widest">NABL Accredited</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">Labs fully audited to ISO 15189 standards</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
-            <div className="text-left">
-              <h4 className="font-bold text-white text-xs uppercase tracking-widest">MD Radiologists</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">Dual-verified reporting of all scan results</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <HeartPulse className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
-            <div className="text-left">
-              <h4 className="font-bold text-white text-xs uppercase tracking-widest">2 Crore+ Patients</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">Most trusted name in diagnostics & scans</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-[#AD1457] flex-shrink-0" />
-            <div className="text-left">
-              <h4 className="font-bold text-white text-xs uppercase tracking-widest">Robotic Accuracy</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">Minimal human contact for sterile precision</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 grid grid-cols-1 md:grid-cols-12 gap-8 text-left">
         

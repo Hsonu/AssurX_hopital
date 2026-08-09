@@ -132,16 +132,19 @@ export default function App() {
       try {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
-          return parsed.map((sec: any) => {
-            if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging' || sec.title === 'Popular Sonography & Scan' || sec.title === 'Popular Sonography & USG Scans') {
-              return { 
-                ...sec, 
-                title: 'Popular Sonography',
-                bannerImage: '/sonography_equipment.png'
-              };
-            }
-            return sec;
-          });
+          const filtered = parsed.filter((sec: any) => sec.id !== 'section-labs' && !sec.title?.toLowerCase().includes('blood'));
+          if (filtered.length > 0) {
+            return filtered.map((sec: any) => {
+              if (sec.id === 'section-scans' || sec.title === 'Imagine' || sec.title === 'Popular Scans & Imaging' || sec.title === 'Popular Scans & Diagnostic Imaging' || sec.title === 'Popular Sonography & Scan' || sec.title === 'Popular Sonography & USG Scans') {
+                return { 
+                  ...sec, 
+                  title: 'Popular Sonography',
+                  bannerImage: '/sonography_equipment.png'
+                };
+              }
+              return sec;
+            });
+          }
         }
       } catch (e) {
         // use default if parse failed
@@ -157,17 +160,6 @@ export default function App() {
         bannerImage: '/sonography_equipment.png',
         bannerTag: 'Advanced Sonography Center',
         bannerTitle: 'High-Resolution 3D/4D Sonography (USG) & Advanced Scans',
-        serviceIds: []
-      },
-      {
-        id: 'section-labs',
-        title: 'Popular Blood & Lab Tests',
-        subtitle: 'Sterile Home Collection • Certified Phlebotomists',
-        category: 'lab',
-        viewAllTab: 'labs',
-        bannerImage: 'bloodTestingBanner',
-        bannerTag: 'NABL Standard Labs',
-        bannerTitle: 'Sterile 1-Click Home Blood Collection with Barcoded Vials',
         serviceIds: []
       }
     ];
@@ -816,7 +808,7 @@ export default function App() {
                 </div>
 
                 {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div className={`grid grid-cols-1 ${sections.length > 1 ? 'lg:grid-cols-2' : 'max-w-4xl mx-auto'} gap-8 items-start`}>
                   {sections.map((section) => {
                     // Determine tests to display
                     let displayServices: DiagnosticService[] = [];
