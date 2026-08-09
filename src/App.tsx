@@ -1696,6 +1696,44 @@ export default function App() {
                 ))}
               </div>
             </section>
+
+            {/* BOTTOM MARKETING BANNERS */}
+            <section className="max-w-6xl mx-auto px-4 md:px-6 py-8 space-y-8" id="bottom-banners-section">
+              <div className="space-y-8">
+                <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-150 hover:shadow-xl transition-shadow duration-300 bg-white">
+                  <img
+                    src="/sonography_equipment.png"
+                    alt="Sonography & Ultrasound Equipment Features"
+                    className="w-full h-auto object-contain block"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-150 hover:shadow-xl transition-shadow duration-300 bg-white">
+                  <img
+                    src="/family_health_offer.png"
+                    alt="Why AssurRx and 4 Steps Booking Guide"
+                    className="w-full h-auto object-contain block"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-150 hover:shadow-xl transition-shadow duration-300 bg-white">
+                  <img
+                    src="/promo_code_offers.png"
+                    alt="Tests and Health Packages Promo Codes"
+                    className="w-full h-auto object-contain block"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="overflow-hidden rounded-3xl shadow-lg border border-slate-150 hover:shadow-xl transition-shadow duration-300 bg-white">
+                  <img
+                    src="/specialist_doctors.png"
+                    alt="Social & Society Health Camps"
+                    className="w-full h-auto object-contain block"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </div>
+            </section>
           </div>
         )}
 
