@@ -65,6 +65,7 @@ export interface Booking {
   timestamp: string;
   prescriptionName?: string;
   simulatedReportUrl?: string; // To let them view their simulated report PDF
+  doctor?: string;
 }
 
 export interface Testimonial {

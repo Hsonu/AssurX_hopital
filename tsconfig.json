@@ -21,6 +21,21 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "noEmit": true,
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "express",
+      "jsonwebtoken",
+      "pg"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "server.ts"
+  ]
 }
