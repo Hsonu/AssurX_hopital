@@ -7,7 +7,7 @@ import {
   CheckCircle2, Loader2, Printer, Clock, Download, Eye,
   LogOut, ArrowLeft, Award, HeartPulse, Sparkles, Filter,
   Check, HelpCircle, Star, Sparkle, AlertTriangle, AlertCircle, ExternalLink,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Tent
 } from 'lucide-react';
 
 import { DiagnosticService, HealthPackage, CartItem, Patient, HomepageSection, ClinicCenter, Doctor, Testimonial } from './types';
@@ -25,6 +25,7 @@ import Footer from './components/Footer';
 import CallbackSticky from './components/CallbackSticky';
 import DirectBookModal from './components/DirectBookModal';
 import DoctorAppointmentModal from './components/DoctorAppointmentModal';
+import CampApplicationModal from './components/CampApplicationModal';
 import { TrackOrderSection, HiringCareersSection } from './components/HearingAndTracking';
 import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
@@ -81,8 +82,14 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
-  const [selectedDoctorForModal, setSelectedDoctorForModal] = useState<Doctor | null>(null);
   const [activePromoIndex, setActivePromoIndex] = useState(0);
+  const [isCampModalOpen, setIsCampModalOpen] = useState(false);
+  const [selectedCampType, setSelectedCampType] = useState('Free Health Check-up');
+
+  const handleOpenCampModal = (campType: string = 'Free Health Check-up') => {
+    setSelectedCampType(campType);
+    setIsCampModalOpen(true);
+  };
 
   const homeBanners = React.useMemo(() => [
     { src: '/fever_sugar_profile.png', alt: 'Fever and Sugar Profile Offer', tab: 'packages' as const },
@@ -1478,6 +1485,23 @@ export default function App() {
                   </ul>
                 </div>
               </div>
+
+              {/* Organize Health Camp Banner */}
+              <div className="bg-gradient-to-r from-[#1A0040] via-[#2D006B] to-[#400080] rounded-3xl p-6 text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl mt-6">
+                <div className="space-y-1">
+                  <h4 className="text-base sm:text-lg font-bold text-white">Want to organize a Health Camp in your Housing Society?</h4>
+                  <p className="text-xs text-purple-200">
+                    AssurX provides complete setup, doctors, blood testing kits, and subsidised reports at your doorstep.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleOpenCampModal('Free Health Check-up')}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex-shrink-0 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                >
+                  <Tent className="w-4 h-4" />
+                  <span>Apply for Camp Now</span>
+                </button>
+              </div>
             </section>
 
             {/* TESTIMONIALS (PATIENT SUCCESS STORIES) */}
@@ -2152,8 +2176,19 @@ export default function App() {
         />
       )}
 
+      {/* --- CAMP APPLICATION MODAL --- */}
+      {isCampModalOpen && (
+        <CampApplicationModal
+          isOpen={isCampModalOpen}
+          onClose={() => setIsCampModalOpen(false)}
+          defaultCampType={selectedCampType}
+          selectedBranch={selectedBranch}
+          centers={centers}
+        />
+      )}
+
       {/* --- FLOATING PERSISTENT BOTTOM CALLBACK WIDGET --- */}
-      <CallbackSticky selectedBranch={selectedBranch} centers={centers} />
+      <CallbackSticky selectedBranch={selectedBranch} centers={centers} onOpenCampModal={handleOpenCampModal} />
 
     </div>
   );

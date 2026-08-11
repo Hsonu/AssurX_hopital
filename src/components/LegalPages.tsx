@@ -135,7 +135,7 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Helpline Numbers</span>
-                      <a href="tel:18001201100" className="text-slate-850 font-bold block mt-0.5 hover:underline">+91 9830678387  (Toll-Free)</a>
+                      <a href="tel:+919830678387" className="text-slate-850 font-bold block mt-0.5 hover:underline">+91 9830678387 (Hotline & WhatsApp)</a>
                       <a href="tel:02250117701" className="text-slate-700 text-xs block mt-0.5 hover:underline">022-50117701 (Malad Branch)</a>
                     </div>
                   </div>
@@ -331,7 +331,7 @@ export default function LegalPages({ activeSection, onSectionChange }: LegalPage
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Go to your <strong>My Bookings</strong> section in the Patient Dashboard and select the cancel option next to your pending appointment.</li>
-                  <li>Call our Toll-Free customer support hotline at <a href="tel:18001201100" className="text-emerald-700 font-bold hover:underline">+91 9830678387 </a>.</li>
+                  <li>Call our customer support hotline at <a href="tel:+919830678387" className="text-emerald-700 font-bold hover:underline">+91 9830678387</a>.</li>
                   <li>Email your request along with the ASX booking reference ID to <a href="mailto:assurxdiagonistics@gmail.com" className="text-emerald-700 hover:underline">assurxdiagonistics@gmail.com</a>.</li>
                 </ul>
               </div>

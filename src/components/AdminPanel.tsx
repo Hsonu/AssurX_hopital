@@ -3,7 +3,7 @@ import {
   Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock,
   ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp,
   DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw, MapPin,
-  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning
+  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning, Tent, MessageSquare
 } from 'lucide-react';
 import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter, PatientComplaint, Doctor } from '../types';
 
@@ -819,6 +819,7 @@ export default function AdminPanel({
 
   // Prescriptions state
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [selectedLeadFilter, setSelectedLeadFilter] = useState<'all' | 'camps' | 'prescriptions' | 'callbacks'>('all');
 
   // Load prescriptions from LocalStorage
   useEffect(() => {
@@ -1941,13 +1942,29 @@ export default function AdminPanel({
         </button>
 
         <button
-          onClick={() => setActiveTab('prescriptions')}
-          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'prescriptions' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
+          onClick={() => {
+            setActiveTab('prescriptions');
+            setSelectedLeadFilter('camps');
+          }}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'prescriptions' && selectedLeadFilter === 'camps' ? 'text-purple-900 font-black' : 'hover:text-purple-800 text-purple-700 font-extrabold'
+            }`}
+        >
+          <Tent className="w-4 h-4 text-purple-600" />
+          <span>⛺ Health Camp Applications ({prescriptions.filter(p => p.prescriptionId?.startsWith('CAMP') || p.patientName?.includes('[CAMP]') || p.fileName?.includes('Camp')).length})</span>
+          {activeTab === 'prescriptions' && selectedLeadFilter === 'camps' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-700 rounded-full"></span>}
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('prescriptions');
+            setSelectedLeadFilter('all');
+          }}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'prescriptions' && selectedLeadFilter !== 'camps' ? 'text-teal-800 font-black' : 'hover:text-slate-700'
             }`}
         >
           <FileText className="w-4 h-4 text-teal-600" />
           <span>Prescription Consults & Leads ({prescriptions.length})</span>
-          {activeTab === 'prescriptions' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-700 rounded-full"></span>}
+          {activeTab === 'prescriptions' && selectedLeadFilter !== 'camps' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-700 rounded-full"></span>}
         </button>
 
         <button
@@ -3265,31 +3282,77 @@ export default function AdminPanel({
           <div className="space-y-6 animate-fade-in">
             <div className="bg-[#fcfcfb] border border-gray-200 p-4 rounded-3xl flex flex-col md:flex-row justify-between gap-4 items-center">
               <div>
-                <span className="text-[10px] font-black text-teal-800 tracking-wider uppercase block">Patient Prescriptions Leads</span>
-                <p className="text-xs text-slate-500">View real-time doctor prescription files and requested callback consults.</p>
+                <span className="text-[10px] font-black text-teal-800 tracking-wider uppercase block">Patient Prescriptions & Health Camp Leads</span>
+                <p className="text-xs text-slate-500">View real-time doctor prescription files, housing society camp applications, and callback requests.</p>
               </div>
               <button
                 onClick={() => {
                   triggerConfirm(
-                    'Clear Prescription Logs',
-                    'Are you sure you want to clear all prescription records from your local storage and view?',
+                    'Clear Lead Logs',
+                    'Are you sure you want to clear all lead and camp application records from your view?',
                     'Clear Logs',
                     () => {
                       localStorage.removeItem('assurx_prescriptions');
                       setPrescriptions([]);
-                      showToast('Prescription logs cleared.', 'success');
+                      showToast('Lead logs cleared.', 'success');
                     }
                   );
                 }}
                 className="px-3.5 py-1.5 border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-xl cursor-pointer"
               >
-                Clear Prescription Logs
+                Clear Lead Logs
+              </button>
+            </div>
+
+            {/* Quick Filter Pills for Admin */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider text-[10px] mr-1">Filter Leads:</span>
+              <button
+                onClick={() => setSelectedLeadFilter('all')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  selectedLeadFilter === 'all'
+                    ? 'bg-[#2D006B] text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All Leads ({prescriptions.length})
+              </button>
+              <button
+                onClick={() => setSelectedLeadFilter('camps')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedLeadFilter === 'camps'
+                    ? 'bg-purple-700 text-white shadow-sm'
+                    : 'bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100'
+                }`}
+              >
+                <Tent className="w-3.5 h-3.5" />
+                <span>⛺ Health Camp Applications ({prescriptions.filter(p => p.prescriptionId?.startsWith('CAMP') || p.patientName?.includes('[CAMP]') || p.fileName?.includes('Camp')).length})</span>
+              </button>
+              <button
+                onClick={() => setSelectedLeadFilter('prescriptions')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  selectedLeadFilter === 'prescriptions'
+                    ? 'bg-teal-700 text-white shadow-sm'
+                    : 'bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100'
+                }`}
+              >
+                Doctor Prescriptions ({prescriptions.filter(p => !p.prescriptionId?.startsWith('CAMP') && !p.patientName?.includes('Quick Callback')).length})
+              </button>
+              <button
+                onClick={() => setSelectedLeadFilter('callbacks')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  selectedLeadFilter === 'callbacks'
+                    ? 'bg-rose-700 text-white shadow-sm'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+                }`}
+              >
+                Quick Callbacks ({prescriptions.filter(p => p.patientName?.includes('Quick Callback')).length})
               </button>
             </div>
 
             {prescriptions.length === 0 ? (
               <div className="py-16 text-center bg-white border border-gray-200 rounded-3xl text-slate-450 font-bold">
-                No patient prescriptions registered. Try uploading one on the homepage!
+                No patient prescriptions or camp applications registered.
               </div>
             ) : (
               <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-xs">
@@ -3297,95 +3360,160 @@ export default function AdminPanel({
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-50/70 border-b border-gray-200 text-slate-450 font-bold uppercase tracking-wider text-[9px]">
-                        <th className="py-4.5 px-5">Consult ID / Patient</th>
-                        <th className="py-4.5 px-4">Contact Number</th>
-                        <th className="py-4.5 px-4">Submitted File</th>
-                        <th className="py-4.5 px-4">Consultation Mode</th>
-                        <th className="py-4.5 px-4">Match / Extracted Tests</th>
+                        <th className="py-4.5 px-5">Lead ID / Applicant Name</th>
+                        <th className="py-4.5 px-4">Contact Phone</th>
+                        <th className="py-4.5 px-4">Lead Type / File</th>
+                        <th className="py-4.5 px-4">Category</th>
+                        <th className="py-4.5 px-4">Extracted Details / Notes</th>
                         <th className="py-4.5 px-4">Status</th>
                         <th className="py-4.5 px-5 text-right">Operational Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-150 text-slate-700 font-semibold">
-                      {prescriptions.map((prx) => (
-                        <tr key={prx.id} className="hover:bg-slate-50/40 transition-colors">
-                          <td className="py-4 px-5">
-                            <div className="space-y-0.5">
-                              <span className="font-mono text-[10px] text-teal-700 font-bold tracking-wider block">
-                                {prx.prescriptionId}
-                              </span>
-                              <span className="font-bold text-slate-900 text-sm block">
-                                {prx.patientName}
-                              </span>
-                              <span className="text-[9px] text-slate-400 block font-mono">
-                                {new Date(prx.timestamp).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="text-slate-800 font-bold text-xs">
-                              {prx.patientPhone}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-slate-500 font-mono text-[11px]">
-                            📁 {prx.fileName}
-                          </td>
-                          <td className="py-4 px-4">
-                            {prx.dontKnowTests ? (
-                              <span className="text-[9.5px] font-black text-rose-700 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full inline-block">
-                                📞 Call Needed (Unsure of Tests)
-                              </span>
-                            ) : (
-                              <span className="text-[9.5px] font-bold text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full inline-block">
-                                ⚙️ Automated Test Extract
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-4 px-4 max-w-[180px]">
-                            {prx.extractedServiceIds && prx.extractedServiceIds.length > 0 ? (
-                              <div className="space-y-0.5">
-                                {prx.extractedServiceIds.map((srvId: string, idx: number) => {
-                                  const matchService = services.find(s => s.id === srvId);
-                                  return (
-                                    <div key={idx} className="text-[10.5px] text-slate-700 truncate block font-bold">
-                                      • {matchService ? matchService.name : srvId}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-slate-400 italic">None - Assistant call requested</span>
-                            )}
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className={`text-[10px] font-extrabold uppercase block ${prx.status === 'pending_call' ? 'text-amber-600' :
-                              prx.status === 'called' ? 'text-indigo-600' : 'text-emerald-600'
-                              }`}>
-                              {prx.status === 'pending_call' ? '● Pending Call' :
-                                prx.status === 'called' ? '● Called & Handled' : '● Converted to Booking'}
-                            </span>
-                          </td>
-                          <td className="py-4 px-5 text-right">
-                            <div className="flex gap-2 justify-end">
-                              {prx.status === 'pending_call' && (
-                                <button
-                                  onClick={() => handleUpdatePrescriptionStatus(prx.id, 'called')}
-                                  className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
-                                >
-                                  Mark Called
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeletePrescription(prx.id)}
-                                className="p-1.5 border border-slate-200 hover:bg-rose-50 hover:text-rose-600 rounded-lg text-slate-400 transition-colors cursor-pointer"
-                                title="Delete Lead"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {prescriptions
+                        .filter(prx => {
+                          const isCamp = prx.prescriptionId?.startsWith('CAMP') || prx.patientName?.includes('[CAMP]') || prx.fileName?.includes('Camp');
+                          const isCallback = prx.patientName?.includes('Quick Callback');
+                          const isRx = !isCamp && !isCallback;
+                          if (selectedLeadFilter === 'camps') return isCamp;
+                          if (selectedLeadFilter === 'prescriptions') return isRx;
+                          if (selectedLeadFilter === 'callbacks') return isCallback;
+                          return true;
+                        })
+                        .map((prx) => {
+                          const isCamp = prx.prescriptionId?.startsWith('CAMP') || prx.patientName?.includes('[CAMP]') || prx.fileName?.includes('Camp');
+                          return (
+                            <tr key={prx.id || prx.prescriptionId} className={`hover:bg-slate-50/60 transition-colors ${isCamp ? 'bg-purple-50/20' : ''}`}>
+                              <td className="py-4 px-5">
+                                <div className="space-y-0.5">
+                                  {isCamp ? (
+                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-900 border border-purple-300 font-mono text-[10px] font-bold rounded-md inline-flex items-center gap-1">
+                                      <Tent className="w-3 h-3 text-purple-700" />
+                                      {prx.prescriptionId}
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-[10px] text-teal-700 font-bold tracking-wider block">
+                                      {prx.prescriptionId}
+                                    </span>
+                                  )}
+                                  <span className="font-bold text-slate-900 text-sm block mt-1">
+                                    {prx.patientName}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 block font-mono">
+                                    {prx.timestamp ? new Date(prx.timestamp).toLocaleString('en-IN') : 'Just now'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-slate-900 font-bold text-xs">
+                                    {prx.patientPhone}
+                                  </span>
+                                  <a
+                                    href={`https://wa.me/91${prx.patientPhone.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-md transition-all flex items-center justify-center cursor-pointer shadow-xs"
+                                    title="Contact Applicant on WhatsApp"
+                                  >
+                                    <MessageSquare className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                {isCamp ? (
+                                  <div className="space-y-1">
+                                    <span className="px-2.5 py-0.5 bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-bold rounded-full inline-block">
+                                      ⛺ Health Camp Application
+                                    </span>
+                                    <p className="text-[11px] text-slate-600 font-medium max-w-xs leading-snug">
+                                      {prx.fileName}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-600 font-mono text-[11px]">
+                                    📁 {prx.fileName}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-4 px-4">
+                                {isCamp ? (
+                                  <span className="text-[9.5px] font-extrabold text-purple-900 bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                                    <Tent className="w-3 h-3 text-purple-700" />
+                                    Society Health Camp
+                                  </span>
+                                ) : prx.dontKnowTests ? (
+                                  <span className="text-[9.5px] font-black text-rose-700 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full inline-block">
+                                    📞 Call Needed (Quick Request)
+                                  </span>
+                                ) : (
+                                  <span className="text-[9.5px] font-bold text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full inline-block">
+                                    ⚙️ Automated Prescription Extract
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-4 px-4 max-w-[240px]">
+                                {isCamp ? (
+                                  <div className="space-y-1 text-[11px] text-slate-700">
+                                    <p className="font-bold text-purple-950 leading-snug">
+                                      {prx.doctorName || prx.fileName}
+                                    </p>
+                                    {Array.isArray(prx.extractedServiceIds) && prx.extractedServiceIds.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {prx.extractedServiceIds.map((item: string, idx: number) => (
+                                          <span key={idx} className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200">
+                                            {item}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : prx.extractedServiceIds && prx.extractedServiceIds.length > 0 ? (
+                                  <div className="space-y-0.5">
+                                    {prx.extractedServiceIds.map((srvId: string, idx: number) => {
+                                      const matchService = services.find(s => s.id === srvId);
+                                      return (
+                                        <div key={idx} className="text-[10.5px] text-slate-700 truncate block font-bold">
+                                          • {matchService ? matchService.name : srvId}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 italic">None - Call requested</span>
+                                )}
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`text-[10px] font-extrabold uppercase block ${
+                                  prx.status === 'pending_call' ? 'text-amber-600' :
+                                  prx.status === 'called' ? 'text-indigo-600' : 'text-emerald-600'
+                                }`}>
+                                  {prx.status === 'pending_call' ? '● Pending Follow-up' :
+                                    prx.status === 'called' ? '● Contacted & Scheduled' : '● Converted'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-5 text-right">
+                                <div className="flex gap-2 justify-end">
+                                  {prx.status === 'pending_call' && (
+                                    <button
+                                      onClick={() => handleUpdatePrescriptionStatus(prx.id, 'called')}
+                                      className="px-2.5 py-1.5 bg-[#2D006B] hover:bg-[#3B008D] text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      Mark Contacted
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleDeletePrescription(prx.id)}
+                                    className="p-1.5 border border-slate-200 hover:bg-rose-50 hover:text-rose-600 rounded-lg text-slate-400 transition-colors cursor-pointer"
+                                    title="Delete Lead"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
