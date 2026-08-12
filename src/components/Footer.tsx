@@ -127,8 +127,82 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
     other: 'Other',
   };
 
+  const popularTestsData = [
+    [
+      { name: 'Amh test' },
+      { name: 'Creatinine test' },
+      { name: 'ECG Test', bold: true },
+      { name: 'LFT test' },
+      { name: 'Prolactin test' },
+      { name: 'Thyroid test' },
+      { name: 'Vitamin D Test' }
+    ],
+    [
+      { name: 'Elastography', isScan: true },
+      { name: 'Semen Analysis', bold: true },
+      { name: 'FBS test' },
+      { name: 'Lipid profile test' },
+      { name: 'Covid 19 Rapid' },
+      { name: 'Uric Acid test' },
+      { name: 'Widal test' }
+    ],
+    [
+      { name: 'CBC test' },
+      { name: 'CRP test' },
+      { name: 'Hba1c test' },
+      { name: 'Whole Abdomen (USG)', bold: true, isScan: true },
+      { name: 'RBS test' },
+      { name: 'Urine culture test' },
+      { name: 'Pap Smear', bold: true }
+    ],
+    [
+      { name: 'NT Scan', isScan: true },
+      { name: 'D dimer test' },
+      { name: 'HIV test' },
+      { name: '2D - ECHO', bold: true, isScan: true },
+      { name: '3D Pregnancy Scan', isScan: true },
+      { name: 'VDRL test' },
+      { name: 'Colour Doppler', isScan: true }
+    ],
+    [
+      { name: 'Cholesterol test' },
+      { name: 'Dengue Test' },
+      { name: 'KFT test' },
+      { name: 'PPBS test' },
+      { name: 'Obstetrics Profile', bold: true },
+      { name: 'Vitamin B12 test' }
+    ]
+  ];
+
   return (
-    <footer className="bg-slate-900 text-slate-400 text-xs md:text-sm border-t border-slate-800" id="main-footer">
+    <>
+      {/* POPULAR TESTS SECTION ABOVE FOOTER */}
+      <section className="bg-[#f3f4f6] border-t border-slate-200 py-10 px-4 md:px-8 text-slate-800" id="popular-tests-footer-section">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight text-left">
+            Popular tests
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3.5 gap-x-8 text-xs md:text-sm text-slate-700 text-left">
+            {popularTestsData.map((col, colIdx) => (
+              <div key={colIdx} className="space-y-3">
+                {col.map((item, itemIdx) => (
+                  <button
+                    key={itemIdx}
+                    onClick={() => onNavigate(item.isScan ? 'scans' : 'labs')}
+                    className={`block text-left w-full hover:text-[#AD1457] transition-colors cursor-pointer ${
+                      item.bold ? 'font-serif font-bold text-slate-900' : 'font-normal text-slate-650'
+                    }`}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-slate-900 text-slate-400 text-xs md:text-sm border-t border-slate-800" id="main-footer">
       
       {/* HOW TO BOOK A TEST / HOW IT WORKS SECTION */}
       <div className="bg-slate-950 border-b border-slate-800/80 py-10 px-4 md:px-6 text-slate-300" id="how-to-book-section">
@@ -689,5 +763,6 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
       )}
 
     </footer>
+  </>
   );
 }
