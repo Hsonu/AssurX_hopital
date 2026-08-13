@@ -30,7 +30,7 @@ import { TrackOrderSection, HiringCareersSection } from './components/HearingAnd
 import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
 import LegalPages from './components/LegalPages';
-import { CUSTOMER_TESTIMONIALS } from './data';
+import { CUSTOMER_TESTIMONIALS, POPULAR_TESTS_DATA } from './data';
 
 const getPackageImage = (id: string) => {
   switch (id) {
@@ -1325,6 +1325,32 @@ export default function App() {
                 )}
               </section>
             )}
+
+            {/* POPULAR TESTS SECTION (PLACED DIRECTLY UNDER DOCTORS SECTION) */}
+            <section className="bg-[#f3f4f6] border-t border-b border-slate-200 py-10 px-4 md:px-8 text-slate-800 my-4" id="popular-tests-footer-section">
+              <div className="max-w-7xl mx-auto space-y-6">
+                <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight text-left">
+                  Popular tests
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3.5 gap-x-8 text-xs md:text-sm text-slate-700 text-left">
+                  {POPULAR_TESTS_DATA.map((col, colIdx) => (
+                    <div key={colIdx} className="space-y-3">
+                      {col.map((item, itemIdx) => (
+                        <button
+                          key={itemIdx}
+                          onClick={() => setCurrentTab(item.isScan ? 'scans' : 'labs')}
+                          className={`block text-left w-full hover:text-[#AD1457] transition-colors cursor-pointer ${
+                            item.bold ? 'font-serif font-bold text-slate-900' : 'font-normal text-slate-650'
+                          }`}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
             {/* AUTOPLAY PROMO SLIDER SECTION (Items 9, 10, 11 merged) */}
             <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">

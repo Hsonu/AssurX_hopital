@@ -2803,3 +2803,50 @@ export const DEFAULT_DOCTORS: Doctor[] = [
   }
 ];
 
+export const POPULAR_TESTS_DATA = [
+  [
+    { name: 'Amh test' },
+    { name: 'Creatinine test' },
+    { name: 'ECG Test', bold: true },
+    { name: 'LFT test' },
+    { name: 'Prolactin test' },
+    { name: 'Thyroid test' },
+    { name: 'Vitamin D Test' }
+  ],
+  [
+    { name: 'Elastography', isScan: true },
+    { name: 'Semen Analysis', bold: true },
+    { name: 'FBS test' },
+    { name: 'Lipid profile test' },
+    { name: 'Covid 19 Rapid' },
+    { name: 'Uric Acid test' },
+    { name: 'Widal test' }
+  ],
+  [
+    { name: 'CBC test' },
+    { name: 'CRP test' },
+    { name: 'Hba1c test' },
+    { name: 'Whole Abdomen (USG)', bold: true, isScan: true },
+    { name: 'RBS test' },
+    { name: 'Urine culture test' },
+    { name: 'Pap Smear', bold: true }
+  ],
+  [
+    { name: 'NT Scan', isScan: true },
+    { name: 'D dimer test' },
+    { name: 'HIV test' },
+    { name: '2D - ECHO', bold: true, isScan: true },
+    { name: '3D Pregnancy Scan', isScan: true },
+    { name: 'VDRL test' },
+    { name: 'Colour Doppler', isScan: true }
+  ],
+  [
+    { name: 'Cholesterol test' },
+    { name: 'Dengue Test' },
+    { name: 'KFT test' },
+    { name: 'PPBS test' },
+    { name: 'Obstetrics Profile', bold: true },
+    { name: 'Vitamin B12 test' }
+  ]
+];
+
