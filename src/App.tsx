@@ -22,6 +22,7 @@ import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
+import logoImg from '../logo.jpeg';
 import CallbackSticky from './components/CallbackSticky';
 import DirectBookModal from './components/DirectBookModal';
 import DoctorAppointmentModal from './components/DoctorAppointmentModal';
@@ -1351,6 +1352,71 @@ export default function App() {
                 )}
               </section>
             )}
+
+            {/* EASY 4-STEP BOOKING PROCESS */}
+            <section className="bg-slate-950 border-t border-b border-slate-800/80 py-10 px-4 md:px-6 text-slate-300 my-4" id="how-to-book-section">
+              <div className="max-w-7xl mx-auto space-y-6 text-center">
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-purple-900/40 border border-purple-700/50 text-[#80CBC4] text-[10px] font-black uppercase tracking-widest rounded-full">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    Easy 4-Step Booking Process
+                  </span>
+                  <h3 className="text-xl md:text-2xl font-serif font-bold text-white tracking-tight flex items-center justify-center gap-2 mt-2 flex-wrap">
+                    <span>How to Book a Diagnostic Test at</span>
+                    <img src={logoImg} alt="AssurX Diagnostics Logo" className="h-7 w-auto object-contain bg-white rounded px-1.5 py-0.5 inline-block align-middle shadow-xs" />
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-xl mx-auto">
+                    Book certified pathology tests, USG sonography scans, and full-body health packages in under 60 seconds.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left pt-3">
+                  {/* Step 1 */}
+                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                      01
+                    </div>
+                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Select Test or Package</h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Browse our wide catalog of lab pathology tests, 3D/4D USG scans, or subsidised health packages.
+                    </p>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                      02
+                    </div>
+                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Choose Visit or Home Visit</h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Pick home blood sample collection at your doorstep or schedule a visit to Malad / Goregaon centers.
+                    </p>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                      03
+                    </div>
+                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Sterile Sample Collection</h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      DHA-certified phlebotomist visits your doorstep with sterile vacuum tube collection kits.
+                    </p>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                      04
+                    </div>
+                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Receive Digital Reports</h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Download MD Pathologist & Radiologist verified PDF reports sent directly to WhatsApp & SMS.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             {/* AUTOPLAY PROMO SLIDER SECTION (Items 9, 10, 11 merged) */}
             <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">
