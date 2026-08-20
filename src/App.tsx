@@ -31,7 +31,7 @@ import { TrackOrderSection, HiringCareersSection } from './components/HearingAnd
 import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
 import LegalPages from './components/LegalPages';
-import { CUSTOMER_TESTIMONIALS, POPULAR_TESTS_DATA } from './data';
+import { CUSTOMER_TESTIMONIALS, POPULAR_TESTS_DATA, DIAGNOSTIC_SERVICES } from './data';
 
 const getPackageImage = (id: string) => {
   switch (id) {
@@ -81,12 +81,21 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [activeBanner, setActiveBanner] = useState(0);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [selectedDoctorForModal, setSelectedDoctorForModal] = useState<Doctor | null>(null);
   const [activePromoIndex, setActivePromoIndex] = useState(0);
   const [isCampModalOpen, setIsCampModalOpen] = useState(false);
   const [selectedCampType, setSelectedCampType] = useState('Free Health Check-up');
+  const [isPromoAdOpen, setIsPromoAdOpen] = useState(() => {
+    return sessionStorage.getItem('assurx_promo_ad_dismissed') !== 'true';
+  });
+
+  const handleClosePromoAd = () => {
+    sessionStorage.setItem('assurx_promo_ad_dismissed', 'true');
+    setIsPromoAdOpen(false);
+  };
 
   const handleOpenCampModal = (campType: string = 'Free Health Check-up') => {
     setSelectedCampType(campType);
@@ -387,6 +396,20 @@ export default function App() {
     setDirectBookingItem(item);
   };
 
+  const getCarouselService = (testName: string) => {
+    const mapping: Record<string, string> = {
+      'CBC TEST': 'lab-cbc',
+      'LIPID PROFILE': 'lab-lipid',
+      'THYROID PANEL': 'lab-thyroid',
+      'LIVER FUNCTION': 'lab-liver-lft',
+      'KIDNEY PROFILE': 'lab-kidney-kft',
+      'VITAMIN D': 'lab-vitamin-d'
+    };
+    const serviceId = mapping[testName];
+    if (!serviceId) return null;
+    return services.find(s => s.id === serviceId) || DIAGNOSTIC_SERVICES.find(s => s.id === serviceId) || null;
+  };
+
   const [selectedBranch, setSelectedBranchState] = useState<string>(() => {
     return localStorage.getItem('assurx_selected_branch') || 'Malad';
   });
@@ -494,6 +517,10 @@ export default function App() {
 
   // Handle adding a single service or package to cart
   const handleAddToCart = (item: DiagnosticService | HealthPackage, type: 'service' | 'package') => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
     // Check if already in cart
     if (cart.some(ci => ci.itemId === item.id)) {
       setAddedItemFeedback(`"${item.name}" is already in your cart!`);
@@ -520,6 +547,10 @@ export default function App() {
 
   // Handle adding multiple items from prescription upload
   const handleAddMultipleToCart = (items: CartItem[]) => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
     const existingIds = cart.map(c => c.itemId);
     const uniqueNewItems = items.filter(item => !existingIds.includes(item.itemId));
 
@@ -653,6 +684,8 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         onSearchFocus={handleGlobalSearchFocus}
         centers={centers}
+        isLoginModalOpen={isLoginModalOpen}
+        setIsLoginModalOpen={setIsLoginModalOpen}
       />
 
       {/* VIEWPORT CONTROLLER */}
@@ -859,11 +892,15 @@ export default function App() {
                         </div>
 
                         {/* Section banner */}
-                        <div className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm">
+                        <div 
+                          onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
+                          className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
+                          title={`Go to ${section.title}`}
+                        >
                           <img
                             src={resolveBannerImage(section.bannerImage)}
                             alt={section.title}
-                            className="w-full h-full object-cover select-none"
+                            className="w-full h-full object-cover select-none hover:scale-[1.015] transition-transform duration-300"
                             referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
@@ -977,7 +1014,12 @@ export default function App() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setCurrentTab('labs');
+                            const svc = getCarouselService(test.name);
+                            if (svc) {
+                              handleAddToCart(svc, 'service');
+                            } else {
+                              setCurrentTab('labs');
+                            }
                           }}
                           className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                         >
@@ -1011,7 +1053,12 @@ export default function App() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setCurrentTab('labs');
+                            const svc = getCarouselService(test.name);
+                            if (svc) {
+                              handleAddToCart(svc, 'service');
+                            } else {
+                              setCurrentTab('labs');
+                            }
                           }}
                           className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                         >
@@ -2249,6 +2296,33 @@ export default function App() {
           selectedBranch={selectedBranch}
           centers={centers}
         />
+      )}
+
+      {/* --- PROMOTIONAL CAMP AD POPUP MODAL --- */}
+      {isPromoAdOpen && currentTab === 'home' && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 p-4 relative animate-scale-in flex flex-col items-center">
+            {/* Close button at the top right of the card, overlaying the image */}
+            <button
+              onClick={handleClosePromoAd}
+              className="absolute top-3 right-3 p-1.5 bg-slate-900/60 hover:bg-slate-900/80 rounded-full text-white transition-all cursor-pointer z-10"
+              title="Close Ad"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-full max-h-[80vh] overflow-y-auto rounded-2xl">
+              <img
+                src="/promotional_camp.jpg"
+                alt="AssurX Diagnostics Promotional Camp"
+                onClick={() => {
+                  setCurrentTab('labs');
+                  setIsPromoAdOpen(false);
+                }}
+                className="w-full h-auto object-contain rounded-xl cursor-pointer hover:scale-[1.01] transition-transform duration-250"
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* --- FLOATING PERSISTENT BOTTOM CALLBACK WIDGET --- */}

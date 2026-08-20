@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import https from "https";
 import crypto from "crypto";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser, updateUserSession, getUserActiveSession } from "./src/db/users.ts";
@@ -121,6 +122,32 @@ const DEFAULT_ADMIN_BOOKINGS_SEED = [
 ];
 
 let dynamicAdminKey = "";
+
+function updateEnvFile(updates: Record<string, string>) {
+  const envPath = path.join(process.cwd(), '.env');
+  let content = "";
+  if (fs.existsSync(envPath)) {
+    content = fs.readFileSync(envPath, 'utf8');
+  }
+  
+  const lines = content.split(/\r?\n/);
+  for (const [key, val] of Object.entries(updates)) {
+    const regex = new RegExp(`^${key}=.*`);
+    let found = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (regex.test(lines[i])) {
+        lines[i] = `${key}="${val}"`;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      lines.push(`${key}="${val}"`);
+    }
+  }
+  
+  fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
+}
 
 interface AdminInfo {
   email: string;
@@ -948,6 +975,66 @@ async function startServer() {
     } catch (error: any) {
       console.error("Error resetting database:", error);
       res.status(500).json({ error: error.message || "Failed to reset database" });
+    }
+  });
+
+  // Secure Admin Credentials Self-Update API
+  app.post("/api/admin/update-credentials", requireAdminAuth, async (req, res) => {
+    try {
+      const { newPassword, newKey } = req.body;
+      const adminEmail = req.headers["x-admin-email"] as string | undefined;
+
+      if (!adminEmail) {
+        return res.status(400).json({ error: "Missing admin identity header." });
+      }
+
+      const matchedAdmin = adminList.find(a => a.email === adminEmail.trim().toLowerCase());
+      if (!matchedAdmin) {
+        return res.status(404).json({ error: "Administrator account not found." });
+      }
+
+      const updates: Record<string, string> = {};
+
+      if (newPassword && typeof newPassword === "string" && newPassword.trim()) {
+        matchedAdmin.password = newPassword.trim();
+        // Determine which env variable to update
+        if (matchedAdmin.email === (process.env.ADMIN_EMAIL || "sonusonuraj415@gmail.com").trim().toLowerCase()) {
+          updates["ADMIN_PASSWORD"] = newPassword.trim();
+          process.env.ADMIN_PASSWORD = newPassword.trim();
+        } else if (matchedAdmin.email === (process.env.ADMIN_EMAIL_1 || "admin1@assurx.com").trim().toLowerCase()) {
+          updates["ADMIN_PASSWORD_1"] = newPassword.trim();
+          process.env.ADMIN_PASSWORD_1 = newPassword.trim();
+        } else if (matchedAdmin.email === (process.env.ADMIN_EMAIL_2 || "admin2@assurx.com").trim().toLowerCase()) {
+          updates["ADMIN_PASSWORD_2"] = newPassword.trim();
+          process.env.ADMIN_PASSWORD_2 = newPassword.trim();
+        }
+      }
+
+      if (newKey && typeof newKey === "string" && newKey.trim()) {
+        matchedAdmin.key = newKey.trim();
+        // Determine which env variable to update
+        if (matchedAdmin.email === (process.env.ADMIN_EMAIL || "sonusonuraj415@gmail.com").trim().toLowerCase()) {
+          updates["ADMIN_API_KEY"] = newKey.trim();
+          process.env.ADMIN_API_KEY = newKey.trim();
+          dynamicAdminKey = newKey.trim();
+        } else if (matchedAdmin.email === (process.env.ADMIN_EMAIL_1 || "admin1@assurx.com").trim().toLowerCase()) {
+          updates["ADMIN_KEY_1"] = newKey.trim();
+          process.env.ADMIN_KEY_1 = newKey.trim();
+        } else if (matchedAdmin.email === (process.env.ADMIN_EMAIL_2 || "admin2@assurx.com").trim().toLowerCase()) {
+          updates["ADMIN_KEY_2"] = newKey.trim();
+          process.env.ADMIN_KEY_2 = newKey.trim();
+        }
+      }
+
+      // Write updates to .env file if any updates were made
+      if (Object.keys(updates).length > 0) {
+        updateEnvFile(updates);
+      }
+
+      res.json({ success: true, message: "Credentials updated successfully." });
+    } catch (error: any) {
+      console.error("Error updating admin credentials:", error);
+      res.status(500).json({ error: error.message || "Failed to update administrator credentials." });
     }
   });
 

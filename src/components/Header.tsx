@@ -17,6 +17,8 @@ interface HeaderProps {
   setSearchQuery: (query: string) => void;
   onSearchFocus: () => void;
   centers?: Array<{ city: string; address: string; phone: string }>;
+  isLoginModalOpen: boolean;
+  setIsLoginModalOpen: (open: boolean) => void;
 }
 
 export default function Header({
@@ -29,7 +31,9 @@ export default function Header({
   searchQuery,
   setSearchQuery,
   onSearchFocus,
-  centers = []
+  centers = [],
+  isLoginModalOpen,
+  setIsLoginModalOpen
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mainMenuOpen, setMainMenuOpen] = useState(false);
@@ -37,7 +41,6 @@ export default function Header({
   const [healthPackagesOpen, setHealthPackagesOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isBookingsOpen, setIsBookingsOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginError, setLoginError] = useState('');
   const { user, idToken, loginWithGoogle, logout } = useAuth();
 
@@ -236,7 +239,7 @@ export default function Header({
                   if (user) {
                     setUserDropdownOpen(!userDropdownOpen);
                   } else {
-                    handleTabClick('bookings');
+                    setIsLoginModalOpen(true);
                   }
                 }}
                 className="flex items-center justify-center p-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/15 text-white transition-colors cursor-pointer"
@@ -494,7 +497,8 @@ export default function Header({
             ) : (
               <button
                 onClick={() => {
-                  handleTabClick('bookings');
+                  setIsLoginModalOpen(true);
+                  setMobileMenuOpen(false);
                 }}
                 className="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >

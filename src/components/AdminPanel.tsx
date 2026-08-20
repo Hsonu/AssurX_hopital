@@ -198,7 +198,60 @@ export default function AdminPanel({
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages' | 'doctors'>('dispatcher');
+  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages' | 'doctors' | 'security'>('dispatcher');
+
+  // Security credentials state
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [newAdminKey, setNewAdminKey] = useState('');
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [securityMessage, setSecurityMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleUpdateSecurity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminPassword && !newAdminKey) {
+      setSecurityMessage({ type: 'error', text: 'Please fill in at least one field to update.' });
+      return;
+    }
+    setSecurityLoading(true);
+    setSecurityMessage(null);
+
+    try {
+      const email = localStorage.getItem('adminEmail') || '';
+      const session = localStorage.getItem('adminSession') || '';
+      const currentKey = localStorage.getItem('adminKey') || '';
+
+      const res = await fetch('/api/admin/update-credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-email': email,
+          'x-admin-session': session,
+          'x-admin-key': currentKey
+        },
+        body: JSON.stringify({
+          newPassword: newAdminPassword.trim() || undefined,
+          newKey: newAdminKey.trim() || undefined
+        })
+      });
+
+      if (res.ok) {
+        setSecurityMessage({ type: 'success', text: 'Credentials updated successfully!' });
+        if (newAdminKey.trim()) {
+          localStorage.setItem('adminKey', newAdminKey.trim());
+        }
+        setNewAdminPassword('');
+        setNewAdminKey('');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setSecurityMessage({ type: 'error', text: errData.error || 'Failed to update credentials.' });
+      }
+    } catch (err) {
+      console.error('Error updating security credentials:', err);
+      setSecurityMessage({ type: 'error', text: 'Network connection failed.' });
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
 
   // Complaints state
   const [complaints, setComplaints] = useState<PatientComplaint[]>([]);
@@ -2059,6 +2112,16 @@ export default function AdminPanel({
           <MessageSquareWarning className="w-4 h-4 text-amber-600" />
           <span>Patient Complaints ({complaints.length})</span>
           {activeTab === 'complaints' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 rounded-full"></span>}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('security')}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'security' ? 'text-emerald-800 font-black' : 'hover:text-slate-700'
+            }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-650" />
+          <span>Security Settings</span>
+          {activeTab === 'security' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full"></span>}
         </button>
       </div>
 
@@ -4776,6 +4839,58 @@ export default function AdminPanel({
 )
 }
           </div >
+        )}
+
+        {activeTab === 'security' && (
+          <div className="max-w-xl mx-auto bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-md text-left space-y-6 animate-fade-in">
+            <div>
+              <span className="text-[9px] font-black text-emerald-700 tracking-widest uppercase block">CREDENTIAL MANAGEMENT</span>
+              <h3 className="text-lg font-serif font-bold text-slate-900">Security & API Keys</h3>
+              <p className="text-xs text-slate-500 mt-1">Modify your administrator access passwords and core API validation keys.</p>
+            </div>
+
+            {securityMessage && (
+              <div className={`p-4 border rounded-2xl text-xs font-bold ${
+                securityMessage.type === 'success' 
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}>
+                {securityMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateSecurity} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-black text-slate-450 uppercase tracking-wider">New Password</label>
+                <input
+                  type="password"
+                  placeholder="Enter new password"
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-black text-slate-450 uppercase tracking-wider">New Admin Key (X-Admin-Key)</label>
+                <input
+                  type="text"
+                  placeholder="Enter new admin key"
+                  value={newAdminKey}
+                  onChange={(e) => setNewAdminKey(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-800"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={securityLoading}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-150 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {securityLoading ? 'Updating credentials...' : 'Save Credentials'}
+              </button>
+            </form>
+          </div>
         )}
 
       </div >
