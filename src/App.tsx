@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, MapPin, PhoneCall, ShoppingCart, User, Menu, X,
   ShieldCheck, ClipboardCheck, Users, Calendar, ArrowRight,
@@ -76,8 +77,27 @@ const resolveBannerImage = (img: string) => {
   return img;
 };
 
-export default function App() {
-  const [currentTab, setCurrentTab] = useState<'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us'>('home');
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const getTabFromPath = (pathname: string): 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us' => {
+    const cleanPath = pathname.replace(/^\//, '');
+    const validTabs = ['scans', 'labs', 'packages', 'hiring', 'admin', 'bookings', 'privacy-policy', 'terms-of-use', 'refund-policy', 'shipping-policy', 'about-us', 'contact-us'];
+    if (validTabs.includes(cleanPath)) {
+      return cleanPath as any;
+    }
+    return 'home';
+  };
+
+  const currentTab = getTabFromPath(location.pathname);
+  const setCurrentTab = (tab: 'home' | 'scans' | 'labs' | 'packages' | 'hiring' | 'admin' | 'bookings' | 'privacy-policy' | 'terms-of-use' | 'refund-policy' | 'shipping-policy' | 'about-us' | 'contact-us') => {
+    navigate(tab === 'home' ? '/' : `/${tab}`);
+  };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentTab]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [bookingRefreshKey, setBookingRefreshKey] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -2329,5 +2349,13 @@ export default function App() {
       <CallbackSticky selectedBranch={selectedBranch} centers={centers} onOpenCampModal={handleOpenCampModal} />
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
