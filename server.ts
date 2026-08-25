@@ -207,7 +207,7 @@ async function startServer() {
     console.error("⚠️ WARNING: MongoDB connection failed on startup. Starting server in offline mode. Database features will be unavailable.");
   }
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   // JSON parsing middleware
   app.use(express.json({ limit: "50mb" }));
@@ -1528,7 +1528,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*all", (req, res) => {
+    app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
