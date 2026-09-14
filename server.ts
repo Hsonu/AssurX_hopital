@@ -6,7 +6,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser, updateUserSession, getUserActiveSession } from "./src/db/users.ts";
-import { getAdminSession, setAdminSession, clearAdminSession } from "./src/db/adminSession.ts";
+import { getAdminSession, setAdminSession, clearAdminSession, addAdminSession, removeAdminSession, isValidAdminSession } from "./src/db/adminSession.ts";
 import { AdminSessionModel } from "./src/db/schema.ts";
 import authRoutes from "./src/routes/authRoutes.ts";
 import patientRoutes from "./src/routes/patientRoutes.ts";
@@ -66,6 +66,8 @@ import {
   getAllFAQs,
   getAllCenters,
   getAllDoctors,
+  getPromoAd,
+  updatePromoAd,
 } from "./src/db/queries.ts";
 
 const DEFAULT_ADMIN_BOOKINGS_SEED = [
@@ -207,7 +209,7 @@ async function startServer() {
     console.error("⚠️ WARNING: MongoDB connection failed on startup. Starting server in offline mode. Database features will be unavailable.");
   }
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // JSON parsing middleware
   app.use(express.json({ limit: "50mb" }));
@@ -874,9 +876,9 @@ async function startServer() {
         return res.status(401).json({ error: "Invalid administrator credentials or security key." });
       }
 
-      // Generate a new session ID, replacing any previous admin session for this email
+      // Generate a new session ID for this device and add to active sessions
       const sessionId = crypto.randomUUID();
-      await setAdminSession(matchedAdmin.email, sessionId);
+      await addAdminSession(matchedAdmin.email, sessionId);
 
       res.json({ success: true, sessionId });
     } catch (error: any) {
@@ -885,7 +887,7 @@ async function startServer() {
     }
   });
 
-  // Admin Logout — invalidates the active session in the database.
+  // Admin Logout — invalidates this specific device session in the database.
   app.post("/api/admin/logout", async (req, res) => {
     try {
       const incomingSession = req.headers["x-admin-session"] as string | undefined;
@@ -895,17 +897,21 @@ async function startServer() {
 
       if (!emailToClear && incomingSession) {
         // Fallback: look up email by active session
-        const doc = await AdminSessionModel.findOne({ activeSession: incomingSession }).lean();
+        const doc = await AdminSessionModel.findOne({
+          $or: [
+            { activeSessions: incomingSession },
+            { activeSession: incomingSession }
+          ]
+        }).lean();
         if (doc) {
           emailToClear = (doc as any)._id;
         }
       }
 
-      if (emailToClear) {
-        const storedSession = await getAdminSession(emailToClear);
-        if (incomingSession && incomingSession === storedSession) {
-          await clearAdminSession(emailToClear);
-        }
+      if (emailToClear && incomingSession) {
+        await removeAdminSession(emailToClear, incomingSession);
+      } else if (emailToClear) {
+        await clearAdminSession(emailToClear);
       }
       res.json({ success: true });
     } catch (error: any) {
@@ -930,32 +936,29 @@ async function startServer() {
       }
     }
 
-    // ── Single-session enforcement for admin ────────────────────────────────
+    // ── Multi-device session validation for admin ────────────────────────────
     try {
       const incomingSession = req.headers["x-admin-session"] as string | undefined;
       const adminEmail = req.headers["x-admin-email"] as string | undefined;
 
-      if (adminEmail) {
-        const storedSession = await getAdminSession(adminEmail);
-        if (storedSession && incomingSession !== storedSession) {
+      if (adminEmail && incomingSession) {
+        const isValid = await isValidAdminSession(adminEmail, incomingSession);
+        if (!isValid) {
           return res.status(401).json({
-            error: "Your account has been logged in on another device. Please log in again."
+            error: "Admin session is invalid or has expired. Please log in again."
           });
         }
       } else if (incomingSession) {
         // Fallback: lookup by session ID
-        const doc = await AdminSessionModel.findOne({ activeSession: incomingSession }).lean();
+        const doc = await AdminSessionModel.findOne({
+          $or: [
+            { activeSessions: incomingSession },
+            { activeSession: incomingSession }
+          ]
+        }).lean();
         if (!doc) {
           return res.status(401).json({
-            error: "Your account has been logged in on another device. Please log in again."
-          });
-        }
-      } else {
-        // If neither email nor session ID is provided, verify if there are any active sessions at all.
-        const activeCount = await AdminSessionModel.countDocuments({ activeSession: { $ne: "" } });
-        if (activeCount > 0) {
-          return res.status(401).json({
-            error: "Your account has been logged in on another device. Please log in again."
+            error: "Admin session is invalid or has expired. Please log in again."
           });
         }
       }
@@ -1302,6 +1305,42 @@ async function startServer() {
     }
   });
 
+  // --- PROMOTIONAL POPUP AD ROUTES ---
+  app.get("/api/promo-ad", async (req, res) => {
+    try {
+      const promo = await getPromoAd();
+      res.json(promo);
+    } catch (error: any) {
+      console.error("Error fetching promo ad:", error);
+      res.json({
+        id: "main_promo",
+        title: "AssurX Diagnostics Promotional Camp",
+        imageUrl: "/promotional_camp.jpg",
+        targetTab: "labs",
+        targetUrl: "",
+        isActive: true,
+      });
+    }
+  });
+
+  app.post("/api/admin/promo-ad", requireAdminAuth, async (req, res) => {
+    try {
+      const { title, imageUrl, targetTab, targetUrl, isActive } = req.body;
+      const updated = await updatePromoAd({
+        title: typeof title === "string" ? title.trim() : undefined,
+        imageUrl: typeof imageUrl === "string" ? imageUrl.trim() : undefined,
+        targetTab: typeof targetTab === "string" ? targetTab.trim() : undefined,
+        targetUrl: typeof targetUrl === "string" ? targetUrl.trim() : undefined,
+        isActive: typeof isActive === "boolean" ? isActive : undefined,
+      });
+      res.json({ success: true, promo: updated });
+    } catch (error: any) {
+      console.error("Error updating promo ad:", error);
+      res.status(500).json({ error: error.message || "Failed to update promo ad" });
+    }
+  });
+
+
 
   // 1. Get all Bookings
   app.get("/api/admin/bookings", requireAdminAuth, async (req, res) => {
@@ -1533,7 +1572,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
 
     // Self-pinging routine to keep the Render instance awake (only in production)
@@ -1549,6 +1588,15 @@ async function startServer() {
       setInterval(() => {
         pingServer(APP_URL);
       }, 5 * 60 * 1000);
+    }
+  });
+
+  server.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`❌ Port ${PORT} is already in use by another running process.`);
+      console.error(`👉 Solution: Port 3000 par pehle se server chal raha hai. Aap apne purane terminal ko band karein ya 'npx kill-port 3000' run karein.`);
+    } else {
+      console.error("Server startup error:", err);
     }
   });
 }

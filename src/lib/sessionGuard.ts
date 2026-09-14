@@ -53,8 +53,8 @@ if (typeof window !== 'undefined') {
 
   // Listen for storage events (which fire only on OTHER tabs/windows of the same origin when localStorage changes)
   window.addEventListener('storage', (event) => {
-    if (event.key === 'adminSession' && event.newValue && event.newValue !== adminSessionIdInMemory) {
-      fireKick('admin');
+    if (event.key === 'adminSession') {
+      adminSessionIdInMemory = event.newValue || '';
     }
     if (event.key === 'userSession' && event.newValue && event.newValue !== userSessionIdInMemory) {
       fireKick('user');

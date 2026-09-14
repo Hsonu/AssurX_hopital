@@ -1,9 +1,9 @@
 {
-  "projectId": "assurx-hopital",
-  "appId": "1:800577987126:web:4abbaee70a74e8865bae97",
-  "apiKey": "AIzaSyChwGyHj3kgB-Sd5LIJOeHwkS-lCie6f7M",
-  "authDomain": "assurx-hopital.firebaseapp.com",
-  "storageBucket": "assurx-hopital.firebasestorage.app",
-  "messagingSenderId": "800577987126",
-  "measurementId": "G-LRELBYB1WQ"
+  "projectId": "assurx-hospital",
+  "appId": "1:261614998290:web:1d4929b1f1ab7ecd3619cb",
+  "apiKey": "AIzaSyA2EtnqZQITvYhPfvE5dTaw5OG0E-hKzfA",
+  "authDomain": "assurx-hospital.firebaseapp.com",
+  "storageBucket": "assurx-hospital.firebasestorage.app",
+  "messagingSenderId": "261614998290",
+  "measurementId": "G-BTB5HD5W0Z"
 }

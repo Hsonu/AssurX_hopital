@@ -11,6 +11,7 @@ import {
   FAQModel,
   CenterModel,
   DoctorModel,
+  PromoAdModel,
   getNextId,
 } from './schema.ts';
 import {
@@ -419,6 +420,87 @@ export async function seedCatalog() {
       console.log("🌱 Seeding doctors into MongoDB...");
       await DoctorModel.insertMany(SEED_DOCTORS);
     }
+    const bookingCount = await BookingModel.countDocuments();
+    if (bookingCount === 0) {
+      console.log("🌱 Seeding initial bookings into MongoDB...");
+      const initialBookings = [
+        {
+          bookingId: 'ASX-984310',
+          userId: 1,
+          patientName: 'Vy9892 Patel',
+          patientAge: 29,
+          patientGender: 'Male',
+          patientRelationship: 'Self',
+          appointmentDate: '2026-07-01',
+          appointmentTime: '08:00 AM - 10:00 AM',
+          collectionType: 'home',
+          street: 'Flat 405, Blue Meadows, S.V. Road',
+          city: 'Malad',
+          pincode: '400064',
+          paymentMethod: 'upi',
+          paymentStatus: 'paid',
+          bookingStatus: 'report_ready',
+          totalAmount: 1700,
+          simulatedReportUrl: '/reports/ASX-984310.pdf',
+          items: JSON.stringify([
+            { itemId: 'pkg-fever-profile', itemType: 'package', name: 'Fever Profile', price: 3000, discountPrice: 1700, category: 'package' }
+          ]),
+          timestamp: '2026-07-01T08:15:00.000Z'
+        },
+        {
+          bookingId: 'ASX-751294',
+          userId: 1,
+          patientName: 'Meera Sharma',
+          patientAge: 45,
+          patientGender: 'Female',
+          patientRelationship: 'Other',
+          appointmentDate: '2026-07-04',
+          appointmentTime: '11:00 AM - 12:00 PM',
+          collectionType: 'center',
+          street: 'Goregaon Hub Center Visit',
+          city: 'Goregaon',
+          pincode: '400063',
+          paymentMethod: 'card',
+          paymentStatus: 'paid',
+          bookingStatus: 'sample_collected',
+          totalAmount: 2500,
+          simulatedReportUrl: '/reports/ASX-751294.pdf',
+          items: JSON.stringify([
+            { itemId: 'pkg-womens-health-essential', itemType: 'package', name: "Women's Health - ESSENTIAL", price: 5000, discountPrice: 2500, category: 'package' }
+          ]),
+          timestamp: '2026-07-04T11:30:00.000Z'
+        },
+        {
+          bookingId: 'ASX-112399',
+          userId: 1,
+          patientName: 'Rajesh Mehta',
+          patientAge: 52,
+          patientGender: 'Male',
+          patientRelationship: 'Other',
+          appointmentDate: '2026-07-06',
+          appointmentTime: '09:00 AM - 11:00 AM',
+          collectionType: 'center',
+          street: 'Malad West Clinic Walk-in',
+          city: 'Malad',
+          pincode: '400064',
+          paymentMethod: 'netbanking',
+          paymentStatus: 'paid',
+          bookingStatus: 'booked',
+          totalAmount: 1000,
+          items: JSON.stringify([
+            { itemId: 'pkg-sugar-profile', itemType: 'package', name: 'Sugar Profile', price: 2000, discountPrice: 1000, category: 'package' }
+          ]),
+          timestamp: '2026-07-06T09:10:00.000Z'
+        }
+      ];
+      for (const b of initialBookings) {
+        try {
+          await createBooking(b);
+        } catch (bErr) {
+          console.error("Initial booking seed error:", bErr);
+        }
+      }
+    }
   } catch (error) {
     console.error("Failed to seed catalog data:", error);
   }
@@ -767,4 +849,74 @@ export async function deleteDoctor(id: string) {
     throw new Error('Failed to delete doctor from database.', { cause: error });
   }
 }
+
+// ─── PROMOTIONAL AD QUERIES ───────────────────────────────────────────────────
+
+export async function getPromoAd() {
+  await ensureConnected();
+  try {
+    let promo = await PromoAdModel.findOne({ id: 'main_promo' });
+    if (!promo) {
+      promo = await PromoAdModel.create({
+        id: 'main_promo',
+        title: 'AssurX Diagnostics Promotional Camp',
+        imageUrl: '/promotional_camp.jpg',
+        targetTab: 'labs',
+        targetUrl: '',
+        isActive: true,
+        updatedAt: new Date()
+      });
+    }
+    return {
+      id: promo.id,
+      title: promo.title,
+      imageUrl: promo.imageUrl,
+      targetTab: promo.targetTab,
+      targetUrl: promo.targetUrl,
+      isActive: promo.isActive,
+      updatedAt: promo.updatedAt,
+    };
+  } catch (error) {
+    console.error("Failed to get promo ad from database:", error);
+    return {
+      id: 'main_promo',
+      title: 'AssurX Diagnostics Promotional Camp',
+      imageUrl: '/promotional_camp.jpg',
+      targetTab: 'labs',
+      targetUrl: '',
+      isActive: true,
+      updatedAt: new Date()
+    };
+  }
+}
+
+export async function updatePromoAd(data: {
+  title?: string;
+  imageUrl?: string;
+  targetTab?: string;
+  targetUrl?: string;
+  isActive?: boolean;
+}) {
+  await ensureConnected();
+  try {
+    const updated = await PromoAdModel.findOneAndUpdate(
+      { id: 'main_promo' },
+      { $set: { ...data, updatedAt: new Date() } },
+      { upsert: true, returnDocument: 'after' }
+    );
+    return updated ? {
+      id: updated.id,
+      title: updated.title,
+      imageUrl: updated.imageUrl,
+      targetTab: updated.targetTab,
+      targetUrl: updated.targetUrl,
+      isActive: updated.isActive,
+      updatedAt: updated.updatedAt,
+    } : null;
+  } catch (error) {
+    console.error("Failed to update promo ad in database:", error);
+    throw new Error("Failed to save promo ad configuration in database.", { cause: error });
+  }
+}
+
 

@@ -28,13 +28,15 @@ export const UserModel: Model<IUser> =
 
 export interface IAdminSession {
   _id: string;
-  activeSession: string;
+  activeSessions?: string[];
+  activeSession?: string;
   updatedAt: Date;
 }
 
 const adminSessionSchema = new Schema<IAdminSession>({
   _id: { type: String },
-  activeSession: { type: String, required: true, default: '' },
+  activeSessions: { type: [String], default: [] },
+  activeSession: { type: String, default: '' },
   updatedAt: { type: Date, default: Date.now },
 });
 
@@ -365,5 +367,32 @@ const doctorSchema = new Schema<IDoctor>({
 
 export const DoctorModel: Model<IDoctor> =
   mongoose.models.Doctor || mongoose.model<IDoctor>('Doctor', doctorSchema);
+
+
+// ─── PROMOTIONAL AD POPUP ─────────────────────────────────────────────────────
+
+export interface IPromoAd extends Document {
+  id: string; // 'main_promo'
+  title: string;
+  imageUrl: string;
+  targetTab: string; // 'labs' | 'camps' | 'packages' | 'doctors' | 'home'
+  targetUrl?: string;
+  isActive: boolean;
+  updatedAt: Date;
+}
+
+const promoAdSchema = new Schema<IPromoAd>({
+  id: { type: String, required: true, unique: true, default: 'main_promo' },
+  title: { type: String, default: 'AssurX Diagnostics Promotional Camp' },
+  imageUrl: { type: String, default: '/promotional_camp.jpg' },
+  targetTab: { type: String, default: 'labs' },
+  targetUrl: { type: String, default: '' },
+  isActive: { type: Boolean, default: true },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+export const PromoAdModel: Model<IPromoAd> =
+  mongoose.models.PromoAd || mongoose.model<IPromoAd>('PromoAd', promoAdSchema);
+
 
 

@@ -109,6 +109,40 @@ function AppContent() {
   const [isCampModalOpen, setIsCampModalOpen] = useState(false);
   const [selectedCampType, setSelectedCampType] = useState('Free Health Check-up');
 
+  // Promotional Camp Popup Ad State
+  const [promoAd, setPromoAd] = useState<{
+    title: string;
+    imageUrl: string;
+    targetTab: string;
+    targetUrl?: string;
+    isActive: boolean;
+  }>({
+    title: 'AssurX Diagnostics Promotional Camp',
+    imageUrl: '/promotional_camp.jpg',
+    targetTab: 'labs',
+    targetUrl: '',
+    isActive: true,
+  });
+
+  const [isPromoAdOpen, setIsPromoAdOpen] = useState(() => {
+    return sessionStorage.getItem('assurx_promo_ad_dismissed') !== 'true';
+  });
+
+  const handleClosePromoAd = () => {
+    sessionStorage.setItem('assurx_promo_ad_dismissed', 'true');
+    setIsPromoAdOpen(false);
+  };
+
+  useEffect(() => {
+    fetch('/api/promo-ad')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.imageUrl) {
+          setPromoAd(data);
+        }
+      })
+      .catch((err) => console.warn('Could not load promo ad:', err));
+  }, []);
 
   const handleOpenCampModal = (campType: string = 'Free Health Check-up') => {
     setSelectedCampType(campType);
@@ -2312,6 +2346,40 @@ function AppContent() {
       )}
 
 
+
+      {/* --- PROMOTIONAL CAMP AD POPUP MODAL --- */}
+      {isPromoAdOpen && currentTab === 'home' && promoAd.isActive && promoAd.imageUrl && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs text-left animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 p-4 relative animate-scale-in flex flex-col items-center">
+            {/* Close button at the top right of the card, overlaying the image */}
+            <button
+              onClick={handleClosePromoAd}
+              className="absolute top-3 right-3 p-1.5 bg-slate-900/60 hover:bg-slate-900/80 rounded-full text-white transition-all cursor-pointer z-10 shadow-md"
+              title="Close Ad"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-full max-h-[80vh] overflow-y-auto rounded-2xl">
+              <img
+                src={promoAd.imageUrl}
+                alt={promoAd.title || "AssurX Diagnostics Promotional Camp"}
+                onClick={() => {
+                  if (promoAd.targetTab === 'camps') {
+                    handleOpenCampModal();
+                  } else if (promoAd.targetTab && promoAd.targetTab !== 'home') {
+                    setCurrentTab(promoAd.targetTab as any);
+                  }
+                  if (promoAd.targetUrl) {
+                    window.open(promoAd.targetUrl, '_blank');
+                  }
+                  setIsPromoAdOpen(false);
+                }}
+                className="w-full h-auto object-contain rounded-xl cursor-pointer hover:scale-[1.01] transition-transform duration-250"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- FLOATING PERSISTENT BOTTOM CALLBACK WIDGET --- */}
       <CallbackSticky selectedBranch={selectedBranch} centers={centers} onOpenCampModal={handleOpenCampModal} />

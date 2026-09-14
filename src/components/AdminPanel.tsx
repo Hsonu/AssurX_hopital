@@ -3,7 +3,8 @@ import {
   Building, ClipboardList, CheckCircle2, ChevronRight, Download, Eye, Clock,
   ShieldCheck, AlertCircle, PhoneCall, Plus, LogOut, ArrowLeft, X, TrendingUp,
   DollarSign, Activity, Settings, UserCheck, Trash2, Edit2, Search, Filter, RefreshCw, MapPin,
-  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning, Tent, MessageSquare
+  FileText, Briefcase, LayoutGrid, ArrowUp, ArrowDown, MessageSquareWarning, Tent, MessageSquare,
+  Megaphone, Image as ImageIcon, Upload, Sparkles
 } from 'lucide-react';
 import { Booking, Patient, DiagnosticService, HealthPackage, CartItem, HomepageSection, ClinicCenter, PatientComplaint, Doctor } from '../types';
 
@@ -198,7 +199,17 @@ export default function AdminPanel({
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages' | 'doctors' | 'security'>('dispatcher');
+  const [activeTab, setActiveTab] = useState<'dispatcher' | 'catalog' | 'manual' | 'analytics' | 'prescriptions' | 'careers' | 'sections' | 'branches' | 'complaints' | 'packages' | 'doctors' | 'security' | 'promoad'>('dispatcher');
+
+  // Promotional Popup Ad Configuration State
+  const [promoAdConfig, setPromoAdConfig] = useState({
+    title: 'AssurX Diagnostics Promotional Camp',
+    imageUrl: '/promotional_camp.jpg',
+    targetTab: 'labs',
+    targetUrl: '',
+    isActive: true,
+  });
+  const [promoAdSaving, setPromoAdSaving] = useState(false);
 
   // Security credentials state
   const [newAdminPassword, setNewAdminPassword] = useState('');
@@ -1013,21 +1024,8 @@ export default function AdminPanel({
       const bookingsRes = await adminFetch('/api/admin/bookings');
       if (bookingsRes.ok) {
         const bookingsData = await bookingsRes.json();
-
-        // Merge: Include any locally-cached bookings not yet in DB response
-        // (handles race condition where admin panel opens before DB read completes)
-        const cachedStr = localStorage.getItem('assurx_bookings');
-        const cachedBookings: any[] = cachedStr ? JSON.parse(cachedStr) : [];
-        const dbIds = new Set(bookingsData.map((b: any) => String(b.id)));
-        const localOnlyBookings = cachedBookings.filter(
-          (b: any) => b.id && !dbIds.has(String(b.id)) && !String(b.id).startsWith('b-admin-')
-        );
-        const mergedBookings = localOnlyBookings.length > 0
-          ? [...localOnlyBookings, ...bookingsData]
-          : bookingsData;
-
-        setBookings(mergedBookings);
-        localStorage.setItem('assurx_bookings', JSON.stringify(mergedBookings));
+        setBookings(bookingsData);
+        localStorage.setItem('assurx_bookings', JSON.stringify(bookingsData));
       } else if (bookingsRes.status === 401) {
         // Session kicked — the sessionGuard will fire the kick handler; stop polling
         return;
@@ -1052,6 +1050,17 @@ export default function AdminPanel({
       } else if (careersRes.status !== 401) {
         throw new Error(`Real-time careers fetch returned status ${careersRes.status}`);
       }
+
+      // Fetch Promo Ad Configuration
+      try {
+        const promoRes = await fetch('/api/promo-ad');
+        if (promoRes.ok) {
+          const promoData = await promoRes.json();
+          if (promoData && promoData.imageUrl) {
+            setPromoAdConfig(promoData);
+          }
+        }
+      } catch (_) { /* continue */ }
     } catch (error) {
       console.error("Failed to load real-time admin records, using cached state.", error);
       // Fallback to LocalStorage
@@ -1065,6 +1074,45 @@ export default function AdminPanel({
       if (cachedApplications) setApplications(JSON.parse(cachedApplications));
     } finally {
       if (!silent) setIsSyncing(false);
+    }
+  };
+
+  const handlePromoImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image size should be less than 5MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPromoAdConfig(prev => ({ ...prev, imageUrl: reader.result as string }));
+        showToast('Image selected! Click "Save & Publish Ad Settings" to apply.', 'info');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSavePromoAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromoAdSaving(true);
+    try {
+      const res = await adminFetch('/api/admin/promo-ad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(promoAdConfig),
+      });
+
+      if (res.ok) {
+        showToast('🎉 Homepage Promotional Popup Ad updated successfully!', 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to update promo ad', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Network error updating promo ad', 'error');
+    } finally {
+      setPromoAdSaving(false);
     }
   };
 
@@ -2112,6 +2160,16 @@ export default function AdminPanel({
           <MessageSquareWarning className="w-4 h-4 text-amber-600" />
           <span>Patient Complaints ({complaints.length})</span>
           {activeTab === 'complaints' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 rounded-full"></span>}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('promoad')}
+          className={`pb-3 transition-colors relative flex items-center gap-1.5 cursor-pointer ${activeTab === 'promoad' ? 'text-amber-800 font-black' : 'hover:text-slate-700'
+            }`}
+        >
+          <Megaphone className="w-4 h-4 text-amber-600" />
+          <span>Homepage Popup Ad {promoAdConfig.isActive ? '🟢' : '⚪'}</span>
+          {activeTab === 'promoad' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600 rounded-full"></span>}
         </button>
 
         <button
@@ -4890,6 +4948,200 @@ export default function AdminPanel({
                 {securityLoading ? 'Updating credentials...' : 'Save Credentials'}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Tab: Promotional Popup Ad Manager */}
+        {activeTab === 'promoad' && (
+          <div className="space-y-6 animate-fade-in text-left">
+            {/* Header banner */}
+            <div className="bg-[#fcfcfb] border border-gray-200 p-5 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-amber-600 tracking-widest uppercase block">MARKETING & CAMPAIGNS</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    promoAdConfig.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {promoAdConfig.isActive ? '🟢 Active on Homepage' : '⚪ Disabled / Hidden'}
+                  </span>
+                </div>
+                <h3 className="text-base font-serif font-bold text-slate-800 mt-1">Homepage Promotional Popup Ad Banner</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Manage the promotional popup banner that appears to patients when visiting the website.</p>
+              </div>
+
+              {/* Quick status toggle */}
+              <button
+                type="button"
+                onClick={() => setPromoAdConfig(prev => ({ ...prev, isActive: !prev.isActive }))}
+                className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  promoAdConfig.isActive
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-100'
+                    : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                }`}
+              >
+                <span>{promoAdConfig.isActive ? 'Ad is Enabled (Click to Turn Off)' : 'Ad is Disabled (Click to Enable)'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Form settings */}
+              <form onSubmit={handleSavePromoAd} className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5">
+                <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-emerald-600" />
+                  <span>Ad Configuration & Redirection</span>
+                </h4>
+
+                {/* Campaign Title */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10.5px] font-black text-slate-500 uppercase tracking-wider">Campaign Title / Internal Note</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. AssurX Diagnostics Promotional Camp"
+                    value={promoAdConfig.title}
+                    onChange={(e) => setPromoAdConfig(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-slate-50/50 focus:bg-white"
+                  />
+                </div>
+
+                {/* Ad Image URL & Upload File */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10.5px] font-black text-slate-500 uppercase tracking-wider">Promotional Banner Image</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Paste image URL or use upload button"
+                      value={promoAdConfig.imageUrl}
+                      onChange={(e) => setPromoAdConfig(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      className="flex-1 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-slate-50/50 focus:bg-white"
+                    />
+                    <label className="px-4 py-2.5 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all flex-shrink-0">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload File</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePromoImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] text-slate-400 font-medium">Supports JPG, PNG, WebP (Max 5MB)</span>
+                    <button
+                      type="button"
+                      onClick={() => setPromoAdConfig(prev => ({ ...prev, imageUrl: '/promotional_camp.jpg' }))}
+                      className="text-[10px] text-emerald-600 font-bold hover:underline cursor-pointer"
+                    >
+                      Restore Original Camp Ad Image
+                    </button>
+                  </div>
+                </div>
+
+                {/* Target Navigation Action */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10.5px] font-black text-slate-500 uppercase tracking-wider">On-Click Action (Where user goes when clicking the Ad)</label>
+                  <select
+                    value={promoAdConfig.targetTab}
+                    onChange={(e) => setPromoAdConfig(prev => ({ ...prev, targetTab: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 bg-slate-50/50 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="camps">⛺ Open Free Health Camp Application Modal</option>
+                    <option value="labs">🧪 Open Diagnostic Laboratory Tests Catalog</option>
+                    <option value="packages">📦 Open Health Checkup Packages</option>
+                    <option value="doctors">👨‍⚕️ Open Specialist Doctors Directory</option>
+                    <option value="home">🏠 Stay on Homepage (Close Ad)</option>
+                  </select>
+                </div>
+
+                {/* Optional External Target URL */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10.5px] font-black text-slate-500 uppercase tracking-wider">External Link URL (Optional)</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com (optional link to open in new tab)"
+                    value={promoAdConfig.targetUrl || ''}
+                    onChange={(e) => setPromoAdConfig(prev => ({ ...prev, targetUrl: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-slate-50/50 focus:bg-white"
+                  />
+                </div>
+
+                {/* Active Toggle Box */}
+                <div className="p-4 bg-slate-50 border border-slate-150 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-xs text-slate-800 block">Show Popup to Visitors</span>
+                    <span className="text-[10.5px] text-slate-400">When enabled, visitors on the home page will see this promotional popup.</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={promoAdConfig.isActive}
+                      onChange={(e) => setPromoAdConfig(prev => ({ ...prev, isActive: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+
+                {/* Submit button */}
+                <div className="pt-3 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={promoAdSaving}
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-100 cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{promoAdSaving ? 'Saving Changes...' : 'Save & Publish Ad Settings'}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Live Preview Card */}
+              <div className="lg:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-sky-600" />
+                      <span>Live Popup Preview</span>
+                    </h4>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Interactive Mockup</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2">This is how the popup looks to patients when they open the homepage:</p>
+                </div>
+
+                {/* Mockup Container */}
+                <div className="bg-slate-900/40 p-4 rounded-2xl flex items-center justify-center border border-slate-100 min-h-[300px]">
+                  <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-2.5 relative max-w-xs w-full text-center">
+                    <div className="absolute top-2 right-2 p-1 bg-slate-900/60 rounded-full text-white text-[10px]">
+                      <X className="w-3.5 h-3.5" />
+                    </div>
+                    {promoAdConfig.imageUrl ? (
+                      <img
+                        src={promoAdConfig.imageUrl}
+                        alt={promoAdConfig.title || 'Ad Preview'}
+                        className="w-full h-auto max-h-[260px] object-contain rounded-xl"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/promotional_camp.jpg';
+                        }}
+                      />
+                    ) : (
+                      <div className="h-48 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs font-bold">
+                        No Image Provided
+                      </div>
+                    )}
+                    <div className="pt-2">
+                      <p className="text-[10.5px] font-bold text-slate-700 truncate">{promoAdConfig.title}</p>
+                      <p className="text-[9px] text-emerald-600 font-extrabold uppercase mt-0.5">Click opens: {promoAdConfig.targetTab}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/70 border border-amber-200/50 p-3 rounded-2xl text-[10.5px] text-amber-800 font-medium">
+                  💡 <strong>Tip:</strong> You can change the image anytime by pasting a link or uploading a banner from your computer. Click &quot;Save &amp; Publish&quot; to update across all devices instantly.
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
