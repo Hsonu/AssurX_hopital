@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sonurajsonuraj4515_db_user:Sonu@cluster0.cxyxqda.mongodb.net/assurx?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://bmandal1997_db_user:Sonu%40123456789@cluster0.6aeqnar.mongodb.net/assurx?retryWrites=true&w=majority&appName=Cluster0';
 
 if (!process.env.MONGODB_URI) {
   console.warn("⚠️ WARNING: MONGODB_URI environment variable is NOT set! Falling back to cloud database.");
@@ -26,7 +26,12 @@ export async function connectDB() {
     console.log(`Connecting to MongoDB: ${maskedURI}`);
 
     await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      autoIndex: false,
     });
     isConnected = true;
     console.log(`✅ MongoDB connected successfully.`);
