@@ -169,8 +169,8 @@ function isValidAdminKey(key: any): boolean {
 }
 
 async function startServer() {
-  const defaultEmail = process.env.ADMIN_EMAIL || "sonusonuraj415@gmail.com";
-  const defaultPassword = process.env.ADMIN_PASSWORD || "assurxlab2026";
+  const defaultEmail = process.env.ADMIN_EMAIL || "superadmin@assurx.com";
+  const defaultPassword = process.env.ADMIN_PASSWORD || "assurx_super_2026";
 
   if (!process.env.ADMIN_API_KEY) {
     dynamicAdminKey = crypto.randomUUID();
@@ -199,6 +199,36 @@ async function startServer() {
       email: (process.env.ADMIN_EMAIL_3 || "admin3@assurx.com").trim().toLowerCase(),
       password: (process.env.ADMIN_PASSWORD_3 || "assurx_adm3_1e2f3g").trim(),
       key: (process.env.ADMIN_KEY_3 || "key_adm3_5d4e3f").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_4 || "admin4@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_4 || "assurx_adm4_8h9i0j").trim(),
+      key: (process.env.ADMIN_KEY_4 || "key_adm4_2g1h0i").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_5 || "admin5@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_5 || "assurx_adm5_3k4l5m").trim(),
+      key: (process.env.ADMIN_KEY_5 || "key_adm5_6n7o8p").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_6 || "admin6@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_6 || "assurx_adm6_9q0r1s").trim(),
+      key: (process.env.ADMIN_KEY_6 || "key_adm6_4t5u6v").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_7 || "admin7@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_7 || "assurx_adm7_2w3x4y").trim(),
+      key: (process.env.ADMIN_KEY_7 || "key_adm7_7z8a9b").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_8 || "admin8@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_8 || "assurx_adm8_5c6d7e").trim(),
+      key: (process.env.ADMIN_KEY_8 || "key_adm8_0f1g2h").trim()
+    },
+    {
+      email: (process.env.ADMIN_EMAIL_9 || "admin9@assurx.com").trim().toLowerCase(),
+      password: (process.env.ADMIN_PASSWORD_9 || "assurx_adm9_8i9j0k").trim(),
+      key: (process.env.ADMIN_KEY_9 || "key_adm9_3l4m5n").trim()
     }
   ];
 

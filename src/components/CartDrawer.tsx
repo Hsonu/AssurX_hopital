@@ -31,7 +31,7 @@ export default function CartDrawer({
   const [collectionType, setCollectionType] = useState<'home' | 'center'>('center');
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('08:00 AM - 10:00 AM');
-  
+
   // Patient details state
   const [patient, setPatient] = useState<Patient>({
     name: '',
@@ -61,8 +61,8 @@ export default function CartDrawer({
   // Check if any cart item is a scan (MRI, CT, USG, X-Ray, etc. cannot be done at home)
   const hasScanItem = cart.some(item => {
     // If the category is scan or name starts with MRI, CT, Ultrasound, X-Ray, Mammogram, ECHO, DEXA
-    return item.category === 'scan' || 
-           /mri|ct|ultrasound|usg|x-ray|mammogram|echo|dexa/i.test(item.name);
+    return item.category === 'scan' ||
+      /mri|ct|ultrasound|usg|x-ray|mammogram|echo|dexa/i.test(item.name);
   });
 
   // Safe fallback: if there is a scan, force collection to center
@@ -120,7 +120,7 @@ export default function CartDrawer({
   return (
     <div className="fixed inset-0 z-55 overflow-hidden flex justify-end" id="cart-drawer-container">
       {/* Overlay backdrop */}
-      <div 
+      <div
         onClick={onClose}
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
       ></div>
@@ -133,7 +133,7 @@ export default function CartDrawer({
             <ShoppingBag className="w-5 h-5 text-teal-600" />
             <h3 className="font-extrabold text-slate-800 text-base md:text-lg tracking-tight">Your Booking Cart ({cart.length})</h3>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-1.5 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
           >
@@ -186,7 +186,7 @@ export default function CartDrawer({
                             <p className="text-[9px] text-slate-400 line-through">₹{item.price}</p>
                           )}
                         </div>
-                        <button 
+                        <button
                           onClick={() => onRemoveFromCart(item.itemId)}
                           className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-slate-50 transition-colors"
                         >
@@ -288,11 +288,10 @@ export default function CartDrawer({
                 <div className="flex flex-wrap gap-2 text-left">
                   <button
                     onClick={() => setPatient({ name: patient.name || '', age: patient.age, gender: patient.gender, relationship: 'Self' })}
-                    className={`px-3 py-2 border rounded-xl text-xs font-bold text-left transition-colors cursor-pointer flex-1 min-w-[120px] ${
-                      patient.relationship === 'Self'
-                        ? 'border-teal-600 bg-teal-55/20 text-teal-800'
-                        : 'border-slate-200 hover:bg-slate-55'
-                    }`}
+                    className={`px-3 py-2 border rounded-xl text-xs font-bold text-left transition-colors cursor-pointer flex-1 min-w-[120px] ${patient.relationship === 'Self'
+                      ? 'border-teal-600 bg-teal-55/20 text-teal-800'
+                      : 'border-slate-200 hover:bg-slate-55'
+                      }`}
                   >
                     <div>Self (Primary)</div>
                     <div className="text-[10px] font-medium text-slate-500 mt-0.5">
@@ -304,11 +303,10 @@ export default function CartDrawer({
                     <button
                       key={index}
                       onClick={() => setPatient(member)}
-                      className={`px-3 py-2 border rounded-xl text-xs font-bold text-left transition-colors cursor-pointer flex-1 min-w-[120px] ${
-                        patient.name === member.name && patient.relationship === member.relationship
-                          ? 'border-teal-600 bg-teal-55/20 text-teal-800'
-                          : 'border-slate-200 hover:bg-slate-55'
-                      }`}
+                      className={`px-3 py-2 border rounded-xl text-xs font-bold text-left transition-colors cursor-pointer flex-1 min-w-[120px] ${patient.name === member.name && patient.relationship === member.relationship
+                        ? 'border-teal-600 bg-teal-55/20 text-teal-800'
+                        : 'border-slate-200 hover:bg-slate-55'
+                        }`}
                     >
                       <div>{member.relationship}</div>
                       <div className="text-[10px] font-medium text-slate-500 mt-0.5 truncate">{member.name}</div>
@@ -365,11 +363,10 @@ export default function CartDrawer({
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setCollectionType('center')}
-                      className={`p-3 border rounded-xl text-left flex flex-col gap-1 transition-all cursor-pointer ${
-                        activeCollectionType === 'center'
-                          ? 'border-teal-600 bg-teal-55/20 text-teal-800'
-                          : 'border-slate-200 hover:bg-slate-55'
-                      }`}
+                      className={`p-3 border rounded-xl text-left flex flex-col gap-1 transition-all cursor-pointer ${activeCollectionType === 'center'
+                        ? 'border-teal-600 bg-teal-55/20 text-teal-800'
+                        : 'border-slate-200 hover:bg-slate-55'
+                        }`}
                     >
                       <Building className="w-4 h-4 text-teal-600" />
                       <span className="font-bold text-xs">Walk-in at Center</span>
@@ -378,11 +375,10 @@ export default function CartDrawer({
 
                     <button
                       onClick={() => setCollectionType('home')}
-                      className={`p-3 border rounded-xl text-left flex flex-col gap-1 transition-all cursor-pointer ${
-                        activeCollectionType === 'home'
-                          ? 'border-teal-600 bg-teal-55/20 text-teal-800'
-                          : 'border-slate-200 hover:bg-slate-55'
-                      }`}
+                      className={`p-3 border rounded-xl text-left flex flex-col gap-1 transition-all cursor-pointer ${activeCollectionType === 'home'
+                        ? 'border-teal-600 bg-teal-55/20 text-teal-800'
+                        : 'border-slate-200 hover:bg-slate-55'
+                        }`}
                     >
                       <Home className="w-4 h-4 text-teal-600" />
                       <span className="font-bold text-xs">Home Sample Collection</span>
