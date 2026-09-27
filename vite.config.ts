@@ -23,6 +23,14 @@ export default defineConfig(() => {
       // Reduce chunk size warning threshold
       chunkSizeWarningLimit: 600,
     },
+    esbuild: {
+      target: 'esnext',
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'esnext',
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

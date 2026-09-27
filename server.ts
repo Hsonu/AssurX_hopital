@@ -1636,14 +1636,19 @@ async function startServer() {
 
   // --- VITE INTERFACES & STATIC FILES ---
 
-  if (process.env.NODE_ENV !== "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  const hasDist = fs.existsSync(path.join(distPath, "index.html"));
+  const isProduction = process.env.NODE_ENV === "production" || hasDist;
+
+  if (!isProduction) {
+    console.log("🚀 Starting Vite dev server middleware...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    console.log("⚡ Serving production static build from ./dist");
     // === Hostinger VPS: Aggressive caching for static assets (faster on slow networks) ===
     app.use(express.static(distPath, {
       maxAge: '7d',              // Cache static files for 7 days
