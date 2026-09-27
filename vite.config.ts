@@ -8,6 +8,20 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     build: {
       target: 'esnext',
+      // === Code splitting for faster loading on slow networks ===
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Split vendor libraries into separate chunks
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-firebase': ['firebase/app', 'firebase/auth'],
+            'vendor-motion': ['motion'],
+            'vendor-icons': ['lucide-react'],
+          },
+        },
+      },
+      // Reduce chunk size warning threshold
+      chunkSizeWarningLimit: 600,
     },
     resolve: {
       alias: {

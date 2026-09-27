@@ -18,21 +18,26 @@ import { useAuth } from './lib/auth.ts';
 import { onSessionKicked, getUserSessionId, getAdminSessionId } from './lib/sessionGuard.ts';
 import Header from './components/Header';
 import Hero from './components/Hero';
-import PrescriptionUpload from './components/PrescriptionUpload';
-import CartDrawer from './components/CartDrawer';
-import CheckoutModal from './components/CheckoutModal';
-import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 import logoImg from '../logo.jpeg';
-import CallbackSticky from './components/CallbackSticky';
-import DirectBookModal from './components/DirectBookModal';
-import DoctorAppointmentModal from './components/DoctorAppointmentModal';
-import CampApplicationModal from './components/CampApplicationModal';
-import { TrackOrderSection, HiringCareersSection } from './components/HearingAndTracking';
-import MyBookingsSection from './components/MyBookingsSection';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
-import LegalPages from './components/LegalPages';
 import { CUSTOMER_TESTIMONIALS, POPULAR_TESTS_DATA, DIAGNOSTIC_SERVICES } from './data';
+
+// === PERF: Lazy-load heavy components (only loaded when needed) ===
+const PrescriptionUpload = React.lazy(() => import('./components/PrescriptionUpload'));
+const CartDrawer = React.lazy(() => import('./components/CartDrawer'));
+const CheckoutModal = React.lazy(() => import('./components/CheckoutModal'));
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
+const CallbackSticky = React.lazy(() => import('./components/CallbackSticky'));
+const DirectBookModal = React.lazy(() => import('./components/DirectBookModal'));
+const DoctorAppointmentModal = React.lazy(() => import('./components/DoctorAppointmentModal'));
+const CampApplicationModal = React.lazy(() => import('./components/CampApplicationModal'));
+const LegalPages = React.lazy(() => import('./components/LegalPages'));
+const MyBookingsSection = React.lazy(() => import('./components/MyBookingsSection'));
+
+// Lazy-load named exports with wrapper
+const LazyTrackOrderSection = React.lazy(() => import('./components/HearingAndTracking').then(m => ({ default: m.TrackOrderSection })));
+const LazyHiringCareersSection = React.lazy(() => import('./components/HearingAndTracking').then(m => ({ default: m.HiringCareersSection })));
 
 const getPackageImage = (id: string) => {
   switch (id) {
@@ -133,16 +138,7 @@ function AppContent() {
     setIsPromoAdOpen(false);
   };
 
-  useEffect(() => {
-    fetch('/api/promo-ad')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.imageUrl) {
-          setPromoAd(data);
-        }
-      })
-      .catch((err) => console.warn('Could not load promo ad:', err));
-  }, []);
+  // Promo ad is now fetched via /api/init combined endpoint
 
   const handleOpenCampModal = (campType: string = 'Free Health Check-up') => {
     setSelectedCampType(campType);
@@ -279,61 +275,11 @@ function AppContent() {
     }
   };
 
-  useEffect(() => {
-    // Fetch services
-    fetch('/api/services')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load services");
-        return res.json();
-      })
-      .then(data => setServices(data))
-      .catch(err => {
-        console.error("Error fetching services:", err);
-      });
-
-    // Fetch packages
-    fetch('/api/packages')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load packages");
-        return res.json();
-      })
-      .then(data => setPackages(data))
-      .catch(err => {
-        console.error("Error fetching packages:", err);
-      });
-  }, []);
-
   // Dynamic clinic centers loaded from MongoDB
   const [centers, setCenters] = useState<ClinicCenter[]>([]);
 
-  // Fetch centers from API
-  useEffect(() => {
-    fetch('/api/centers')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load centers");
-        return res.json();
-      })
-      .then(data => setCenters(data))
-      .catch(err => {
-        console.error("Error fetching centers:", err);
-      });
-  }, []);
-
   // Dynamic doctors directory loaded from MongoDB
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-
-  // Fetch doctors from API
-  useEffect(() => {
-    fetch('/api/doctors')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load doctors");
-        return res.json();
-      })
-      .then(data => setDoctors(data))
-      .catch(err => {
-        console.error("Error fetching doctors:", err);
-      });
-  }, []);
 
   // Dynamic testimonials loaded from MongoDB
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -375,39 +321,35 @@ function AppContent() {
     }
   };
 
-  // Fetch testimonials from API
-  useEffect(() => {
-    fetch('/api/testimonials')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load testimonials");
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTestimonials(data);
-        } else {
-          setTestimonials(CUSTOMER_TESTIMONIALS);
-        }
-      })
-      .catch(err => {
-        console.error("Error fetching testimonials, falling back to local copy:", err);
-        setTestimonials(CUSTOMER_TESTIMONIALS);
-      });
-  }, []);
-
   // Dynamic FAQs loaded from MongoDB
   const [faqs, setFaqs] = useState<{ q: string; a: string }[]>([]);
 
-  // Fetch FAQs from API
   useEffect(() => {
-    fetch('/api/faqs')
+    // === PERF FIX: Single combined API call instead of 6+ separate ones ===
+    // This dramatically reduces load time on slow networks (1 round-trip vs 6)
+    fetch('/api/init')
       .then(res => {
-        if (!res.ok) throw new Error("Failed to load FAQs");
+        if (!res.ok) throw new Error("Failed to load initial data");
         return res.json();
       })
-      .then(data => setFaqs(data))
+      .then(data => {
+        if (data.services) setServices(data.services);
+        if (data.packages) setPackages(data.packages);
+        if (data.centers) setCenters(data.centers);
+        if (data.doctors) setDoctors(data.doctors);
+        if (data.testimonials && data.testimonials.length > 0) {
+          setTestimonials(data.testimonials);
+        } else {
+          setTestimonials(CUSTOMER_TESTIMONIALS);
+        }
+        if (data.faqs) setFaqs(data.faqs);
+        if (data.promoAd && data.promoAd.imageUrl) {
+          setPromoAd(data.promoAd);
+        }
+      })
       .catch(err => {
-        console.error("Error fetching FAQs:", err);
+        console.error("Error loading initial data:", err);
+        setTestimonials(CUSTOMER_TESTIMONIALS);
       });
   }, []);
 
@@ -2219,11 +2161,12 @@ function AppContent() {
 
         {/* TAB 4.5: HIRING & CAREERS */}
         {currentTab === 'hiring' && (
-          <HiringCareersSection
-            selectedBranch={selectedBranch}
-          />
+          <React.Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-teal-600" /></div>}>
+            <LazyHiringCareersSection
+              selectedBranch={selectedBranch}
+            />
+          </React.Suspense>
         )}
-
         {/* TAB 4.8: MY PATIENT BOOKINGS PORTAL */}
         {currentTab === 'bookings' && (
           <MyBookingsSection

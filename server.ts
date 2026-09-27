@@ -3,6 +3,7 @@ import path from "path";
 import https from "https";
 import crypto from "crypto";
 import fs from "fs";
+import compression from "compression";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser, updateUserSession, getUserActiveSession } from "./src/db/users.ts";
@@ -13,18 +14,6 @@ import patientRoutes from "./src/routes/patientRoutes.ts";
 import { connectDB } from "./src/db/index.ts";
 
 
-function pingServer(url: string) {
-  try {
-    const formattedUrl = url.endsWith("/") ? `${url}api/health` : `${url}/api/health`;
-    https.get(formattedUrl, (res) => {
-      console.log(`[Self-Ping] Status Code: ${res.statusCode} at ${new Date().toISOString()}`);
-    }).on("error", (err) => {
-      console.error("[Self-Ping] Error:", err.message);
-    });
-  } catch (err: any) {
-    console.error("[Self-Ping] Exception:", err.message);
-  }
-}
 import {
   createBooking,
   getUserBookings,
@@ -241,6 +230,28 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  // === FIX: Disable QUIC/HTTP3 to prevent ERR_QUIC_PROTOCOL_ERROR on slow networks ===
+  // This tells browsers NOT to upgrade to HTTP/3 (QUIC), which fails on unstable connections
+  app.use((req, res, next) => {
+    // Force disable QUIC/HTTP3 — prevents ERR_QUIC_PROTOCOL_ERROR on mobile/slow networks
+    res.setHeader("Alt-Svc", 'clear');
+    // Additional header to prevent protocol upgrade issues
+    res.setHeader("Alt-Used", req.headers.host || '');
+    next();
+  });
+
+  // === FIX: Proper gzip/brotli compression for faster loading on slow networks ===
+  app.use(compression({
+    level: 6,                    // Good balance of speed vs compression ratio
+    threshold: 1024,             // Only compress responses > 1KB
+    filter: (req, res) => {
+      // Don't compress event streams
+      if (req.headers.accept === 'text/event-stream') return false;
+      // Use default filter for everything else
+      return compression.filter(req, res);
+    }
+  }));
+
   // JSON parsing middleware
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -379,6 +390,43 @@ async function startServer() {
   // Health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // === Combined Init Endpoint: Fetch ALL initial data in one request ===
+  // This reduces 6+ parallel API calls to 1, dramatically faster on slow networks
+  let initDataCache: { data: any; timestamp: number } | null = null;
+  const INIT_CACHE_TTL = 60000; // Cache for 60 seconds
+
+  app.get("/api/init", async (req, res) => {
+    try {
+      const now = Date.now();
+      // Return cached data if fresh enough
+      if (initDataCache && (now - initDataCache.timestamp) < INIT_CACHE_TTL) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(initDataCache.data);
+      }
+
+      // Fetch all data in parallel
+      const [services, packages, centers, doctors, testimonials, faqs, promoAdData] = await Promise.all([
+        getAllServices().catch(() => []),
+        getAllPackages().catch(() => []),
+        getAllCenters().catch(() => []),
+        getAllDoctors().catch(() => []),
+        getAllTestimonials().catch(() => []),
+        getAllFAQs().catch(() => []),
+        getPromoAd().catch(() => null),
+      ]);
+
+      const data = { services, packages, centers, doctors, testimonials, faqs, promoAd: promoAdData };
+      
+      // Cache the result
+      initDataCache = { data, timestamp: now };
+      res.setHeader('X-Cache', 'MISS');
+      res.json(data);
+    } catch (error: any) {
+      console.error("Error in /api/init:", error);
+      res.status(500).json({ error: "Failed to load initial data" });
+    }
   });
 
   // Create Razorpay Order
@@ -1596,30 +1644,41 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    // === Hostinger VPS: Aggressive caching for static assets (faster on slow networks) ===
+    app.use(express.static(distPath, {
+      maxAge: '7d',              // Cache static files for 7 days
+      etag: true,                // Enable ETag for cache validation
+      lastModified: true,        // Enable Last-Modified header
+      immutable: true,           // Hashed assets never change
+    }));
     app.get("/{*splat}", (req, res) => {
+      // HTML files should not be cached (always serve latest version)
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+    console.log(`📌 Environment: ${process.env.NODE_ENV || "development"}`);
 
-    // Self-pinging routine to keep the Render instance awake (only in production)
-    const APP_URL = process.env.APP_URL || "https://assurx-hopital-g2wu.onrender.com/";
-    if (process.env.NODE_ENV === "production" && APP_URL) {
-      console.log(`Initializing self-ping to ${APP_URL} every 5 minutes`);
-      // Ping once shortly after boot (10 seconds delay)
-      setTimeout(() => {
-        pingServer(APP_URL);
-      }, 10000);
-
-      // Ping every 5 minutes
+    // === Hostinger VPS: Health check logging (VPS stays always-on, no self-ping needed) ===
+    if (process.env.NODE_ENV === "production") {
+      // Log server uptime every 10 minutes for monitoring
       setInterval(() => {
-        pingServer(APP_URL);
-      }, 5 * 60 * 1000);
+        const uptime = process.uptime();
+        const hours = Math.floor(uptime / 3600);
+        const mins = Math.floor((uptime % 3600) / 60);
+        console.log(`[Health] Server uptime: ${hours}h ${mins}m | Memory: ${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB | ${new Date().toISOString()}`);
+      }, 10 * 60 * 1000);
     }
   });
+
+  // === Server timeouts for slow network resilience ===
+  server.keepAliveTimeout = 65000; // 65 seconds (longer than default 5s, helps slow connections)
+  server.headersTimeout = 66000;   // Must be > keepAliveTimeout
+  server.requestTimeout = 120000;  // 2 minutes max for a request (slow networks)
+  server.timeout = 120000;         // Overall socket timeout
 
   server.on("error", (err: any) => {
     if (err.code === "EADDRINUSE") {

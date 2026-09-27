@@ -9,12 +9,19 @@
   <title>AssurX Diagnostics</title>
   <meta name="description"
     content="AssurX Scans & Labs is India’s premier diagnostics and advanced medical imaging network. Get affordable high-end MRI, CT scans, and complete laboratory blood analyses." />
-  <!-- html2pdf library for direct PDF generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+  <!-- DNS prefetch and preconnect for faster external resource loading -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+  <link rel="dns-prefetch" href="https://images.unsplash.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- html2pdf library for direct PDF generation (deferred to not block rendering) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
     integrity="sha512-GsLlZN/3F2ErC5IfS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvCpuqpYgOJKw1UrLoECWQNtE6tGbCwGgCNIPKA=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- Razorpay Standard Checkout Integration -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- Razorpay Standard Checkout Integration (async - only needed when user clicks pay) -->
+  <script async src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 
 <body>
