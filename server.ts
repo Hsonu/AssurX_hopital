@@ -157,6 +157,24 @@ function isValidAdminKey(key: any): boolean {
   });
 }
 
+// === CRASH PREVENTION: Prevent server from dying on uncaught errors ===
+// These handlers keep the server alive even when unexpected errors occur,
+// which fixes ERR_CONNECTION_CLOSED on production VPS
+process.on('uncaughtException', (err) => {
+  console.error('❌ UNCAUGHT EXCEPTION (server still running):', err.message);
+  console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION (server still running):', reason);
+});
+
+// Graceful shutdown on SIGTERM (Hostinger/PM2/Docker stop signals)
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received. Shutting down gracefully...');
+  process.exit(0);
+});
+
 async function startServer() {
   const defaultEmail = process.env.ADMIN_EMAIL || "superadmin@assurx.com";
   const defaultPassword = process.env.ADMIN_PASSWORD || "assurx_super_2026";
@@ -1695,4 +1713,14 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('❌ FATAL: Server failed to start:', err);
+  // Retry after 5 seconds instead of crashing
+  setTimeout(() => {
+    console.log('🔄 Retrying server startup...');
+    startServer().catch((retryErr) => {
+      console.error('❌ FATAL: Server retry also failed:', retryErr);
+      process.exit(1);
+    });
+  }, 5000);
+});

@@ -556,7 +556,19 @@ export default function Header({
             <img src={logoImg} alt="AssurX Diagnostics" className="h-8.5 w-auto rounded-lg object-contain bg-white/95 px-1 py-0.5" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Admin Console Button - Always visible on mobile */}
+            <button
+              onClick={() => handleTabClick('admin')}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${currentTab === 'admin'
+                ? 'bg-white text-[#2D006B] shadow-md'
+                : 'bg-red-600 text-white hover:bg-red-500 shadow-md shadow-red-900/10'
+                }`}
+              title="Admin Console"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Admin</span>
+            </button>
             <a
               href="tel:+919830678387"
               className="p-1.5 rounded-full bg-[#AD1457] text-white shadow-md"
