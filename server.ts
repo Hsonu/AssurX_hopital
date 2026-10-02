@@ -248,13 +248,17 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  // === FIX: Disable QUIC/HTTP3 to prevent ERR_QUIC_PROTOCOL_ERROR on slow networks ===
-  // This tells browsers NOT to upgrade to HTTP/3 (QUIC), which fails on unstable connections
+  // === FIX: Prevent ERR_CONNECTION_CLOSED — Keep connections alive ===
   app.use((req, res, next) => {
     // Force disable QUIC/HTTP3 — prevents ERR_QUIC_PROTOCOL_ERROR on mobile/slow networks
     res.setHeader("Alt-Svc", 'clear');
     // Additional header to prevent protocol upgrade issues
     res.setHeader("Alt-Used", req.headers.host || '');
+    // Keep connection alive — prevents Hostinger proxy from closing connection early
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Keep-Alive", "timeout=120");
+    // Prevent caching issues that cause stale connections
+    res.setHeader("X-Accel-Buffering", "no");
     next();
   });
 
@@ -1652,6 +1656,15 @@ async function startServer() {
 
 
 
+  // === GLOBAL ERROR HANDLER: Catch all route errors without killing the server ===
+  // This prevents ERR_CONNECTION_CLOSED when any API route throws an unexpected error
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(`❌ Route Error [${req.method} ${req.path}]:`, err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error. Please try again." });
+    }
+  });
+
   // --- VITE INTERFACES & STATIC FILES ---
 
   const distPath = path.join(process.cwd(), "dist");
@@ -1667,7 +1680,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     console.log("⚡ Serving production static build from ./dist");
-    // === Hostinger VPS: Aggressive caching for static assets (faster on slow networks) ===
+    // === Hostinger: Aggressive caching for static assets (faster on slow networks) ===
     app.use(express.static(distPath, {
       maxAge: '7d',              // Cache static files for 7 days
       etag: true,                // Enable ETag for cache validation
@@ -1685,14 +1698,30 @@ async function startServer() {
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`📌 Environment: ${process.env.NODE_ENV || "development"}`);
 
-    // === Hostinger VPS: Health check logging (VPS stays always-on, no self-ping needed) ===
+    // === Hostinger: Self-ping every 4 minutes to keep server warm ===
+    // Hostinger puts idle Node.js apps to sleep, causing ERR_CONNECTION_CLOSED
+    // This keeps the server awake
+    setInterval(() => {
+      try {
+        const http = require('http');
+        http.get(`http://127.0.0.1:${PORT}/api/health`, () => {});
+      } catch (e) { /* ignore */ }
+    }, 4 * 60 * 1000); // Every 4 minutes
+
+    // === Hostinger: Memory cleanup every 5 minutes ===
+    // Prevents memory buildup that causes Hostinger to kill the process
+    setInterval(() => {
+      if (global.gc) global.gc();
+    }, 5 * 60 * 1000);
+
+    // Log server uptime every 10 minutes for monitoring
     if (process.env.NODE_ENV === "production") {
-      // Log server uptime every 10 minutes for monitoring
       setInterval(() => {
         const uptime = process.uptime();
         const hours = Math.floor(uptime / 3600);
         const mins = Math.floor((uptime % 3600) / 60);
-        console.log(`[Health] Server uptime: ${hours}h ${mins}m | Memory: ${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB | ${new Date().toISOString()}`);
+        const mem = process.memoryUsage();
+        console.log(`[Health] Uptime: ${hours}h ${mins}m | RSS: ${Math.round(mem.rss / 1024 / 1024)}MB | Heap: ${Math.round(mem.heapUsed / 1024 / 1024)}/${Math.round(mem.heapTotal / 1024 / 1024)}MB | ${new Date().toISOString()}`);
       }, 10 * 60 * 1000);
     }
   });

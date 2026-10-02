@@ -1,5 +1,11 @@
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
 var __esm = (fn, res, err) => function __init() {
   if (err) throw err[0];
   try {
@@ -4565,6 +4571,9 @@ async function startServer() {
   app.use((req, res, next) => {
     res.setHeader("Alt-Svc", "clear");
     res.setHeader("Alt-Used", req.headers.host || "");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Keep-Alive", "timeout=120");
+    res.setHeader("X-Accel-Buffering", "no");
     next();
   });
   app.use(compression({
@@ -5664,6 +5673,12 @@ async function startServer() {
       res.status(500).json({ error: error.message || "Failed to delete job application" });
     }
   });
+  app.use((err, req, res, next) => {
+    console.error(`\u274C Route Error [${req.method} ${req.path}]:`, err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error. Please try again." });
+    }
+  });
   const distPath = path.join(process.cwd(), "dist");
   const hasDist = fs.existsSync(path.join(distPath, "index.html"));
   const isProduction = process.env.NODE_ENV === "production" || hasDist;
@@ -5694,12 +5709,24 @@ async function startServer() {
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`\u2705 Server running on http://localhost:${PORT}`);
     console.log(`\u{1F4CC} Environment: ${process.env.NODE_ENV || "development"}`);
+    setInterval(() => {
+      try {
+        const http = __require("http");
+        http.get(`http://127.0.0.1:${PORT}/api/health`, () => {
+        });
+      } catch (e) {
+      }
+    }, 4 * 60 * 1e3);
+    setInterval(() => {
+      if (global.gc) global.gc();
+    }, 5 * 60 * 1e3);
     if (process.env.NODE_ENV === "production") {
       setInterval(() => {
         const uptime = process.uptime();
         const hours = Math.floor(uptime / 3600);
         const mins = Math.floor(uptime % 3600 / 60);
-        console.log(`[Health] Server uptime: ${hours}h ${mins}m | Memory: ${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB | ${(/* @__PURE__ */ new Date()).toISOString()}`);
+        const mem = process.memoryUsage();
+        console.log(`[Health] Uptime: ${hours}h ${mins}m | RSS: ${Math.round(mem.rss / 1024 / 1024)}MB | Heap: ${Math.round(mem.heapUsed / 1024 / 1024)}/${Math.round(mem.heapTotal / 1024 / 1024)}MB | ${(/* @__PURE__ */ new Date()).toISOString()}`);
       }, 10 * 60 * 1e3);
     }
   });
