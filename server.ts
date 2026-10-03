@@ -1657,6 +1657,16 @@ async function startServer() {
 
 
   // === GLOBAL ERROR HANDLER: Catch all route errors without killing the server ===
+  // === Health check endpoint (required for self-ping to keep VPS alive) ===
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      uptime: Math.floor(process.uptime()),
+      memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // This prevents ERR_CONNECTION_CLOSED when any API route throws an unexpected error
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(`❌ Route Error [${req.method} ${req.path}]:`, err.message);
@@ -1698,15 +1708,33 @@ async function startServer() {
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`📌 Environment: ${process.env.NODE_ENV || "development"}`);
 
-    // === Hostinger: Self-ping every 4 minutes to keep server warm ===
+    // === Hostinger VPS: Internal self-ping every 2 minutes to keep server warm ===
     // Hostinger puts idle Node.js apps to sleep, causing ERR_CONNECTION_CLOSED
-    // This keeps the server awake
     setInterval(() => {
       try {
         const http = require('http');
-        http.get(`http://127.0.0.1:${PORT}/api/health`, () => {});
+        http.get(`http://127.0.0.1:${PORT}/api/health`, (res: any) => {
+          res.resume(); // Consume response to free memory
+        }).on('error', () => { /* ignore */ });
       } catch (e) { /* ignore */ }
-    }, 4 * 60 * 1000); // Every 4 minutes
+    }, 2 * 60 * 1000); // Every 2 minutes (more aggressive)
+
+    // === Hostinger VPS: External self-ping to keep domain alive ===
+    // Some VPS providers need external traffic to keep the process warm
+    const APP_URL = process.env.APP_URL;
+    if (APP_URL && process.env.NODE_ENV === 'production') {
+      setInterval(() => {
+        try {
+          const pingUrl = `${APP_URL.replace(/\/$/, '')}/api/health`;
+          https.get(pingUrl, (res) => {
+            res.resume();
+            console.log(`[Keep-Alive] External ping OK: ${res.statusCode}`);
+          }).on('error', (err) => {
+            console.warn(`[Keep-Alive] External ping failed: ${err.message}`);
+          });
+        } catch (e) { /* ignore */ }
+      }, 3 * 60 * 1000); // Every 3 minutes
+    }
 
     // === Hostinger: Memory cleanup every 5 minutes ===
     // Prevents memory buildup that causes Hostinger to kill the process
@@ -1731,6 +1759,16 @@ async function startServer() {
   server.headersTimeout = 66000;   // Must be > keepAliveTimeout
   server.requestTimeout = 120000;  // 2 minutes max for a request (slow networks)
   server.timeout = 120000;         // Overall socket timeout
+
+  // === Handle connection-level errors to prevent ERR_CONNECTION_CLOSED ===
+  server.on('connection', (socket: any) => {
+    socket.on('error', (err: any) => {
+      // Silently handle socket errors (client disconnected, reset, etc.)
+      if (err.code !== 'ECONNRESET' && err.code !== 'EPIPE' && err.code !== 'ECANCELED') {
+        console.warn(`[Socket] Connection error: ${err.code || err.message}`);
+      }
+    });
+  });
 
   server.on("error", (err: any) => {
     if (err.code === "EADDRINUSE") {

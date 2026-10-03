@@ -5673,6 +5673,14 @@ async function startServer() {
       res.status(500).json({ error: error.message || "Failed to delete job application" });
     }
   });
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({
+      status: "ok",
+      uptime: Math.floor(process.uptime()),
+      memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + "MB",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  });
   app.use((err, req, res, next) => {
     console.error(`\u274C Route Error [${req.method} ${req.path}]:`, err.message);
     if (!res.headersSent) {
@@ -5712,11 +5720,28 @@ async function startServer() {
     setInterval(() => {
       try {
         const http = __require("http");
-        http.get(`http://127.0.0.1:${PORT}/api/health`, () => {
+        http.get(`http://127.0.0.1:${PORT}/api/health`, (res) => {
+          res.resume();
+        }).on("error", () => {
         });
       } catch (e) {
       }
-    }, 4 * 60 * 1e3);
+    }, 2 * 60 * 1e3);
+    const APP_URL = process.env.APP_URL;
+    if (APP_URL && process.env.NODE_ENV === "production") {
+      setInterval(() => {
+        try {
+          const pingUrl = `${APP_URL.replace(/\/$/, "")}/api/health`;
+          https.get(pingUrl, (res) => {
+            res.resume();
+            console.log(`[Keep-Alive] External ping OK: ${res.statusCode}`);
+          }).on("error", (err) => {
+            console.warn(`[Keep-Alive] External ping failed: ${err.message}`);
+          });
+        } catch (e) {
+        }
+      }, 3 * 60 * 1e3);
+    }
     setInterval(() => {
       if (global.gc) global.gc();
     }, 5 * 60 * 1e3);
@@ -5734,6 +5759,13 @@ async function startServer() {
   server.headersTimeout = 66e3;
   server.requestTimeout = 12e4;
   server.timeout = 12e4;
+  server.on("connection", (socket) => {
+    socket.on("error", (err) => {
+      if (err.code !== "ECONNRESET" && err.code !== "EPIPE" && err.code !== "ECANCELED") {
+        console.warn(`[Socket] Connection error: ${err.code || err.message}`);
+      }
+    });
+  });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       console.error(`\u274C Port ${PORT} is already in use by another running process.`);
