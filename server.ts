@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import http from "http";
 import https from "https";
 import crypto from "crypto";
 import fs from "fs";
@@ -170,9 +171,21 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Graceful shutdown on SIGTERM (Hostinger/PM2/Docker stop signals)
+// Store server reference for graceful shutdown
+let httpServer: ReturnType<typeof http.createServer> | null = null;
+
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
+  if (httpServer) {
+    httpServer.close(() => {
+      console.log('✅ HTTP server closed. Exiting.');
+      process.exit(0);
+    });
+    // Force exit after 10 seconds if server doesn't close
+    setTimeout(() => process.exit(0), 10000);
+  } else {
+    process.exit(0);
+  }
 });
 
 async function startServer() {
@@ -292,7 +305,7 @@ async function startServer() {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com data:; " +
       "img-src 'self' data: https://*.google.com https://*.googleusercontent.com https://*.unsplash.com https://*.razorpay.com; " +
-      "connect-src 'self' https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com https://api.razorpay.com https://*.razorpay.com; " +
+      "connect-src 'self' https://assurx.co.in https://*.assurx.co.in https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com https://api.razorpay.com https://*.razorpay.com; " +
       "frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app https://*.firebaseapp.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com; " +
       "frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://*.ai.studio;"
     );
@@ -1657,15 +1670,6 @@ async function startServer() {
 
 
   // === GLOBAL ERROR HANDLER: Catch all route errors without killing the server ===
-  // === Health check endpoint (required for self-ping to keep VPS alive) ===
-  app.get('/api/health', (req, res) => {
-    res.status(200).json({
-      status: 'ok',
-      uptime: Math.floor(process.uptime()),
-      memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
-      timestamp: new Date().toISOString()
-    });
-  });
 
   // This prevents ERR_CONNECTION_CLOSED when any API route throws an unexpected error
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -1705,6 +1709,7 @@ async function startServer() {
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {
+    httpServer = server; // Store reference for graceful shutdown
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`📌 Environment: ${process.env.NODE_ENV || "development"}`);
 
@@ -1712,7 +1717,6 @@ async function startServer() {
     // Hostinger puts idle Node.js apps to sleep, causing ERR_CONNECTION_CLOSED
     setInterval(() => {
       try {
-        const http = require('http');
         http.get(`http://127.0.0.1:${PORT}/api/health`, (res: any) => {
           res.resume(); // Consume response to free memory
         }).on('error', () => { /* ignore */ });

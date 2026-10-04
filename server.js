@@ -1,11 +1,5 @@
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-}) : x)(function(x) {
-  if (typeof require !== "undefined") return require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
 var __esm = (fn, res, err) => function __init() {
   if (err) throw err[0];
   try {
@@ -78,6 +72,7 @@ var init_jwt = __esm({
 // server.ts
 import express from "express";
 import path from "path";
+import http from "http";
 import https from "https";
 import crypto from "crypto";
 import fs from "fs";
@@ -4495,9 +4490,18 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason, promise) => {
   console.error("\u274C UNHANDLED REJECTION (server still running):", reason);
 });
+var httpServer = null;
 process.on("SIGTERM", () => {
   console.log("\u{1F6D1} SIGTERM received. Shutting down gracefully...");
-  process.exit(0);
+  if (httpServer) {
+    httpServer.close(() => {
+      console.log("\u2705 HTTP server closed. Exiting.");
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(0), 1e4);
+  } else {
+    process.exit(0);
+  }
 });
 async function startServer() {
   const defaultEmail = process.env.ADMIN_EMAIL || "superadmin@assurx.com";
@@ -4591,7 +4595,7 @@ async function startServer() {
   app.use((req, res, next) => {
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://checkout.razorpay.com https://*.razorpay.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://*.google.com https://*.googleusercontent.com https://*.unsplash.com https://*.razorpay.com; connect-src 'self' https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com https://api.razorpay.com https://*.razorpay.com; frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app https://*.firebaseapp.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com; frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://*.ai.studio;"
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://checkout.razorpay.com https://*.razorpay.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://*.google.com https://*.googleusercontent.com https://*.unsplash.com https://*.razorpay.com; connect-src 'self' https://assurx.co.in https://*.assurx.co.in https://*.google.com https://*.googleapis.com ws://localhost:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:* https://*.firebaseapp.com https://api.razorpay.com https://*.razorpay.com; frame-src 'self' https://*.google.com https://*.ai.studio https://*.run.app https://*.firebaseapp.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com; frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://*.ai.studio;"
     );
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
@@ -5673,14 +5677,6 @@ async function startServer() {
       res.status(500).json({ error: error.message || "Failed to delete job application" });
     }
   });
-  app.get("/api/health", (req, res) => {
-    res.status(200).json({
-      status: "ok",
-      uptime: Math.floor(process.uptime()),
-      memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + "MB",
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    });
-  });
   app.use((err, req, res, next) => {
     console.error(`\u274C Route Error [${req.method} ${req.path}]:`, err.message);
     if (!res.headersSent) {
@@ -5715,11 +5711,11 @@ async function startServer() {
     });
   }
   const server = app.listen(PORT, "0.0.0.0", () => {
+    httpServer = server;
     console.log(`\u2705 Server running on http://localhost:${PORT}`);
     console.log(`\u{1F4CC} Environment: ${process.env.NODE_ENV || "development"}`);
     setInterval(() => {
       try {
-        const http = __require("http");
         http.get(`http://127.0.0.1:${PORT}/api/health`, (res) => {
           res.resume();
         }).on("error", () => {
