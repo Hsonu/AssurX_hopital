@@ -180,6 +180,10 @@ export default function Hero({
             <img
               src={smilingSpecialist}
               alt="Smiling Diagnostic Specialist / Radiologist"
+              width={360}
+              height={360}
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-full object-cover object-top select-none transition-transform duration-500 hover:scale-102 mix-blend-multiply"
               referrerPolicy="no-referrer"
             />
@@ -192,7 +196,7 @@ export default function Hero({
           >
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2">
-                <img src={logoImg} alt="AssurX Logo" className="h-6 w-auto object-contain bg-white rounded px-1.5 py-0.5 shadow-xs" />
+                <img src={logoImg} alt="AssurX Logo" width={65} height={24} decoding="async" className="h-6 w-auto object-contain bg-white rounded px-1.5 py-0.5 shadow-xs" />
                 <span className="text-[10px] sm:text-xs font-black tracking-widest text-[#BFA15F] uppercase text-center block">
                   Partner With AssurX
                 </span>

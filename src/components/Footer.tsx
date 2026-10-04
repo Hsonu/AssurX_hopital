@@ -138,7 +138,7 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
         {/* Col 1: About Logo & Socials - md:col-span-4 */}
         <div className="md:col-span-4 space-y-5">
           <div className="flex items-center gap-2 select-none cursor-pointer" onClick={() => onNavigate('home')}>
-            <img src={logoImg} alt="AssurX Diagnostics" className="h-14 w-auto rounded-lg object-contain bg-white/10 px-1.5 py-0.5" />
+            <img src={logoImg} alt="AssurX Diagnostics" width={152} height={56} loading="lazy" decoding="async" className="h-14 w-auto rounded-lg object-contain bg-white/10 px-1.5 py-0.5" />
           </div>
           <p className="text-[11px] font-bold tracking-wider text-slate-400">
             <span className="text-[#0288d1]">Pathology</span> | <span className="text-[#d32f2f]">Biochemistry</span> | <span className="text-[#303f9f]">Microbiology</span>
@@ -241,7 +241,7 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
       <div className="bg-slate-950 text-slate-550 border-t border-slate-900 py-6 px-4 md:px-6 text-[10px] md:text-xs">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-2">
-            <img src={logoImg} alt="AssurX Diagnostics Logo" className="h-6 w-auto object-contain bg-white rounded p-0.5 shadow-xs" />
+            <img src={logoImg} alt="AssurX Diagnostics Logo" width={65} height={24} loading="lazy" decoding="async" className="h-6 w-auto object-contain bg-white rounded p-0.5 shadow-xs" />
             <p>© 2026 AssurX Diagnostics Pvt. Ltd. All rights reserved.</p>
           </div>
           <div className="flex flex-wrap justify-center sm:justify-end gap-x-6 gap-y-2 uppercase tracking-wider font-semibold">
@@ -262,7 +262,7 @@ export default function Footer({ onNavigate, centers = [], selectedBranch }: Foo
             {/* Header */}
             <div className="bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <img src={logoImg} alt="AssurX Logo" className="h-8 w-auto rounded-md bg-white p-0.5 object-contain" />
+                <img src={logoImg} alt="AssurX Logo" width={87} height={32} loading="lazy" decoding="async" className="h-8 w-auto rounded-md bg-white p-0.5 object-contain" />
                 <div>
                   <h3 className="text-sm font-bold text-white font-serif">Patient Complaint</h3>
                   <p className="text-[10px] text-white/70">We value your feedback & will act swiftly</p>

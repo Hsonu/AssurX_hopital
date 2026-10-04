@@ -421,6 +421,11 @@ export function TrackOrderSection({ onGoToBooking, selectedBranch }: TrackOrderP
                       <img 
                         src={auth.currentUser.photoURL} 
                         alt="User profile" 
+                        loading="lazy"
+                        decoding="async"
+                        width={24}
+                        height={24}
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                         className="w-6 h-6 rounded-full"
                         referrerPolicy="no-referrer"
                       />
@@ -703,6 +708,13 @@ export function HiringCareersSection({ selectedBranch }: HiringCareersSectionPro
           <img 
             src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=600&auto=format&fit=crop" 
             alt="Medical research team working in lab" 
+            loading="lazy"
+            decoding="async"
+            width={320}
+            height={176}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/sonography_equipment.png';
+            }}
             className="w-full h-full object-cover select-none"
             referrerPolicy="no-referrer"
           />

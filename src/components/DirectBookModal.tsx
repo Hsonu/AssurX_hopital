@@ -741,6 +741,13 @@ export default function DirectBookModal({
                   <img
                     src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=400&auto=format&fit=crop"
                     alt="Safe Home Sample Collection"
+                    loading="lazy"
+                    decoding="async"
+                    width={80}
+                    height={64}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/fever_sugar_profile.png';
+                    }}
                     className="w-20 h-16 object-cover rounded-xl flex-shrink-0"
                     referrerPolicy="no-referrer"
                   />

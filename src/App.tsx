@@ -130,12 +130,9 @@ function AppContent() {
     isActive: true,
   });
 
-  const [isPromoAdOpen, setIsPromoAdOpen] = useState(() => {
-    return sessionStorage.getItem('assurx_promo_ad_dismissed') !== 'true';
-  });
+  const [isPromoAdOpen, setIsPromoAdOpen] = useState(true);
 
   const handleClosePromoAd = () => {
-    sessionStorage.setItem('assurx_promo_ad_dismissed', 'true');
     setIsPromoAdOpen(false);
   };
 
@@ -889,6 +886,13 @@ function AppContent() {
                           <img
                             src={resolveBannerImage(section.bannerImage)}
                             alt={section.title}
+                            loading="lazy"
+                            decoding="async"
+                            width={800}
+                            height={300}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/sonography_equipment.png';
+                            }}
                             className="w-full h-full object-cover select-none hover:scale-[1.015] transition-transform duration-300"
                             referrerPolicy="no-referrer"
                           />
@@ -1168,6 +1172,11 @@ function AppContent() {
                                 alt={pkg.name}
                                 loading="lazy"
                                 decoding="async"
+                                width={400}
+                                height={175}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop';
+                                }}
                                 className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
                                 referrerPolicy="no-referrer"
                               />
@@ -1333,6 +1342,11 @@ function AppContent() {
                                 alt={doc.name}
                                 loading="lazy"
                                 decoding="async"
+                                width={260}
+                                height={260}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop';
+                                }}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 referrerPolicy="no-referrer"
                               />
@@ -1386,7 +1400,7 @@ function AppContent() {
                   </span>
                   <h3 className="text-xl md:text-2xl font-serif font-bold text-white tracking-tight flex items-center justify-center gap-2 mt-2 flex-wrap">
                     <span>How to Book a Diagnostic Test at</span>
-                    <img src={logoImg} alt="AssurX Diagnostics Logo" className="h-7 w-auto object-contain bg-white rounded px-1.5 py-0.5 inline-block align-middle shadow-xs" />
+                    <img src={logoImg} alt="AssurX Diagnostics Logo" width={76} height={28} loading="lazy" decoding="async" className="h-7 w-auto object-contain bg-white rounded px-1.5 py-0.5 inline-block align-middle shadow-xs" />
                   </h3>
                   <p className="text-xs text-slate-400 max-w-xl mx-auto">
                     Book certified pathology tests, USG sonography scans, and full-body health packages in under 60 seconds.
@@ -1467,7 +1481,9 @@ function AppContent() {
                         alt={banner.alt}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-auto object-contain block select-none"
+                        width={768}
+                        height={768}
+                        className="w-full aspect-square object-contain block select-none"
                         referrerPolicy="no-referrer"
                       />
                     </div>
@@ -2089,7 +2105,7 @@ function AppContent() {
 
             {/* Packages List cards layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              {packages.map((pkg) => {
+              {packages.map((pkg, pkgIndex) => {
                 const inCart = cart.some(ci => ci.itemId === pkg.id);
                 return (
                   <div
@@ -2101,6 +2117,13 @@ function AppContent() {
                       <img
                         src={getPackageImage(pkg.id)}
                         alt={pkg.name}
+                        loading={pkgIndex < 2 ? "eager" : "lazy"}
+                        decoding="async"
+                        width={600}
+                        height={225}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop';
+                        }}
                         className="w-full h-full object-cover select-none"
                         referrerPolicy="no-referrer"
                       />
@@ -2195,35 +2218,55 @@ function AppContent() {
         )}
         {/* TAB 4.8: MY PATIENT BOOKINGS PORTAL */}
         {currentTab === 'bookings' && (
-          <MyBookingsSection
-            onNavigateToCatalog={(tab) => setCurrentTab(tab)}
-          />
+          <React.Suspense fallback={
+            <div className="max-w-7xl mx-auto px-4 py-20 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-[#2D006B]" />
+              <p className="text-xs font-bold text-slate-600">Loading your health bookings...</p>
+            </div>
+          }>
+            <MyBookingsSection
+              onNavigateToCatalog={(tab) => setCurrentTab(tab)}
+            />
+          </React.Suspense>
         )}
 
         {/* TAB 5: ADMIN PANEL CONSOLE */}
         {currentTab === 'admin' && (
-          <AdminPanel
-            currentTab={currentTab}
-            setCurrentTab={setCurrentTab}
-            bookingRefreshKey={bookingRefreshKey}
-            services={services}
-            onUpdateServices={setServices}
-            packages={packages}
-            onUpdatePackages={setPackages}
-            sections={sections}
-            onUpdateSections={setSections}
-            centers={centers}
-            onUpdateCenters={setCenters}
-            doctors={doctors}
-            onUpdateDoctors={setDoctors}
-          />
+          <React.Suspense fallback={
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-[#2D006B]" />
+              <p className="text-xs font-bold text-slate-600">Loading Admin Console...</p>
+            </div>
+          }>
+            <AdminPanel
+              currentTab={currentTab}
+              setCurrentTab={setCurrentTab}
+              bookingRefreshKey={bookingRefreshKey}
+              services={services}
+              onUpdateServices={setServices}
+              packages={packages}
+              onUpdatePackages={setPackages}
+              sections={sections}
+              onUpdateSections={setSections}
+              centers={centers}
+              onUpdateCenters={setCenters}
+              doctors={doctors}
+              onUpdateDoctors={setDoctors}
+            />
+          </React.Suspense>
         )}
         {/* TAB 6: LEGAL & COMPLIANCE PAGES (Razorpay Requirements) */}
         {['privacy-policy', 'terms-of-use', 'refund-policy', 'shipping-policy', 'about-us', 'contact-us'].includes(currentTab) && (
-          <LegalPages
-            activeSection={currentTab as any}
-            onSectionChange={(section) => setCurrentTab(section)}
-          />
+          <React.Suspense fallback={
+            <div className="max-w-4xl mx-auto py-20 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+            </div>
+          }>
+            <LegalPages
+              activeSection={currentTab as any}
+              onSectionChange={(section) => setCurrentTab(section)}
+            />
+          </React.Suspense>
         )}
 
       </main>
@@ -2235,85 +2278,97 @@ function AppContent() {
 
       {/* --- FLOATING PRESCRIPTION DIALOG / PORTAL OVERLAY --- */}
       {isPrescriptionOpen && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <PrescriptionUpload
-            onAddItemsToCart={handleAddMultipleToCart}
-            onClose={() => setIsPrescriptionOpen(false)}
-            services={services}
-          />
-        </div>
+        <React.Suspense fallback={null}>
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+            <PrescriptionUpload
+              onAddItemsToCart={handleAddMultipleToCart}
+              onClose={() => setIsPrescriptionOpen(false)}
+              services={services}
+            />
+          </div>
+        </React.Suspense>
       )}
 
       {/* --- SIDE-DRAWER SHOPPING CART CONTROL --- */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        onRemoveFromCart={handleRemoveFromCart}
-        onClearCart={handleClearCart}
-        onProceedToCheckout={handleCartProceed}
-        centers={centers}
-      />
+      <React.Suspense fallback={null}>
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          cart={cart}
+          onRemoveFromCart={handleRemoveFromCart}
+          onClearCart={handleClearCart}
+          onProceedToCheckout={handleCartProceed}
+          centers={centers}
+        />
+      </React.Suspense>
 
       {/* --- checkout billing payment success modal overlays --- */}
       {isCheckoutOpen && checkoutBookingDetails && (
-        <CheckoutModal
-          isOpen={isCheckoutOpen}
-          onClose={() => setIsCheckoutOpen(false)}
-          cart={cart}
-          bookingDetails={checkoutBookingDetails}
-          grandTotal={
-            cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) +
-            (checkoutBookingDetails.collectionType === 'home' ? 150 : 0) +
-            Math.round(cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) * 0.05)
-          }
-          onBookingSuccess={handleCheckoutSuccess}
-        />
+        <React.Suspense fallback={null}>
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
+            cart={cart}
+            bookingDetails={checkoutBookingDetails}
+            grandTotal={
+              cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) +
+              (checkoutBookingDetails.collectionType === 'home' ? 150 : 0) +
+              Math.round(cart.reduce((acc, item) => acc + (item.discountPrice || item.price), 0) * 0.05)
+            }
+            onBookingSuccess={handleCheckoutSuccess}
+          />
+        </React.Suspense>
       )}
 
       {/* --- DIRECT BOOKING MODAL (PAY AT LAB) --- */}
       {directBookingItem && (
-        <DirectBookModal
-          isOpen={!!directBookingItem}
-          onClose={() => setDirectBookingItem(null)}
-          selectedItem={directBookingItem}
-          selectedBranch={selectedBranch}
-          onBookingSuccess={() => {
-            setDirectBookingItem(null);
-            setBookingRefreshKey(prev => prev + 1); // Keep AdminPanel data fresh for next admin visit
-            setCurrentTab('home');
-          }}
-        />
+        <React.Suspense fallback={null}>
+          <DirectBookModal
+            isOpen={!!directBookingItem}
+            onClose={() => setDirectBookingItem(null)}
+            selectedItem={directBookingItem}
+            selectedBranch={selectedBranch}
+            onBookingSuccess={() => {
+              setDirectBookingItem(null);
+              setBookingRefreshKey(prev => prev + 1); // Keep AdminPanel data fresh for next admin visit
+              setCurrentTab('home');
+            }}
+          />
+        </React.Suspense>
       )}
 
       {/* --- DOCTOR APPOINTMENT MODAL --- */}
       {isDoctorModalOpen && (
-        <DoctorAppointmentModal
-          isOpen={isDoctorModalOpen}
-          onClose={() => {
-            setIsDoctorModalOpen(false);
-            setSelectedDoctorForModal(null);
-          }}
-          doctors={doctors}
-          selectedDoctor={selectedDoctorForModal}
-          onBookingSuccess={() => {
-            setIsDoctorModalOpen(false);
-            setSelectedDoctorForModal(null);
-            setBookingRefreshKey(prev => prev + 1);
-            setCurrentTab('bookings'); // Redirect to bookings page to see confirmed slot
-          }}
-        />
+        <React.Suspense fallback={null}>
+          <DoctorAppointmentModal
+            isOpen={isDoctorModalOpen}
+            onClose={() => {
+              setIsDoctorModalOpen(false);
+              setSelectedDoctorForModal(null);
+            }}
+            doctors={doctors}
+            selectedDoctor={selectedDoctorForModal}
+            onBookingSuccess={() => {
+              setIsDoctorModalOpen(false);
+              setSelectedDoctorForModal(null);
+              setBookingRefreshKey(prev => prev + 1);
+              setCurrentTab('bookings'); // Redirect to bookings page to see confirmed slot
+            }}
+          />
+        </React.Suspense>
       )}
 
       {/* --- CAMP APPLICATION MODAL --- */}
       {isCampModalOpen && (
-        <CampApplicationModal
-          isOpen={isCampModalOpen}
-          onClose={() => setIsCampModalOpen(false)}
-          defaultCampType={selectedCampType}
-          selectedBranch={selectedBranch}
-          centers={centers}
-        />
+        <React.Suspense fallback={null}>
+          <CampApplicationModal
+            isOpen={isCampModalOpen}
+            onClose={() => setIsCampModalOpen(false)}
+            defaultCampType={selectedCampType}
+            selectedBranch={selectedBranch}
+            centers={centers}
+          />
+        </React.Suspense>
       )}
 
 
@@ -2334,16 +2389,24 @@ function AppContent() {
               <img
                 src={promoAd.imageUrl}
                 alt={promoAd.title || "AssurX Diagnostics Promotional Camp"}
+                loading="lazy"
+                decoding="async"
+                width={512}
+                height={640}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/promotional_camp.jpg';
+                }}
                 onClick={() => {
                   if (promoAd.targetTab === 'camps') {
                     handleOpenCampModal();
+                    setIsPromoAdOpen(false);
                   } else if (promoAd.targetTab && promoAd.targetTab !== 'home') {
                     setCurrentTab(promoAd.targetTab as any);
+                    setIsPromoAdOpen(false);
                   }
                   if (promoAd.targetUrl) {
                     window.open(promoAd.targetUrl, '_blank');
                   }
-                  setIsPromoAdOpen(false);
                 }}
                 className="w-full h-auto object-contain rounded-xl cursor-pointer hover:scale-[1.01] transition-transform duration-250"
               />
@@ -2353,7 +2416,9 @@ function AppContent() {
       )}
 
       {/* --- FLOATING PERSISTENT BOTTOM CALLBACK WIDGET --- */}
-      <CallbackSticky selectedBranch={selectedBranch} centers={centers} onOpenCampModal={handleOpenCampModal} />
+      <React.Suspense fallback={null}>
+        <CallbackSticky selectedBranch={selectedBranch} centers={centers} onOpenCampModal={handleOpenCampModal} />
+      </React.Suspense>
 
     </div>
   );

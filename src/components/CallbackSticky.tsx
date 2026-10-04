@@ -123,6 +123,10 @@ export default function CallbackSticky({ selectedBranch, centers, onOpenCampModa
                     <img 
                       src={logoImg} 
                       alt="AssurX Diagnostics Logo" 
+                      loading="lazy"
+                      decoding="async"
+                      width={95}
+                      height={36}
                       className="h-8 sm:h-9 w-auto max-w-[95px] object-contain rounded-lg bg-white border border-slate-200 p-0.5 shadow-xs" 
                     />
                   </div>

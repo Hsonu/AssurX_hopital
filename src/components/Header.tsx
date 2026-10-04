@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { CartItem, PatientComplaint } from '../types';
 import { useAuth } from '../lib/auth.ts';
-import PatientBookingsModal from './PatientBookingsModal.tsx';
+const PatientBookingsModal = React.lazy(() => import('./PatientBookingsModal.tsx'));
 import logoImg from '../../logo.jpeg';
 import { getAllBranches, getBranchInfo } from '../config/branchConfig.ts';
 
@@ -228,7 +228,7 @@ export default function Header({
             onClick={() => handleTabClick('home')}
             className="flex items-center gap-2.5 cursor-pointer select-none flex-shrink-0"
           >
-            <img src={logoImg} alt="AssurX Diagnostics" className="h-9 w-auto rounded-lg object-contain bg-white/95 px-1.5 py-0.5" />
+            <img src={logoImg} alt="AssurX Diagnostics" width={98} height={36} fetchPriority="high" decoding="async" className="h-9 w-auto rounded-lg object-contain bg-white/95 px-1.5 py-0.5" />
             <div className="border-l border-white/30 h-5 pl-2.5">
               <span className="text-[9px] font-black text-[#80CBC4] tracking-widest uppercase block leading-none">Scans & Labs</span>
             </div>
@@ -283,6 +283,10 @@ export default function Header({
                     src={user.photoURL}
                     alt={user.displayName || "User"}
                     referrerPolicy="no-referrer"
+                    width={22}
+                    height={22}
+                    decoding="async"
+                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                     className="w-5.5 h-5.5 rounded-full object-cover border border-white/20"
                   />
                 ) : (
@@ -555,7 +559,7 @@ export default function Header({
             onClick={() => handleTabClick('home')}
             className="flex items-center gap-2 cursor-pointer select-none"
           >
-            <img src={logoImg} alt="AssurX Diagnostics" className="h-8.5 w-auto rounded-lg object-contain bg-white/95 px-1 py-0.5" />
+            <img src={logoImg} alt="AssurX Diagnostics" width={93} height={34} fetchPriority="high" decoding="async" className="h-8.5 w-auto rounded-lg object-contain bg-white/95 px-1 py-0.5" />
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -809,6 +813,11 @@ export default function Header({
                       src={user.photoURL}
                       alt={user.displayName || "User"}
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
+                      width={32}
+                      height={32}
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                       className="w-8 h-8 rounded-full object-cover border border-white/20"
                     />
                   ) : (
@@ -859,13 +868,24 @@ export default function Header({
         </div>
       )}
 
-      {/* PATIENT BOOKINGS MODAL */}
-      <PatientBookingsModal
-        isOpen={isBookingsOpen}
-        onClose={() => setIsBookingsOpen(false)}
-        idToken={idToken}
-        userEmail={user?.email || undefined}
-      />
+      {/* PATIENT BOOKINGS MODAL (Lazy loaded with Suspense) */}
+      {isBookingsOpen && (
+        <React.Suspense fallback={
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white p-5 rounded-2xl shadow-xl flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-[#2D006B]" />
+              <span className="text-xs font-bold text-slate-700">Loading bookings portal...</span>
+            </div>
+          </div>
+        }>
+          <PatientBookingsModal
+            isOpen={isBookingsOpen}
+            onClose={() => setIsBookingsOpen(false)}
+            idToken={idToken}
+            userEmail={user?.email || undefined}
+          />
+        </React.Suspense>
+      )}
 
       {/* --- PATIENT COMPLAIN REGISTRATION MODAL --- */}
       {isComplaintOpen && (

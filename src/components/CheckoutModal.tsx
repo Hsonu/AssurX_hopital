@@ -592,6 +592,13 @@ export default function CheckoutModal({
                         <img
                           src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop"
                           alt="Professional medical sample collection at home"
+                          loading="lazy"
+                          decoding="async"
+                          width={500}
+                          height={112}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/fever_sugar_profile.png';
+                          }}
                           className="w-full h-full object-cover object-center"
                           referrerPolicy="no-referrer"
                         />

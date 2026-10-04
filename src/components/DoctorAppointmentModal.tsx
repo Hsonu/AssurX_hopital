@@ -364,6 +364,13 @@ export default function DoctorAppointmentModal({
                   <img
                     src={activeDoctor.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=150&auto=format&fit=crop'}
                     alt={activeDoctor.name}
+                    loading="lazy"
+                    decoding="async"
+                    width={56}
+                    height={56}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=150&auto=format&fit=crop';
+                    }}
                     className="w-14 h-14 object-cover rounded-xl border-2 border-[#2D006B] flex-shrink-0"
                   />
                   <div className="min-w-0 flex-1">

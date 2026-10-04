@@ -15,7 +15,6 @@ export default defineConfig(() => {
             // Split vendor libraries into separate chunks
             'vendor-react': ['react', 'react-dom', 'react-router-dom'],
             'vendor-firebase': ['firebase/app', 'firebase/auth'],
-            'vendor-motion': ['motion'],
             'vendor-icons': ['lucide-react'],
           },
         },

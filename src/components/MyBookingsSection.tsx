@@ -287,6 +287,11 @@ export default function MyBookingsSection({ onNavigateToCatalog }: MyBookingsSec
               src={user.photoURL} 
               alt={user.displayName || "Patient"} 
               referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
+              width={56}
+              height={56}
+              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               className="w-14 h-14 rounded-full border-2 border-emerald-500 object-cover"
             />
           ) : (

@@ -3880,6 +3880,10 @@ export default function AdminPanel({
                       <img
                         src={section.bannerImage === 'bloodTestingBanner' ? 'https://images.unsplash.com/photo-1579154204601-01588f351167?q=80&w=1200&auto=format&fit=crop' : section.bannerImage}
                         alt={section.title}
+                        loading="lazy"
+                        decoding="async"
+                        width={600}
+                        height={257}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent"></div>
@@ -4844,6 +4848,13 @@ export default function AdminPanel({
               <img
                 src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
                 alt={doc.name}
+                loading="lazy"
+                decoding="async"
+                width={64}
+                height={64}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop';
+                }}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
@@ -5120,6 +5131,8 @@ export default function AdminPanel({
                       <img
                         src={promoAdConfig.imageUrl}
                         alt={promoAdConfig.title || 'Ad Preview'}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-auto max-h-[260px] object-contain rounded-xl"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/promotional_camp.jpg';

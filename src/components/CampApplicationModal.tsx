@@ -132,7 +132,7 @@ export default function CampApplicationModal({
           </button>
 
           <div className="flex items-center gap-3 mb-2">
-            <img src={logoImg} alt="AssurX Diagnostics" className="h-8 w-auto bg-white/95 rounded-lg px-2 py-0.5 object-contain" />
+            <img src={logoImg} alt="AssurX Diagnostics" width={87} height={32} loading="lazy" decoding="async" className="h-8 w-auto bg-white/95 rounded-lg px-2 py-0.5 object-contain" />
             <span className="bg-red-500/20 text-red-200 border border-red-400/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
               Community Initiative
             </span>
