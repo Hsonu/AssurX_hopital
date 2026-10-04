@@ -1723,27 +1723,32 @@ async function startServer() {
       } catch (e) { /* ignore */ }
     }, 2 * 60 * 1000); // Every 2 minutes (more aggressive)
 
-    // === Keep-Alive: Ping https://assurx.co.in every 5 minutes ===
-    const APP_URL = (process.env.APP_URL || 'https://assurx.co.in').replace(/\/$/, '');
-    const pingTarget = `${APP_URL}/api/health`;
-    
-    // Immediate ping on boot + Every 5 minutes interval
+    // === Keep-Alive: 5-Minute Ping to keep server warm ===
+    const localPingUrl = `http://127.0.0.1:${PORT}/api/health`;
+    const externalPingUrl = process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, '')}/api/health` : null;
+
     const performKeepAlivePing = () => {
+      // 1. Internal self-ping (guaranteed to succeed locally, keeps Node event loop warm)
       try {
-        const client = pingTarget.startsWith('https') ? https : http;
-        const req = client.get(pingTarget, { timeout: 10000 }, (res: any) => {
+        http.get(localPingUrl, { timeout: 5000 }, (res: any) => {
           res.resume();
-          console.log(`[Keep-Alive 5-Min Ping] Ping to ${pingTarget} SUCCESS (Status: ${res.statusCode}) at ${new Date().toLocaleTimeString()}`);
-        });
-        req.on('timeout', () => {
-          req.destroy();
-          console.warn(`[Keep-Alive 5-Min Ping] Timeout after 10s for ${pingTarget}`);
-        });
-        req.on('error', (err: any) => {
-          console.warn(`[Keep-Alive 5-Min Ping] Ping failed: ${err.message}`);
-        });
-      } catch (e: any) {
-        console.warn(`[Keep-Alive 5-Min Ping] Error initiating ping: ${e.message}`);
+        }).on('error', () => { /* ignore */ });
+      } catch (e) { /* ignore */ }
+
+      // 2. External domain ping (only if APP_URL is defined)
+      if (externalPingUrl && !externalPingUrl.includes('localhost') && !externalPingUrl.includes('127.0.0.1')) {
+        try {
+          const client = externalPingUrl.startsWith('https') ? https : http;
+          const req = client.get(externalPingUrl, { timeout: 8000 }, (res: any) => {
+            res.resume();
+            console.log(`[Keep-Alive 5-Min Ping] External ping OK: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+          });
+          req.on('timeout', () => { req.destroy(); });
+          req.on('error', (err: any) => {
+            // If live domain VPS is currently stopped/restarting, show clean message
+            console.warn(`[Keep-Alive 5-Min Ping] Live domain unreachable (${err.message}) - will retry in 5 mins`);
+          });
+        } catch (e: any) { /* ignore */ }
       }
     };
 

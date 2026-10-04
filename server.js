@@ -5723,24 +5723,31 @@ async function startServer() {
       } catch (e) {
       }
     }, 2 * 60 * 1e3);
-    const APP_URL = (process.env.APP_URL || "https://assurx.co.in").replace(/\/$/, "");
-    const pingTarget = `${APP_URL}/api/health`;
+    const localPingUrl = `http://127.0.0.1:${PORT}/api/health`;
+    const externalPingUrl = process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, "")}/api/health` : null;
     const performKeepAlivePing = () => {
       try {
-        const client = pingTarget.startsWith("https") ? https : http;
-        const req = client.get(pingTarget, { timeout: 1e4 }, (res) => {
+        http.get(localPingUrl, { timeout: 5e3 }, (res) => {
           res.resume();
-          console.log(`[Keep-Alive 5-Min Ping] Ping to ${pingTarget} SUCCESS (Status: ${res.statusCode}) at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`);
-        });
-        req.on("timeout", () => {
-          req.destroy();
-          console.warn(`[Keep-Alive 5-Min Ping] Timeout after 10s for ${pingTarget}`);
-        });
-        req.on("error", (err) => {
-          console.warn(`[Keep-Alive 5-Min Ping] Ping failed: ${err.message}`);
+        }).on("error", () => {
         });
       } catch (e) {
-        console.warn(`[Keep-Alive 5-Min Ping] Error initiating ping: ${e.message}`);
+      }
+      if (externalPingUrl && !externalPingUrl.includes("localhost") && !externalPingUrl.includes("127.0.0.1")) {
+        try {
+          const client = externalPingUrl.startsWith("https") ? https : http;
+          const req = client.get(externalPingUrl, { timeout: 8e3 }, (res) => {
+            res.resume();
+            console.log(`[Keep-Alive 5-Min Ping] External ping OK: ${res.statusCode} at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`);
+          });
+          req.on("timeout", () => {
+            req.destroy();
+          });
+          req.on("error", (err) => {
+            console.warn(`[Keep-Alive 5-Min Ping] Live domain unreachable (${err.message}) - will retry in 5 mins`);
+          });
+        } catch (e) {
+        }
       }
     };
     setTimeout(performKeepAlivePing, 15e3);

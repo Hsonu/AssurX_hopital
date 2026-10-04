@@ -22,6 +22,8 @@ interface HeaderProps {
   setSearchQuery: (query: string) => void;
   onSearchFocus: () => void;
   centers?: Array<{ city: string; address: string; phone: string }>;
+  isLoginModalOpen?: boolean;
+  setIsLoginModalOpen?: (open: boolean) => void;
 }
 
 const COMPLAINT_CATEGORIES: { value: PatientComplaint['category']; label: string }[] = [
