@@ -1744,9 +1744,8 @@ async function startServer() {
             console.log(`[Keep-Alive 5-Min Ping] External ping OK: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
           });
           req.on('timeout', () => { req.destroy(); });
-          req.on('error', (err: any) => {
-            // If live domain VPS is currently stopped/restarting, show clean message
-            console.warn(`[Keep-Alive 5-Min Ping] Live domain unreachable (${err.message}) - will retry in 5 mins`);
+          req.on('error', () => {
+            // Silently retry next cycle if external domain is temporarily waking up
           });
         } catch (e: any) { /* ignore */ }
       }

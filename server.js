@@ -5743,8 +5743,7 @@ async function startServer() {
           req.on("timeout", () => {
             req.destroy();
           });
-          req.on("error", (err) => {
-            console.warn(`[Keep-Alive 5-Min Ping] Live domain unreachable (${err.message}) - will retry in 5 mins`);
+          req.on("error", () => {
           });
         } catch (e) {
         }
