@@ -19,6 +19,7 @@ import { onSessionKicked, getUserSessionId, getAdminSessionId } from './lib/sess
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Footer from './components/Footer';
+import LazySection from './components/LazySection';
 import logoImg from '../logo.jpeg';
 import bloodTestingBanner from '../assets/blood_testing_banner.png';
 import { CUSTOMER_TESTIMONIALS, POPULAR_TESTS_DATA, DIAGNOSTIC_SERVICES } from './data';
@@ -673,8 +674,6 @@ function AppContent() {
         setSearchQuery={setSearchQuery}
         onSearchFocus={handleGlobalSearchFocus}
         centers={centers}
-        isLoginModalOpen={isLoginModalOpen}
-        setIsLoginModalOpen={setIsLoginModalOpen}
       />
 
       {/* VIEWPORT CONTROLLER */}
@@ -832,7 +831,8 @@ function AppContent() {
 
             {/* SEGMENTED TEST CATALOG EXPLORER */}
             {services.length > 0 && (
-              <section className="max-w-7xl mx-auto px-4 md:px-6">
+              <LazySection minHeight="450px">
+                <section className="max-w-7xl mx-auto px-4 md:px-6">
                 <div className="text-center space-y-2 mb-10">
                   <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
                   <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
@@ -957,10 +957,12 @@ function AppContent() {
                   })}
                 </div>
               </section>
+            </LazySection>
             )}
 
             {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
+            <LazySection minHeight="300px">
+              <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
               {/* Decorative background patterns */}
               <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }}></div>
 
@@ -1098,10 +1100,12 @@ function AppContent() {
                 </div>
               </div>
             </section>
+            </LazySection>
 
             {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
             {packages.length > 0 && (
-              <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
+              <LazySection minHeight="500px">
+                <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
                 {/* background ambient blur dots */}
                 <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
 
@@ -1162,6 +1166,8 @@ function AppContent() {
                               <img
                                 src={getPackageImage(pkg.id)}
                                 alt={pkg.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
                                 referrerPolicy="no-referrer"
                               />
@@ -1246,12 +1252,14 @@ function AppContent() {
                   </div>
                 </div>
               </section>
+            </LazySection>
             )}
 
 
             {/* MEET OUR EXPERT DOCTORS (Item 8) */}
             {doctors.length > 0 && (
-              <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="doctors-section">
+              <LazySection minHeight="450px" id="doctors-section">
+                <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="doctors-section">
                 {/* Header title block */}
                 <div className="space-y-4 text-center">
                   <h2 className="text-3xl md:text-5xl font-extrabold text-[#111827] tracking-tight">
@@ -1323,6 +1331,8 @@ function AppContent() {
                               <img
                                 src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
                                 alt={doc.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 referrerPolicy="no-referrer"
                               />
@@ -1362,10 +1372,12 @@ function AppContent() {
                   </div>
                 )}
               </section>
+            </LazySection>
             )}
 
             {/* EASY 4-STEP BOOKING PROCESS */}
-            <section className="bg-slate-950 border-t border-b border-slate-800/80 py-10 px-4 md:px-6 text-slate-300 my-4" id="how-to-book-section">
+            <LazySection minHeight="280px" id="how-to-book-section">
+              <section className="bg-slate-950 border-t border-b border-slate-800/80 py-10 px-4 md:px-6 text-slate-300 my-4" id="how-to-book-section">
               <div className="max-w-7xl mx-auto space-y-6 text-center">
                 <div className="space-y-1">
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-purple-900/40 border border-purple-700/50 text-[#80CBC4] text-[10px] font-black uppercase tracking-widest rounded-full">
@@ -1428,10 +1440,12 @@ function AppContent() {
                 </div>
               </div>
             </section>
+            </LazySection>
 
             {/* AUTOPLAY PROMO SLIDER SECTION (Items 9, 10, 11 merged) */}
-            <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">
-              <div className="relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-350 border border-gray-250 group">
+            <LazySection minHeight="350px" id="promo-slider-section">
+              <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">
+                <div className="relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-350 border border-gray-250 group">
 
                 {/* Horizontal Sliding container */}
                 <div
@@ -1451,6 +1465,8 @@ function AppContent() {
                       <img
                         src={banner.src}
                         alt={banner.alt}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-auto object-contain block select-none"
                         referrerPolicy="no-referrer"
                       />
@@ -1498,118 +1514,122 @@ function AppContent() {
 
               </div>
             </section>
+            </LazySection>
 
             {/* SOCIAL & SOCIETY HEALTH CAMPS (Item 12) */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-8">
-              <div className="space-y-2">
-                <span className="inline-block px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
-                  Community Initiative
-                </span>
-                <h3 className="text-3xl font-serif font-light text-slate-900 tracking-tight">
-                  Social & Society <span className="italic font-medium text-[#2D006B]">Health Camps</span>
-                </h3>
-                <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
-                  Bringing quality, subsidised, and free diagnostic checkups directly to your neighborhood or housing society.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                {/* Camp Card 1 */}
-                <div className="bg-[#FFF8F8] border border-red-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
-                  <h4 className="text-sm font-black text-red-800 uppercase tracking-wider border-b border-red-100 pb-2">
-                    Free Health Check-ups
-                  </h4>
-                  <ul className="space-y-2 text-xs text-slate-600 font-medium">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
-                      <span>Blood Pressure & Blood Sugar</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
-                      <span>BMI & Weight Evaluation</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
-                      <span>General Physician Consultation</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
-                      <span>Personalized Health Advice</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Camp Card 2 */}
-                <div className="bg-[#F0FAF7] border border-emerald-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
-                  <h4 className="text-sm font-black text-emerald-800 uppercase tracking-wider border-b border-emerald-100 pb-2">
-                    Diagnostic Camps
-                  </h4>
-                  <ul className="space-y-2 text-xs text-slate-600 font-medium">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
-                      <span>ECG & Cardiac Screening</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
-                      <span>Subsidised Lipid & Thyroid Profile</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
-                      <span>Kidney & Liver Function Panels</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
-                      <span>Sterile Blood Sample Collection</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Camp Card 3 */}
-                <div className="bg-[#F4F2FA] border border-purple-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
-                  <h4 className="text-sm font-black text-[#2D006B] uppercase tracking-wider border-b border-purple-100 pb-2">
-                    Awareness Programs
-                  </h4>
-                  <ul className="space-y-2 text-xs text-slate-600 font-medium">
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
-                      <span>Diabetes & Hypertension Seminars</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
-                      <span>Women's Health & Wellness Guidance</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
-                      <span>Pediatric Care & Nutrition Advice</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
-                      <span>Healthy Lifestyle Workshops</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Organize Health Camp Banner */}
-              <div className="bg-gradient-to-r from-[#1A0040] via-[#2D006B] to-[#400080] rounded-3xl p-6 text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl mt-6">
-                <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-white">Want to organize a Health Camp in your Housing Society?</h4>
-                  <p className="text-xs text-purple-200">
-                    AssurX provides complete setup, doctors, blood testing kits, and subsidised reports at your doorstep.
+            <LazySection minHeight="400px">
+              <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-8">
+                <div className="space-y-2">
+                  <span className="inline-block px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                    Community Initiative
+                  </span>
+                  <h3 className="text-3xl font-serif font-light text-slate-900 tracking-tight">
+                    Social & Society <span className="italic font-medium text-[#2D006B]">Health Camps</span>
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
+                    Bringing quality, subsidised, and free diagnostic checkups directly to your neighborhood or housing society.
                   </p>
                 </div>
-                <button
-                  onClick={() => handleOpenCampModal('Free Health Check-up')}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex-shrink-0 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
-                >
-                  <Tent className="w-4 h-4" />
-                  <span>Apply for Camp Now</span>
-                </button>
-              </div>
-            </section>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                  {/* Camp Card 1 */}
+                  <div className="bg-[#FFF8F8] border border-red-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
+                    <h4 className="text-sm font-black text-red-800 uppercase tracking-wider border-b border-red-100 pb-2">
+                      Free Health Check-ups
+                    </h4>
+                    <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                        <span>Blood Pressure & Blood Sugar</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                        <span>BMI & Weight Evaluation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                        <span>General Physician Consultation</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                        <span>Personalized Health Advice</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Camp Card 2 */}
+                  <div className="bg-[#F0FAF7] border border-emerald-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
+                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-wider border-b border-emerald-100 pb-2">
+                      Diagnostic Camps
+                    </h4>
+                    <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                        <span>ECG & Cardiac Screening</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                        <span>Subsidised Lipid & Thyroid Profile</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                        <span>Kidney & Liver Function Panels</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-650 flex-shrink-0" />
+                        <span>Sterile Blood Sample Collection</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Camp Card 3 */}
+                  <div className="bg-[#F4F2FA] border border-purple-100 p-6 rounded-3xl space-y-4 hover:shadow-md transition-all duration-300">
+                    <h4 className="text-sm font-black text-[#2D006B] uppercase tracking-wider border-b border-purple-100 pb-2">
+                      Awareness Programs
+                    </h4>
+                    <ul className="space-y-2 text-xs text-slate-600 font-medium">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                        <span>Diabetes & Hypertension Seminars</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                        <span>Women's Health & Wellness Guidance</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                        <span>Pediatric Care & Nutrition Advice</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-[#2D006B] flex-shrink-0" />
+                        <span>Healthy Lifestyle Workshops</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Organize Health Camp Banner */}
+                <div className="bg-gradient-to-r from-[#1A0040] via-[#2D006B] to-[#400080] rounded-3xl p-6 text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl mt-6">
+                  <div className="space-y-1">
+                    <h4 className="text-base sm:text-lg font-bold text-white">Want to organize a Health Camp in your Housing Society?</h4>
+                    <p className="text-xs text-purple-200">
+                      AssurX provides complete setup, doctors, blood testing kits, and subsidised reports at your doorstep.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenCampModal('Free Health Check-up')}
+                    className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex-shrink-0 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                  >
+                    <Tent className="w-4 h-4" />
+                    <span>Apply for Camp Now</span>
+                  </button>
+                </div>
+              </section>
+            </LazySection>
 
             {/* TESTIMONIALS (PATIENT SUCCESS STORIES) */}
-            <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8 py-6">
+            <LazySection minHeight="420px">
+              <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8 py-6">
               {/* Header */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-100 pb-6">
                 <div className="space-y-1">
@@ -1729,126 +1749,132 @@ function AppContent() {
                 </div>
               </div>
             </section>
+            </LazySection>
 
             {/* MEDIA BOOTH SECTION (Item 14) */}
-            <section className="max-w-4xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="media-booth-section">
-              <div className="space-y-1">
-                <h3 className="font-serif font-black text-[#2D006B] text-3xl md:text-4xl tracking-wider uppercase">
-                  MEDIA BOOTH
-                </h3>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                  Glimpses of our certified laboratories, community camps, and diagnostics checkups
-                </p>
-              </div>
+            <LazySection minHeight="380px" id="media-booth-section">
+              <section className="max-w-4xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="media-booth-section">
+                <div className="space-y-1">
+                  <h3 className="font-serif font-black text-[#2D006B] text-3xl md:text-4xl tracking-wider uppercase">
+                    MEDIA BOOTH
+                  </h3>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                    Glimpses of our certified laboratories, community camps, and diagnostics checkups
+                  </p>
+                </div>
 
-              {/* Slider Wrapper */}
-              <div className="relative group px-12">
-                {/* Left Scroll Button */}
-                <button
-                  onClick={() => scrollMediaBooth('left')}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer border-0 bg-transparent"
-                >
-                  <ArrowLeft className="w-9 h-9 stroke-[3]" />
-                </button>
+                {/* Slider Wrapper */}
+                <div className="relative group px-12">
+                  {/* Left Scroll Button */}
+                  <button
+                    onClick={() => scrollMediaBooth('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer border-0 bg-transparent"
+                  >
+                    <ArrowLeft className="w-9 h-9 stroke-[3]" />
+                  </button>
 
-                {/* Right Scroll Button */}
-                <button
-                  onClick={() => scrollMediaBooth('right')}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer border-0 bg-transparent"
-                >
-                  <ArrowRight className="w-9 h-9 stroke-[3]" />
-                </button>
+                  {/* Right Scroll Button */}
+                  <button
+                    onClick={() => scrollMediaBooth('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer border-0 bg-transparent"
+                  >
+                    <ArrowRight className="w-9 h-9 stroke-[3]" />
+                  </button>
 
-                {/* Horizontal scroll container of film strips */}
-                <div
-                  ref={mediaBoothScrollRef}
-                  className="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth snap-x snap-mandatory px-2"
-                >
-                  {[
-                    { src: '/1.mp4', alt: 'Diagnostic Lab Facility Tour' },
-                    { src: '/2.mp4', alt: 'Pathology Testing & Machinery' },
-                    { src: '/3.mp4', alt: 'Emergency Diagnostics Response' }
-                  ].map((video, index) => (
-                    <div
-                      key={index}
-                      className="flex-shrink-0 w-[260px] sm:w-[300px] bg-black p-0 border border-slate-800 rounded-2xl overflow-hidden shadow-lg select-none snap-start group"
-                    >
-                      {/* Top Sprocket Bar */}
-                      <div className="flex justify-between bg-black px-3 py-1.5 border-b border-black">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                          <div key={i} className="w-2.5 h-3 bg-white rounded-xs opacity-90"></div>
-                        ))}
-                      </div>
+                  {/* Horizontal scroll container of film strips */}
+                  <div
+                    ref={mediaBoothScrollRef}
+                    className="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth snap-x snap-mandatory px-2"
+                  >
+                    {[
+                      { src: '/1.mp4', alt: 'Diagnostic Lab Facility Tour' },
+                      { src: '/2.mp4', alt: 'Pathology Testing & Machinery' },
+                      { src: '/3.mp4', alt: 'Emergency Diagnostics Response' }
+                    ].map((video, index) => (
+                      <div
+                        key={index}
+                        className="flex-shrink-0 w-[260px] sm:w-[300px] bg-black p-0 border border-slate-800 rounded-2xl overflow-hidden shadow-lg select-none snap-start group"
+                      >
+                        {/* Top Sprocket Bar */}
+                        <div className="flex justify-between bg-black px-3 py-1.5 border-b border-black">
+                          {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="w-2.5 h-3 bg-white rounded-xs opacity-90"></div>
+                          ))}
+                        </div>
 
-                      {/* Media Area */}
-                      <div className="relative aspect-[4/3] bg-black overflow-hidden border-x-[10px] border-black">
-                        <video
-                          src={video.src}
-                          controls
-                          autoPlay
-                          muted
-                          loop
-                          className="w-full h-full object-cover"
-                          preload="metadata"
-                          playsInline
-                        />
-                        <div className="absolute top-2 left-2 bg-[#E54848] text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-black shadow-xs pointer-events-none z-10">
-                          VIDEO
+                        {/* Media Area */}
+                        <div className="relative aspect-[4/3] bg-black overflow-hidden border-x-[10px] border-black">
+                          <video
+                            src={video.src}
+                            controls
+                            muted
+                            loop
+                            className="w-full h-full object-cover"
+                            preload="none"
+                            playsInline
+                          />
+                          <div className="absolute top-2 left-2 bg-[#E54848] text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-black shadow-xs pointer-events-none z-10">
+                            VIDEO
+                          </div>
+                        </div>
+
+                        {/* Bottom Sprocket Bar */}
+                        <div className="flex justify-between bg-black px-3 py-1.5 border-t border-black">
+                          {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="w-2.5 h-3 bg-white rounded-xs opacity-90"></div>
+                          ))}
                         </div>
                       </div>
-
-                      {/* Bottom Sprocket Bar */}
-                      <div className="flex justify-between bg-black px-3 py-1.5 border-t border-black">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                          <div key={i} className="w-2.5 h-3 bg-white rounded-xs opacity-90"></div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </LazySection>
 
             {/* FAQ SECTION */}
-            <section className="max-w-4xl mx-auto px-4 md:px-6 text-left space-y-6">
-              <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl text-center tracking-tight">Frequently Asked <span className="italic font-medium text-[#2D006B]">Questions</span></h3>
-              <div className="space-y-3 border border-gray-205 rounded-3xl bg-white p-6 md:p-8 divide-y divide-gray-100 shadow-sm">
-                {faqs.map((faq, idx) => (
-                  <div key={idx} className="py-4 first:pt-0 last:pb-0 space-y-1.5">
-                    <h4 className="font-bold text-slate-850 text-sm md:text-base flex items-start gap-2 leading-snug">
-                      <HelpCircle className="w-4.5 h-4.5 text-[#AD1457] mt-0.5 flex-shrink-0" />
-                      <span>{faq.q}</span>
-                    </h4>
-                    <p className="text-xs text-slate-550 pl-6 leading-relaxed">{faq.a}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* POPULAR TESTS SECTION (PLACED DIRECTLY BELOW FAQ SECTION) */}
-            <section className="bg-[#f3f4f6] border-t border-b border-slate-200 py-10 px-4 md:px-8 text-slate-800 my-4" id="popular-tests-footer-section">
-              <div className="max-w-7xl mx-auto space-y-6">
-                <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight text-left">
-                  Popular tests
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3.5 gap-x-8 text-xs md:text-sm text-slate-700 text-left">
-                  {POPULAR_TESTS_DATA.map((col, colIdx) => (
-                    <div key={colIdx} className="space-y-3">
-                      {col.map((item, itemIdx) => (
-                        <button
-                          key={itemIdx}
-                          onClick={() => setCurrentTab(item.isScan ? 'scans' : 'labs')}
-                          className={`block text-left w-full hover:text-[#AD1457] transition-colors cursor-pointer ${item.bold ? 'font-serif font-bold text-slate-900' : 'font-normal text-slate-650'
-                            }`}
-                        >
-                          {item.name}
-                        </button>
-                      ))}
+            <LazySection minHeight="350px">
+              <section className="max-w-4xl mx-auto px-4 md:px-6 text-left space-y-6">
+                <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl text-center tracking-tight">Frequently Asked <span className="italic font-medium text-[#2D006B]">Questions</span></h3>
+                <div className="space-y-3 border border-gray-205 rounded-3xl bg-white p-6 md:p-8 divide-y divide-gray-100 shadow-sm">
+                  {faqs.map((faq, idx) => (
+                    <div key={idx} className="py-4 first:pt-0 last:pb-0 space-y-1.5">
+                      <h4 className="font-bold text-slate-850 text-sm md:text-base flex items-start gap-2 leading-snug">
+                        <HelpCircle className="w-4.5 h-4.5 text-[#AD1457] mt-0.5 flex-shrink-0" />
+                        <span>{faq.q}</span>
+                      </h4>
+                      <p className="text-xs text-slate-550 pl-6 leading-relaxed">{faq.a}</p>
                     </div>
                   ))}
                 </div>
-              </div>
-            </section>
+              </section>
+            </LazySection>
+
+            {/* POPULAR TESTS SECTION (PLACED DIRECTLY BELOW FAQ SECTION) */}
+            <LazySection minHeight="250px" id="popular-tests-footer-section">
+              <section className="bg-[#f3f4f6] border-t border-b border-slate-200 py-10 px-4 md:px-8 text-slate-800 my-4" id="popular-tests-footer-section">
+                <div className="max-w-7xl mx-auto space-y-6">
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight text-left">
+                    Popular tests
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-3.5 gap-x-8 text-xs md:text-sm text-slate-700 text-left">
+                    {POPULAR_TESTS_DATA.map((col, colIdx) => (
+                      <div key={colIdx} className="space-y-3">
+                        {col.map((item, itemIdx) => (
+                          <button
+                            key={itemIdx}
+                            onClick={() => setCurrentTab(item.isScan ? 'scans' : 'labs')}
+                            className={`block text-left w-full hover:text-[#AD1457] transition-colors cursor-pointer ${item.bold ? 'font-serif font-bold text-slate-900' : 'font-normal text-slate-650'
+                              }`}
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            </LazySection>
 
           </div>
         )}
@@ -2203,7 +2229,9 @@ function AppContent() {
       </main>
 
       {/* Footer element */}
-      <Footer onNavigate={setCurrentTab} centers={centers} selectedBranch={selectedBranch} />
+      <LazySection minHeight="350px">
+        <Footer onNavigate={setCurrentTab} centers={centers} selectedBranch={selectedBranch} />
+      </LazySection>
 
       {/* --- FLOATING PRESCRIPTION DIALOG / PORTAL OVERLAY --- */}
       {isPrescriptionOpen && (

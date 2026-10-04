@@ -5723,21 +5723,28 @@ async function startServer() {
       } catch (e) {
       }
     }, 2 * 60 * 1e3);
-    const APP_URL = process.env.APP_URL;
-    if (APP_URL && process.env.NODE_ENV === "production") {
-      setInterval(() => {
-        try {
-          const pingUrl = `${APP_URL.replace(/\/$/, "")}/api/health`;
-          https.get(pingUrl, (res) => {
-            res.resume();
-            console.log(`[Keep-Alive] External ping OK: ${res.statusCode}`);
-          }).on("error", (err) => {
-            console.warn(`[Keep-Alive] External ping failed: ${err.message}`);
-          });
-        } catch (e) {
-        }
-      }, 3 * 60 * 1e3);
-    }
+    const APP_URL = (process.env.APP_URL || "https://assurx.co.in").replace(/\/$/, "");
+    const pingTarget = `${APP_URL}/api/health`;
+    const performKeepAlivePing = () => {
+      try {
+        const client = pingTarget.startsWith("https") ? https : http;
+        const req = client.get(pingTarget, { timeout: 1e4 }, (res) => {
+          res.resume();
+          console.log(`[Keep-Alive 5-Min Ping] Ping to ${pingTarget} SUCCESS (Status: ${res.statusCode}) at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`);
+        });
+        req.on("timeout", () => {
+          req.destroy();
+          console.warn(`[Keep-Alive 5-Min Ping] Timeout after 10s for ${pingTarget}`);
+        });
+        req.on("error", (err) => {
+          console.warn(`[Keep-Alive 5-Min Ping] Ping failed: ${err.message}`);
+        });
+      } catch (e) {
+        console.warn(`[Keep-Alive 5-Min Ping] Error initiating ping: ${e.message}`);
+      }
+    };
+    setTimeout(performKeepAlivePing, 15e3);
+    setInterval(performKeepAlivePing, 5 * 60 * 1e3);
     setInterval(() => {
       if (global.gc) global.gc();
     }, 5 * 60 * 1e3);
@@ -5757,7 +5764,8 @@ async function startServer() {
   server.timeout = 12e4;
   server.on("connection", (socket) => {
     socket.on("error", (err) => {
-      if (err.code !== "ECONNRESET" && err.code !== "EPIPE" && err.code !== "ECANCELED") {
+      const ignoredCodes = ["ECONNRESET", "ECONNABORTED", "EPIPE", "ECANCELED", "ETIMEDOUT", "ERR_STREAM_PREMATURE_CLOSE"];
+      if (!ignoredCodes.includes(err.code)) {
         console.warn(`[Socket] Connection error: ${err.code || err.message}`);
       }
     });

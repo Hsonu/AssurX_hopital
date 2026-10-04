@@ -1723,22 +1723,33 @@ async function startServer() {
       } catch (e) { /* ignore */ }
     }, 2 * 60 * 1000); // Every 2 minutes (more aggressive)
 
-    // === Hostinger VPS: External self-ping to keep domain alive ===
-    // Some VPS providers need external traffic to keep the process warm
-    const APP_URL = process.env.APP_URL;
-    if (APP_URL && process.env.NODE_ENV === 'production') {
-      setInterval(() => {
-        try {
-          const pingUrl = `${APP_URL.replace(/\/$/, '')}/api/health`;
-          https.get(pingUrl, (res) => {
-            res.resume();
-            console.log(`[Keep-Alive] External ping OK: ${res.statusCode}`);
-          }).on('error', (err) => {
-            console.warn(`[Keep-Alive] External ping failed: ${err.message}`);
-          });
-        } catch (e) { /* ignore */ }
-      }, 3 * 60 * 1000); // Every 3 minutes
-    }
+    // === Keep-Alive: Ping https://assurx.co.in every 5 minutes ===
+    const APP_URL = (process.env.APP_URL || 'https://assurx.co.in').replace(/\/$/, '');
+    const pingTarget = `${APP_URL}/api/health`;
+    
+    // Immediate ping on boot + Every 5 minutes interval
+    const performKeepAlivePing = () => {
+      try {
+        const client = pingTarget.startsWith('https') ? https : http;
+        const req = client.get(pingTarget, { timeout: 10000 }, (res: any) => {
+          res.resume();
+          console.log(`[Keep-Alive 5-Min Ping] Ping to ${pingTarget} SUCCESS (Status: ${res.statusCode}) at ${new Date().toLocaleTimeString()}`);
+        });
+        req.on('timeout', () => {
+          req.destroy();
+          console.warn(`[Keep-Alive 5-Min Ping] Timeout after 10s for ${pingTarget}`);
+        });
+        req.on('error', (err: any) => {
+          console.warn(`[Keep-Alive 5-Min Ping] Ping failed: ${err.message}`);
+        });
+      } catch (e: any) {
+        console.warn(`[Keep-Alive 5-Min Ping] Error initiating ping: ${e.message}`);
+      }
+    };
+
+    // Run first ping after 15 seconds, then every 5 minutes (300,000 ms)
+    setTimeout(performKeepAlivePing, 15000);
+    setInterval(performKeepAlivePing, 5 * 60 * 1000);
 
     // === Hostinger: Memory cleanup every 5 minutes ===
     // Prevents memory buildup that causes Hostinger to kill the process
@@ -1767,8 +1778,9 @@ async function startServer() {
   // === Handle connection-level errors to prevent ERR_CONNECTION_CLOSED ===
   server.on('connection', (socket: any) => {
     socket.on('error', (err: any) => {
-      // Silently handle socket errors (client disconnected, reset, etc.)
-      if (err.code !== 'ECONNRESET' && err.code !== 'EPIPE' && err.code !== 'ECANCELED') {
+      // Silently handle normal client disconnect errors (aborted requests, tab closed, refresh)
+      const ignoredCodes = ['ECONNRESET', 'ECONNABORTED', 'EPIPE', 'ECANCELED', 'ETIMEDOUT', 'ERR_STREAM_PREMATURE_CLOSE'];
+      if (!ignoredCodes.includes(err.code)) {
         console.warn(`[Socket] Connection error: ${err.code || err.message}`);
       }
     });
