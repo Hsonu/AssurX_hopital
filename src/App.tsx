@@ -16,6 +16,7 @@ import { auth } from './lib/firebase.ts';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuth } from './lib/auth.ts';
 import { onSessionKicked, getUserSessionId, getAdminSessionId } from './lib/sessionGuard.ts';
+import { safeFetch, subscribeNetworkStatus, isNetworkOnline } from './lib/apiClient.ts';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Footer from './components/Footer';
@@ -322,34 +323,61 @@ function AppContent() {
   // Dynamic FAQs loaded from MongoDB
   const [faqs, setFaqs] = useState<{ q: string; a: string }[]>([]);
 
-  useEffect(() => {
-    // === PERF FIX: Single combined API call instead of 6+ separate ones ===
-    // This dramatically reduces load time on slow networks (1 round-trip vs 6)
-    fetch('/api/init')
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load initial data");
-        return res.json();
-      })
-      .then(data => {
-        if (data.services) setServices(data.services);
-        if (data.packages) setPackages(data.packages);
-        if (data.centers) setCenters(data.centers);
-        if (data.doctors) setDoctors(data.doctors);
-        if (data.testimonials && data.testimonials.length > 0) {
-          setTestimonials(data.testimonials);
-        } else {
-          setTestimonials(CUSTOMER_TESTIMONIALS);
-        }
-        if (data.faqs) setFaqs(data.faqs);
-        if (data.promoAd && data.promoAd.imageUrl) {
-          setPromoAd(data.promoAd);
-        }
-      })
-      .catch(err => {
-        console.error("Error loading initial data:", err);
+  // Network recovery & auto-reconnection state
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'restored'>(() =>
+    isNetworkOnline() ? 'online' : 'offline'
+  );
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      // safeFetch automatically retries on temporary drops or timeouts with exponential backoff
+      const res = await safeFetch('/api/init', { retries: 3, timeoutMs: 15000 });
+      if (!res.ok) throw new Error("Failed to load initial data");
+      const data = await res.json();
+      if (data.services) setServices(data.services);
+      if (data.packages) setPackages(data.packages);
+      if (data.centers) setCenters(data.centers);
+      if (data.doctors) setDoctors(data.doctors);
+      if (data.testimonials && data.testimonials.length > 0) {
+        setTestimonials(data.testimonials);
+      } else {
         setTestimonials(CUSTOMER_TESTIMONIALS);
-      });
+      }
+      if (data.faqs) setFaqs(data.faqs);
+      if (data.promoAd && data.promoAd.imageUrl) {
+        setPromoAd(data.promoAd);
+      }
+    } catch (err) {
+      console.error("Error loading initial data:", err);
+      setTestimonials(CUSTOMER_TESTIMONIALS);
+    }
   }, []);
+
+  useEffect(() => {
+    // Initial fetch on mount
+    loadInitialData();
+
+    // Auto-reconnect listener: automatically retries when internet comes back
+    let restoredTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = subscribeNetworkStatus((isOnline) => {
+      if (isOnline) {
+        setNetworkStatus('restored');
+        loadInitialData();
+        if (restoredTimer) clearTimeout(restoredTimer);
+        restoredTimer = setTimeout(() => {
+          setNetworkStatus('online');
+        }, 3500);
+      } else {
+        if (restoredTimer) clearTimeout(restoredTimer);
+        setNetworkStatus('offline');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (restoredTimer) clearTimeout(restoredTimer);
+    };
+  }, [loadInitialData]);
 
   const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
   const [doctorSpecialtyFilter, setDoctorSpecialtyFilter] = useState('All');
@@ -628,6 +656,23 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col font-sans" id="app-root-frame">
 
+      {/* ── Network Recovery Status Indicator ───────────────────────────── */}
+      {networkStatus !== 'online' && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none transition-all duration-300">
+          {networkStatus === 'offline' ? (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full shadow-xl text-xs font-semibold text-white bg-amber-600/95 backdrop-blur-md border border-amber-400/40 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-amber-200"></span>
+              <span>Connection lost. Reconnecting...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full shadow-xl text-xs font-semibold text-white bg-emerald-600/95 backdrop-blur-md border border-emerald-400/40">
+              <span className="w-2 h-2 rounded-full bg-emerald-200"></span>
+              <span>Connection restored.</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Session Kicked Popup ─────────────────────────────────────────── */}
       {sessionKickedType && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in">
@@ -830,122 +875,413 @@ function AppContent() {
             {services.length > 0 && (
               <LazySection minHeight="450px">
                 <section className="max-w-7xl mx-auto px-4 md:px-6">
-                <div className="text-center space-y-2 mb-10">
-                  <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
-                  <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
-                </div>
+                  <div className="text-center space-y-2 mb-10">
+                    <h2 className="text-3xl md:text-4xl font-serif font-light text-slate-900 tracking-tight">Our Core <span className="italic font-medium text-[#2D006B]">Diagnostic Offerings</span></h2>
+                    <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">Absolute clinical precision with high-end customer care. Select a category below to explore popular tests.</p>
+                  </div>
 
-                {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
-                <div className={`grid grid-cols-1 ${sections.length > 1 ? 'lg:grid-cols-2' : 'max-w-4xl mx-auto'} gap-8 items-start`}>
-                  {sections.map((section) => {
-                    // Determine tests to display
-                    let displayServices: DiagnosticService[] = [];
-                    if (section.serviceIds && section.serviceIds.length > 0) {
-                      displayServices = section.serviceIds
-                        .map(id => services.find(s => s.id === id))
-                        .filter((s): s is DiagnosticService => !!s);
-                    } else {
-                      displayServices = services
-                        .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
-                        .slice(0, 4);
-                    }
+                  {/* Flex grids of offering panels rendering dynamically based on user sections configuration */}
+                  <div className={`grid grid-cols-1 ${sections.length > 1 ? 'lg:grid-cols-2' : 'max-w-4xl mx-auto'} gap-8 items-start`}>
+                    {sections.map((section) => {
+                      // Determine tests to display
+                      let displayServices: DiagnosticService[] = [];
+                      if (section.serviceIds && section.serviceIds.length > 0) {
+                        displayServices = section.serviceIds
+                          .map(id => services.find(s => s.id === id))
+                          .filter((s): s is DiagnosticService => !!s);
+                      } else {
+                        displayServices = services
+                          .filter(s => (section.category === 'all' || s.category === section.category) && s.popular)
+                          .slice(0, 4);
+                      }
 
-                    const totalCount = section.serviceIds && section.serviceIds.length > 0
-                      ? section.serviceIds.length
-                      : services.filter(s => section.category === 'all' || s.category === section.category).length;
+                      const totalCount = section.serviceIds && section.serviceIds.length > 0
+                        ? section.serviceIds.length
+                        : services.filter(s => section.category === 'all' || s.category === section.category).length;
 
-                    return (
-                      <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
-                        <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                          <div>
-                            <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
-                              {section.category === 'scan' ? (
-                                <Activity className="w-4 h-4 text-[#AD1457]" />
-                              ) : (
-                                <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
-                              )}
-                              {section.title}
-                            </h3>
-                            <span className="text-[10px] text-slate-400">{section.subtitle}</span>
+                      return (
+                        <div key={section.id} className="bg-white border border-gray-250/60 rounded-3xl p-6 md:p-8 shadow-sm text-left space-y-4">
+                          <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                            <div>
+                              <h3 className="font-serif italic font-medium text-slate-900 text-base md:text-lg flex items-center gap-2">
+                                {section.category === 'scan' ? (
+                                  <Activity className="w-4 h-4 text-[#AD1457]" />
+                                ) : (
+                                  <ClipboardCheck className="w-4 h-4 text-[#AD1457]" />
+                                )}
+                                {section.title}
+                              </h3>
+                              <span className="text-[10px] text-slate-400">{section.subtitle}</span>
+                            </div>
+                            <button
+                              onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
+                              className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <span>View All ({totalCount})</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Section banner */}
+                          <div
+                            onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
+                            className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
+                            title={`Go to ${section.title}`}
+                          >
+                            <img
+                              src={resolveBannerImage(section.bannerImage)}
+                              alt={section.title}
+                              loading="lazy"
+                              decoding="async"
+                              width={800}
+                              height={300}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/sonography_equipment.png';
+                              }}
+                              className="w-full h-full object-cover select-none hover:scale-[1.015] transition-transform duration-300"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                            <div className="absolute bottom-3 left-3 right-3 text-left">
+                              <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
+                                {section.bannerTag}
+                              </span>
+                              <p className="text-white text-[10.5px] font-bold leading-tight">
+                                {section.bannerTitle}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Services list inside this panel */}
+                          <div className="space-y-3.5">
+                            {displayServices.map((service) => {
+                              const inCart = cart.some(ci => ci.itemId === service.id);
+                              return (
+                                <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                  <div className="space-y-1 text-left flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
+                                      {service.parametersCount && (
+                                        <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
+                                          {service.parametersCount} params
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
+                                    <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
+                                      {service.category === 'scan'
+                                        ? `Prep: ${service.preparation.split('.')[0]}`
+                                        : `Turnaround: ${service.reportDelivery}`}
+                                    </span>
+                                  </div>
+                                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
+                                    <div className="text-left sm:text-right">
+                                      <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
+                                      {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        onClick={() => handleDirectBook(service)}
+                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
+                                      >
+                                        Book Now
+                                      </button>
+                                      <button
+                                        onClick={() => handleAddToCart(service, 'service')}
+                                        className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                          : 'border border-slate-200 hover:bg-slate-50 text-slate-655 bg-white'
+                                          }`}
+                                      >
+                                        {inCart ? 'Added' : '+ Cart'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              </LazySection>
+            )}
+
+            {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
+            <LazySection minHeight="300px">
+              <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
+                {/* Decorative background patterns */}
+                <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }}></div>
+
+                <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+                  {/* Title Section */}
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold italic text-[#3d2b1f] tracking-tight">
+                      Precision Testing for Your Complete Health
+                    </h2>
+                    <p className="text-xs md:text-sm text-[#6b5744] font-semibold mt-2 tracking-wider">
+                      ISO CERTIFIED • Digital Reports in 24 Hours • Free Home Sample Pickup
+                    </p>
+                  </div>
+
+                  {/* Scrolling Test Cards */}
+                  <div className="relative overflow-hidden mb-8">
+                    <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{ width: 'max-content' }}>
+                      {/* Card Set 1 (original) */}
+                      {[
+                        { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
+                        { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
+                        { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
+                        { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
+                        { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
+                        { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
+                      ].map((test, i) => (
+                        <div key={`a-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
+                              <Award className="w-4 h-4 text-[#8B4513]" />
+                            </div>
+                            <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
+                          </div>
+                          <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
+                          <div className="flex items-baseline gap-2 mb-3">
+                            <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
+                            <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
+                            <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
                           </div>
                           <button
-                            onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
-                            className="text-[#DC2626] hover:text-[#B91C1C] font-bold text-xs uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const svc = getCarouselService(test.name);
+                              if (svc) {
+                                handleAddToCart(svc, 'service');
+                              } else {
+                                setCurrentTab('labs');
+                              }
+                            }}
+                            className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                           >
-                            <span>View All ({totalCount})</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
+                            <ShoppingCart className="w-3 h-3" />
+                            ADD TO CART
                           </button>
                         </div>
-
-                        {/* Section banner */}
-                        <div 
-                          onClick={() => setCurrentTab(section.viewAllTab || 'scans')}
-                          className="relative rounded-2xl overflow-hidden aspect-[21/9] sm:aspect-[16/6] bg-slate-100 border border-slate-100/50 mb-4 shadow-sm cursor-pointer hover:opacity-95 transition-opacity"
-                          title={`Go to ${section.title}`}
-                        >
-                          <img
-                            src={resolveBannerImage(section.bannerImage)}
-                            alt={section.title}
-                            loading="lazy"
-                            decoding="async"
-                            width={800}
-                            height={300}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/sonography_equipment.png';
-                            }}
-                            className="w-full h-full object-cover select-none hover:scale-[1.015] transition-transform duration-300"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-                          <div className="absolute bottom-3 left-3 right-3 text-left">
-                            <span className="bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded mb-1 inline-block">
-                              {section.bannerTag}
-                            </span>
-                            <p className="text-white text-[10.5px] font-bold leading-tight">
-                              {section.bannerTitle}
-                            </p>
+                      ))}
+                      {/* Card Set 2 (duplicate for seamless loop) */}
+                      {[
+                        { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
+                        { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
+                        { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
+                        { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
+                        { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
+                        { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
+                      ].map((test, i) => (
+                        <div key={`b-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
+                              <Award className="w-4 h-4 text-[#8B4513]" />
+                            </div>
+                            <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
                           </div>
+                          <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
+                          <div className="flex items-baseline gap-2 mb-3">
+                            <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
+                            <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
+                            <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const svc = getCarouselService(test.name);
+                              if (svc) {
+                                handleAddToCart(svc, 'service');
+                              } else {
+                                setCurrentTab('labs');
+                              }
+                            }}
+                            className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                          >
+                            <ShoppingCart className="w-3 h-3" />
+                            ADD TO CART
+                          </button>
                         </div>
+                      ))}
+                    </div>
+                  </div>
 
-                        {/* Services list inside this panel */}
-                        <div className="space-y-3.5">
-                          {displayServices.map((service) => {
-                            const inCart = cart.some(ci => ci.itemId === service.id);
-                            return (
-                              <div key={service.id} className="border border-gray-100 p-4 rounded-2xl bg-[#fafafa]/40 hover:bg-[#fafafa]/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="space-y-1 text-left flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <h4 className="font-bold text-slate-850 text-xs md:text-sm truncate">{service.name}</h4>
-                                    {service.parametersCount && (
-                                      <span className="inline-block px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
-                                        {service.parametersCount} params
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{service.description}</p>
-                                  <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-500 font-semibold rounded text-[9px]">
-                                    {service.category === 'scan'
-                                      ? `Prep: ${service.preparation.split('.')[0]}`
-                                      : `Turnaround: ${service.reportDelivery}`}
+                  {/* Bottom: SHOW ALL TESTS + Trust Badges */}
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <button
+                      onClick={() => setCurrentTab('labs')}
+                      className="px-8 py-3 bg-[#009688] hover:bg-[#00796B] text-white rounded-lg text-sm font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer hover:shadow-xl"
+                    >
+                      SHOW ALL TESTS <span className="text-lg">→</span>
+                    </button>
+
+                    <div className="flex items-center gap-6 md:gap-8">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
+                          <Home className="w-5 h-5 text-[#009688]" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Free Home</p>
+                          <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Collection</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-[#009688]" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Same-Day</p>
+                          <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Digital Reports</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* POPULAR DIAGNOSTIC TESTS badge */}
+                    <div className="hidden lg:flex items-center">
+                      <div className="bg-[#d4870a] text-white px-4 py-2.5 rounded-lg shadow-lg">
+                        <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br />DIAGNOSTIC<br />TESTS</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </LazySection>
+
+            {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
+            {packages.length > 0 && (
+              <LazySection minHeight="500px">
+                <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
+                  {/* background ambient blur dots */}
+                  <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
+
+                  <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+                    <div className="text-center space-y-3">
+                      <span className="inline-block px-3 py-1 bg-[#16181d] border border-gray-800 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                        Recommended Preventive Screening
+                      </span>
+                      <h2 className="text-3xl md:text-4xl font-serif font-light text-white tracking-tight">Popular <span className="italic font-medium text-emerald-400">Health Checkup Packages</span></h2>
+                      <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
+                    </div>
+
+                    {/* Horizontal slider container wrapper */}
+                    <div className="relative group/slider px-2">
+                      {/* Left Scroll Button */}
+                      <button
+                        onClick={() => scrollPackages('left')}
+                        disabled={!canScrollLeft}
+                        className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                          }`}
+                        aria-label="Scroll Left"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+
+                      {/* Right Scroll Button */}
+                      <button
+                        onClick={() => scrollPackages('right')}
+                        disabled={!canScrollRight}
+                        className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                          }`}
+                        aria-label="Scroll Right"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+
+                      {/* Horizontal slider of packages */}
+                      <div
+                        ref={packagesScrollRef}
+                        className="flex flex-nowrap overflow-x-auto gap-6 text-left scroll-smooth pb-6 pt-2 snap-x snap-mandatory no-scrollbar"
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'nowrap',
+                          overflowX: 'auto',
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none'
+                        }}
+                      >
+                        {packages.map((pkg) => {
+                          const inCart = cart.some(ci => ci.itemId === pkg.id);
+                          return (
+                            <div
+                              key={pkg.id}
+                              className="w-[85vw] sm:w-[380px] md:w-[400px] flex-shrink-0 bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all snap-start"
+                            >
+                              {/* Package Thumbnail Image */}
+                              <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
+                                <img
+                                  src={getPackageImage(pkg.id)}
+                                  alt={pkg.name}
+                                  loading="lazy"
+                                  decoding="async"
+                                  width={400}
+                                  height={175}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop';
+                                  }}
+                                  className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
+                                {pkg.popular && (
+                                  <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
+                                    Best Value
                                   </span>
-                                </div>
-                                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 flex-shrink-0 w-full sm:w-auto">
-                                  <div className="text-left sm:text-right">
-                                    <span className="text-sm font-black text-slate-800">₹{service.discountPrice || service.price}</span>
-                                    {service.discountPrice && <p className="text-[10px] text-slate-400 line-through">₹{service.price}</p>}
+                                )}
+                              </div>
+
+                              <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
+                                <div className="space-y-4">
+                                  <div>
+                                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
+                                    <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
+                                    <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
                                   </div>
-                                  <div className="flex gap-1.5">
+
+                                  {/* list of subset tests included */}
+                                  <div className="space-y-1.5 border-t border-gray-800 pt-4">
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
+                                    <div className="space-y-1 text-[11px] text-slate-400">
+                                      {pkg.includedTests.slice(0, 4).map((test, idx) => (
+                                        <div key={idx} className="flex items-center gap-1.5">
+                                          <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                          <span className="truncate">{test}</span>
+                                        </div>
+                                      ))}
+                                      {pkg.includedTests.length > 4 && (
+                                        <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-gray-800">
+                                  <div className="flex justify-between items-end">
+                                    <div>
+                                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
+                                      <div className="flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
+                                        <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
+                                      </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
+                                  </div>
+
+                                  <div className="flex gap-2">
                                     <button
-                                      onClick={() => handleDirectBook(service)}
-                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-xs cursor-pointer active:scale-[0.98] transition-all"
+                                      onClick={() => handleDirectBook(pkg)}
+                                      className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
                                     >
-                                      Book Now
+                                      Book Now (Pay at Lab)
                                     </button>
                                     <button
-                                      onClick={() => handleAddToCart(service, 'service')}
-                                      className={`px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer ${inCart
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                        : 'border border-slate-200 hover:bg-slate-50 text-slate-655 bg-white'
+                                      onClick={() => handleAddToCart(pkg, 'package')}
+                                      className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
+                                        ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
+                                        : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
                                         }`}
                                     >
                                       {inCart ? 'Added' : '+ Cart'}
@@ -953,315 +1289,24 @@ function AppContent() {
                                   </div>
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            </LazySection>
-            )}
-
-            {/* ====== ANIMATED PRECISION TESTING BANNER ====== */}
-            <LazySection minHeight="300px">
-              <section className="relative overflow-hidden bg-gradient-to-br from-[#f5efe6] via-[#faf6ee] to-[#efe8da] py-10 md:py-14 border-y border-[#d4c4a0]/40">
-              {/* Decorative background patterns */}
-              <div className="absolute top-0 right-0 w-40 h-40 md:w-64 md:h-64 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'80\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'60\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3Ccircle cx=\'100\' cy=\'100\' r=\'40\' fill=\'none\' stroke=\'%238B4513\' stroke-width=\'1\'/%3E%3C/svg%3E")', backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }}></div>
-
-              <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
-                {/* Title Section */}
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold italic text-[#3d2b1f] tracking-tight">
-                    Precision Testing for Your Complete Health
-                  </h2>
-                  <p className="text-xs md:text-sm text-[#6b5744] font-semibold mt-2 tracking-wider">
-                    ISO CERTIFIED • Digital Reports in 24 Hours • Free Home Sample Pickup
-                  </p>
-                </div>
-
-                {/* Scrolling Test Cards */}
-                <div className="relative overflow-hidden mb-8">
-                  <div className="flex gap-4 md:gap-6 animate-[scroll_20s_linear_infinite] hover:[animation-play-state:paused]" style={{ width: 'max-content' }}>
-                    {/* Card Set 1 (original) */}
-                    {[
-                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
-                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
-                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
-                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
-                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
-                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
-                    ].map((test, i) => (
-                      <div key={`a-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
-                            <Award className="w-4 h-4 text-[#8B4513]" />
-                          </div>
-                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
-                        </div>
-                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
-                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
-                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const svc = getCarouselService(test.name);
-                            if (svc) {
-                              handleAddToCart(svc, 'service');
-                            } else {
-                              setCurrentTab('labs');
-                            }
-                          }}
-                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                        >
-                          <ShoppingCart className="w-3 h-3" />
-                          ADD TO CART
-                        </button>
-                      </div>
-                    ))}
-                    {/* Card Set 2 (duplicate for seamless loop) */}
-                    {[
-                      { name: 'CBC TEST', desc: '24+ Immunity & Anemia Markers', price: 299, mrp: 599, discount: 50 },
-                      { name: 'LIPID PROFILE', desc: 'Full Heart Check: Chol, HDL, LDL', price: 399, mrp: 799, discount: 50 },
-                      { name: 'THYROID PANEL', desc: 'T3, T4, TSH Screening', price: 349, mrp: 699, discount: 50 },
-                      { name: 'LIVER FUNCTION', desc: 'SGPT, SGOT, Bilirubin & More', price: 449, mrp: 899, discount: 50 },
-                      { name: 'KIDNEY PROFILE', desc: 'Creatinine, BUN, Uric Acid', price: 399, mrp: 799, discount: 50 },
-                      { name: 'VITAMIN D', desc: '25-Hydroxy Vitamin D Test', price: 599, mrp: 1199, discount: 50 },
-                    ].map((test, i) => (
-                      <div key={`b-${i}`} className="flex-shrink-0 w-56 md:w-64 bg-gradient-to-b from-[#f9f3e8] to-[#efe5d3] border border-[#d4c4a0] rounded-xl p-4 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-[#8B4513]/10 flex items-center justify-center flex-shrink-0">
-                            <Award className="w-4 h-4 text-[#8B4513]" />
-                          </div>
-                          <h3 className="text-sm font-black text-[#3d2b1f] uppercase tracking-wide">{test.name}</h3>
-                        </div>
-                        <p className="text-[10px] text-[#6b5744] font-medium mb-3 leading-relaxed">{test.desc}</p>
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-xl font-black text-[#3d2b1f]">₹{test.price}</span>
-                          <span className="text-xs text-[#8B4513]/60 line-through">~₹{test.mrp}</span>
-                          <span className="text-[10px] font-bold text-[#8B4513]">~ ({test.discount}% OFF)</span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const svc = getCarouselService(test.name);
-                            if (svc) {
-                              handleAddToCart(svc, 'service');
-                            } else {
-                              setCurrentTab('labs');
-                            }
-                          }}
-                          className="w-full py-1.5 bg-[#8B4513] hover:bg-[#6d350f] text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                        >
-                          <ShoppingCart className="w-3 h-3" />
-                          ADD TO CART
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom: SHOW ALL TESTS + Trust Badges */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <button
-                    onClick={() => setCurrentTab('labs')}
-                    className="px-8 py-3 bg-[#009688] hover:bg-[#00796B] text-white rounded-lg text-sm font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all cursor-pointer hover:shadow-xl"
-                  >
-                    SHOW ALL TESTS <span className="text-lg">→</span>
-                  </button>
-
-                  <div className="flex items-center gap-6 md:gap-8">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
-                        <Home className="w-5 h-5 text-[#009688]" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Free Home</p>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Collection</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-[#009688]/10 flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-[#009688]" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Same-Day</p>
-                        <p className="text-[10px] font-bold text-[#3d2b1f] uppercase">Digital Reports</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* POPULAR DIAGNOSTIC TESTS badge */}
-                  <div className="hidden lg:flex items-center">
-                    <div className="bg-[#d4870a] text-white px-4 py-2.5 rounded-lg shadow-lg">
-                      <p className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">POPULAR<br />DIAGNOSTIC<br />TESTS</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-            </LazySection>
-
-            {/* PRE-MADE DISCOUNT HEALTH CHECKUP PACKAGES */}
-            {packages.length > 0 && (
-              <LazySection minHeight="500px">
-                <section className="bg-[#0f1115] text-slate-350 py-20 px-4 md:px-6 relative overflow-hidden border-b border-gray-900">
-                {/* background ambient blur dots */}
-                <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
-
-                <div className="max-w-7xl mx-auto space-y-10 relative z-10">
-                  <div className="text-center space-y-3">
-                    <span className="inline-block px-3 py-1 bg-[#16181d] border border-gray-800 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
-                      Recommended Preventive Screening
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-serif font-light text-white tracking-tight">Popular <span className="italic font-medium text-emerald-400">Health Checkup Packages</span></h2>
-                    <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">Get comprehensive biological screening covering major vital systems under our highly subsidized medical health panels.</p>
-                  </div>
-
-                  {/* Horizontal slider container wrapper */}
-                  <div className="relative group/slider px-2">
-                    {/* Left Scroll Button */}
-                    <button
-                      onClick={() => scrollPackages('left')}
-                      disabled={!canScrollLeft}
-                      className={`absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                        }`}
-                      aria-label="Scroll Left"
-                    >
-                      <ChevronLeft className="w-6 h-6" />
-                    </button>
-
-                    {/* Right Scroll Button */}
-                    <button
-                      onClick={() => scrollPackages('right')}
-                      disabled={!canScrollRight}
-                      className={`absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-0 ${canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                        }`}
-                      aria-label="Scroll Right"
-                    >
-                      <ChevronRight className="w-6 h-6" />
-                    </button>
-
-                    {/* Horizontal slider of packages */}
-                    <div
-                      ref={packagesScrollRef}
-                      className="flex flex-nowrap overflow-x-auto gap-6 text-left scroll-smooth pb-6 pt-2 snap-x snap-mandatory no-scrollbar"
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'nowrap',
-                        overflowX: 'auto',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none'
-                      }}
-                    >
-                      {packages.map((pkg) => {
-                        const inCart = cart.some(ci => ci.itemId === pkg.id);
-                        return (
-                          <div
-                            key={pkg.id}
-                            className="w-[85vw] sm:w-[380px] md:w-[400px] flex-shrink-0 bg-[#16181d] border border-gray-800 rounded-3xl hover:border-emerald-500/50 shadow-xl flex flex-col justify-between overflow-hidden relative group transition-all snap-start"
-                          >
-                            {/* Package Thumbnail Image */}
-                            <div className="relative aspect-[16/7] w-full bg-gray-900 overflow-hidden">
-                              <img
-                                src={getPackageImage(pkg.id)}
-                                alt={pkg.name}
-                                loading="lazy"
-                                decoding="async"
-                                width={400}
-                                height={175}
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop';
-                                }}
-                                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500 select-none"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#16181d] via-transparent to-transparent"></div>
-                              {pkg.popular && (
-                                <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[8px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full shadow-md z-10">
-                                  Best Value
-                                </span>
-                              )}
                             </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                            <div className="p-6 md:p-8 space-y-4 flex-1 flex flex-col justify-between">
-                              <div className="space-y-4">
-                                <div>
-                                  <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest block">{pkg.testsCount} TESTS / PARAMETERS</span>
-                                  <h3 className="font-serif font-light text-white text-lg md:text-xl tracking-tight mt-1 group-hover:text-emerald-400 transition-colors">{pkg.name}</h3>
-                                  <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{pkg.description}</p>
-                                </div>
-
-                                {/* list of subset tests included */}
-                                <div className="space-y-1.5 border-t border-gray-800 pt-4">
-                                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Includes Lab Portfolios:</span>
-                                  <div className="space-y-1 text-[11px] text-slate-400">
-                                    {pkg.includedTests.slice(0, 4).map((test, idx) => (
-                                      <div key={idx} className="flex items-center gap-1.5">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-400 flex-shrink-0"></span>
-                                        <span className="truncate">{test}</span>
-                                      </div>
-                                    ))}
-                                    {pkg.includedTests.length > 4 && (
-                                      <span className="text-[10px] text-emerald-400 font-bold block pl-2.5">+{pkg.includedTests.length - 4} more profiles included</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4 pt-4 border-t border-gray-800">
-                                <div className="flex justify-between items-end">
-                                  <div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Special Panel Rate</span>
-                                    <div className="flex items-baseline gap-1.5">
-                                      <span className="text-2xl font-serif italic text-white">₹{pkg.discountPrice}</span>
-                                      <span className="text-xs text-slate-500 line-through">₹{pkg.price}</span>
-                                    </div>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-emerald-500">Save {Math.round(((pkg.price - pkg.discountPrice!) / pkg.price) * 100)}% Off</span>
-                                </div>
-
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleDirectBook(pkg)}
-                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-[10px] uppercase tracking-widest rounded-full transition-all active:scale-[0.98] shadow-md shadow-emerald-950/20 cursor-pointer"
-                                  >
-                                    Book Now (Pay at Lab)
-                                  </button>
-                                  <button
-                                    onClick={() => handleAddToCart(pkg, 'package')}
-                                    className={`px-4 py-3 font-bold uppercase tracking-widest rounded-full text-[10px] transition-all active:scale-[0.98] cursor-pointer ${inCart
-                                      ? 'bg-emerald-800 text-emerald-400 border border-emerald-950'
-                                      : 'bg-[#1e2129] hover:bg-[#252a35] text-white border border-gray-850'
-                                      }`}
-                                  >
-                                    {inCart ? 'Added' : '+ Cart'}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="text-center pt-2">
+                      <button
+                        onClick={() => setCurrentTab('packages')}
+                        className="px-6 py-3 border border-gray-800 hover:border-gray-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <span>View All Health Packages</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-
-                  <div className="text-center pt-2">
-                    <button
-                      onClick={() => setCurrentTab('packages')}
-                      className="px-6 py-3 border border-gray-800 hover:border-gray-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-widest rounded-full transition-all cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <span>View All Health Packages</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </section>
-            </LazySection>
+                </section>
+              </LazySection>
             )}
 
 
@@ -1269,191 +1314,191 @@ function AppContent() {
             {doctors.length > 0 && (
               <LazySection minHeight="450px" id="doctors-section">
                 <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-center space-y-6 animate-fade-in" id="doctors-section">
-                {/* Header title block */}
-                <div className="space-y-4 text-center">
-                  <h2 className="text-3xl md:text-5xl font-extrabold text-[#111827] tracking-tight">
-                    Meet Our Specialist Doctors
-                  </h2>
-                  <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wider max-w-4xl mx-auto leading-relaxed">
-                    OUR BOARD-CERTIFIED RADIOLOGISTS, PATHOLOGISTS, AND CLINICAL SPECIALISTS BRING DECADES OF EXPERIENCE, ADVANCED AI-ASSISTED TECHNOLOGY, AND COMPASSIONATE CARE TO EVERY DIAGNOSTIC RESULT.
-                  </p>
-                </div>
-
-                {/* Appointment Button and Label */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-2">
-                  <button
-                    onClick={() => {
-                      setSelectedDoctorForModal(null);
-                      setIsDoctorModalOpen(true);
-                    }}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#E54848] hover:bg-[#d43f3f] text-white font-black text-xs uppercase tracking-widest rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    <span>APPOINTMENT NOW</span>
-                  </button>
-                  <span className="text-xs text-slate-650 font-bold tracking-wide">
-                    Form for appointments and server confirmation
-                  </span>
-                </div>
-
-                {/* Carousel with side arrows */}
-                {filteredDoctors.length === 0 ? (
-                  <div className="text-center py-12 bg-slate-50/50 border border-dashed border-gray-200 rounded-3xl w-full">
-                    <AlertCircle className="w-8 h-8 text-slate-350 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-slate-500">No doctors match your query or filters.</p>
+                  {/* Header title block */}
+                  <div className="space-y-4 text-center">
+                    <h2 className="text-3xl md:text-5xl font-extrabold text-[#111827] tracking-tight">
+                      Meet Our Specialist Doctors
+                    </h2>
+                    <p className="text-[11px] md:text-xs text-slate-500 font-bold uppercase tracking-wider max-w-4xl mx-auto leading-relaxed">
+                      OUR BOARD-CERTIFIED RADIOLOGISTS, PATHOLOGISTS, AND CLINICAL SPECIALISTS BRING DECADES OF EXPERIENCE, ADVANCED AI-ASSISTED TECHNOLOGY, AND COMPASSIONATE CARE TO EVERY DIAGNOSTIC RESULT.
+                    </p>
                   </div>
-                ) : (
-                  <div className="relative group max-w-4xl mx-auto px-12">
-                    {/* Left Scroll Button */}
+
+                  {/* Appointment Button and Label */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-2">
                     <button
-                      onClick={() => scrollDoctors('left')}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                      onClick={() => {
+                        setSelectedDoctorForModal(null);
+                        setIsDoctorModalOpen(true);
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-[#E54848] hover:bg-[#d43f3f] text-white font-black text-xs uppercase tracking-widest rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer"
                     >
-                      <ArrowLeft className="w-9 h-9 stroke-[3]" />
+                      <Calendar className="w-4 h-4" />
+                      <span>APPOINTMENT NOW</span>
                     </button>
+                    <span className="text-xs text-slate-650 font-bold tracking-wide">
+                      Form for appointments and server confirmation
+                    </span>
+                  </div>
 
-                    {/* Right Scroll Button */}
-                    <button
-                      onClick={() => scrollDoctors('right')}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer"
-                    >
-                      <ArrowRight className="w-9 h-9 stroke-[3]" />
-                    </button>
+                  {/* Carousel with side arrows */}
+                  {filteredDoctors.length === 0 ? (
+                    <div className="text-center py-12 bg-slate-50/50 border border-dashed border-gray-200 rounded-3xl w-full">
+                      <AlertCircle className="w-8 h-8 text-slate-350 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-slate-500">No doctors match your query or filters.</p>
+                    </div>
+                  ) : (
+                    <div className="relative group max-w-4xl mx-auto px-12">
+                      {/* Left Scroll Button */}
+                      <button
+                        onClick={() => scrollDoctors('left')}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                      >
+                        <ArrowLeft className="w-9 h-9 stroke-[3]" />
+                      </button>
 
-                    {/* Horizontal scroll container */}
-                    <div
-                      ref={doctorScrollRef}
-                      className="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth px-2"
-                    >
-                      {filteredDoctors.map((doc) => (
-                        <div
-                          key={doc.id}
-                          onClick={() => {
-                            setSelectedDoctorForModal(doc);
-                            setIsDoctorModalOpen(true);
-                          }}
-                          className="flex-shrink-0 w-[240px] sm:w-[260px] bg-[#FFE57F] border-4 border-black rounded-xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 p-5 flex flex-col justify-between cursor-pointer group overflow-hidden"
-                        >
-                          <div className="space-y-4">
-                            {/* Doctor Image / Avatar with dynamic effect */}
-                            <div className="relative aspect-square rounded-xl overflow-hidden bg-white border-2 border-black shadow-inner">
-                              <img
-                                src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
-                                alt={doc.name}
-                                loading="lazy"
-                                decoding="async"
-                                width={260}
-                                height={260}
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop';
-                                }}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute bottom-2 left-2 flex gap-1.5 flex-wrap">
-                                <span className="bg-black text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-black shadow-xs">
-                                  {doc.specialization}
-                                </span>
+                      {/* Right Scroll Button */}
+                      <button
+                        onClick={() => scrollDoctors('right')}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-black hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                      >
+                        <ArrowRight className="w-9 h-9 stroke-[3]" />
+                      </button>
+
+                      {/* Horizontal scroll container */}
+                      <div
+                        ref={doctorScrollRef}
+                        className="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth px-2"
+                      >
+                        {filteredDoctors.map((doc) => (
+                          <div
+                            key={doc.id}
+                            onClick={() => {
+                              setSelectedDoctorForModal(doc);
+                              setIsDoctorModalOpen(true);
+                            }}
+                            className="flex-shrink-0 w-[240px] sm:w-[260px] bg-[#FFE57F] border-4 border-black rounded-xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 p-5 flex flex-col justify-between cursor-pointer group overflow-hidden"
+                          >
+                            <div className="space-y-4">
+                              {/* Doctor Image / Avatar with dynamic effect */}
+                              <div className="relative aspect-square rounded-xl overflow-hidden bg-white border-2 border-black shadow-inner">
+                                <img
+                                  src={doc.avatar || 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop'}
+                                  alt={doc.name}
+                                  loading="lazy"
+                                  decoding="async"
+                                  width={260}
+                                  height={260}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579684389782-64d84b5e901a?q=80&w=300&auto=format&fit=crop';
+                                  }}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute bottom-2 left-2 flex gap-1.5 flex-wrap">
+                                  <span className="bg-black text-white text-[8px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-black shadow-xs">
+                                    {doc.specialization}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
 
-                            <div className="space-y-1 text-left text-black">
-                              <h3 className="font-serif font-black text-black text-sm md:text-base leading-snug group-hover:text-red-750 transition-colors">
-                                {doc.name}
-                              </h3>
-                              <p className="text-[10px] text-teal-800 font-extrabold uppercase tracking-wider">
-                                {doc.qualification}
-                              </p>
-                              <p className="text-[11px] text-slate-800 font-bold">
-                                {doc.experience} Years Experience
-                              </p>
-                            </div>
-
-                            <div className="space-y-1.5 border-t-2 border-black/10 pt-3 text-[11px] text-slate-800 text-left font-bold">
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-black flex-shrink-0" />
-                                <span>{doc.timing}</span>
+                              <div className="space-y-1 text-left text-black">
+                                <h3 className="font-serif font-black text-black text-sm md:text-base leading-snug group-hover:text-red-750 transition-colors">
+                                  {doc.name}
+                                </h3>
+                                <p className="text-[10px] text-teal-800 font-extrabold uppercase tracking-wider">
+                                  {doc.qualification}
+                                </p>
+                                <p className="text-[11px] text-slate-800 font-bold">
+                                  {doc.experience} Years Experience
+                                </p>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
-                                <span className="text-slate-900">{doc.branch} Branch</span>
+
+                              <div className="space-y-1.5 border-t-2 border-black/10 pt-3 text-[11px] text-slate-800 text-left font-bold">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3.5 h-3.5 text-black flex-shrink-0" />
+                                  <span>{doc.timing}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-3.5 h-3.5 text-red-650 flex-shrink-0" />
+                                  <span className="text-slate-900">{doc.branch} Branch</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </section>
-            </LazySection>
+                  )}
+                </section>
+              </LazySection>
             )}
 
             {/* EASY 4-STEP BOOKING PROCESS */}
             <LazySection minHeight="280px" id="how-to-book-section">
               <section className="bg-slate-950 border-t border-b border-slate-800/80 py-10 px-4 md:px-6 text-slate-300 my-4" id="how-to-book-section">
-              <div className="max-w-7xl mx-auto space-y-6 text-center">
-                <div className="space-y-1">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-purple-900/40 border border-purple-700/50 text-[#80CBC4] text-[10px] font-black uppercase tracking-widest rounded-full">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    Easy 4-Step Booking Process
-                  </span>
-                  <h3 className="text-xl md:text-2xl font-serif font-bold text-white tracking-tight flex items-center justify-center gap-2 mt-2 flex-wrap">
-                    <span>How to Book a Diagnostic Test at</span>
-                    <img src={logoImg} alt="AssurX Diagnostics Logo" width={76} height={28} loading="lazy" decoding="async" className="h-7 w-auto object-contain bg-white rounded px-1.5 py-0.5 inline-block align-middle shadow-xs" />
-                  </h3>
-                  <p className="text-xs text-slate-400 max-w-xl mx-auto">
-                    Book certified pathology tests, USG sonography scans, and full-body health packages in under 60 seconds.
-                  </p>
+                <div className="max-w-7xl mx-auto space-y-6 text-center">
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-purple-900/40 border border-purple-700/50 text-[#80CBC4] text-[10px] font-black uppercase tracking-widest rounded-full">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      Easy 4-Step Booking Process
+                    </span>
+                    <h3 className="text-xl md:text-2xl font-serif font-bold text-white tracking-tight flex items-center justify-center gap-2 mt-2 flex-wrap">
+                      <span>How to Book a Diagnostic Test at</span>
+                      <img src={logoImg} alt="AssurX Diagnostics Logo" width={76} height={28} loading="lazy" decoding="async" className="h-7 w-auto object-contain bg-white rounded px-1.5 py-0.5 inline-block align-middle shadow-xs" />
+                    </h3>
+                    <p className="text-xs text-slate-400 max-w-xl mx-auto">
+                      Book certified pathology tests, USG sonography scans, and full-body health packages in under 60 seconds.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left pt-3">
+                    {/* Step 1 */}
+                    <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                      <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                        01
+                      </div>
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider">Select Test or Package</h4>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Browse our wide catalog of lab pathology tests, 3D/4D USG scans, or subsidised health packages.
+                      </p>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                      <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                        02
+                      </div>
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider">Choose Visit or Home Visit</h4>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Pick home blood sample collection at your doorstep or schedule a visit to Malad / Goregaon centers.
+                      </p>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                      <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                        03
+                      </div>
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider">Sterile Sample Collection</h4>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        DHA-certified phlebotomist visits your doorstep with sterile vacuum tube collection kits.
+                      </p>
+                    </div>
+
+                    {/* Step 4 */}
+                    <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
+                      <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
+                        04
+                      </div>
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider">Receive Digital Reports</h4>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Download MD Pathologist & Radiologist verified PDF reports sent directly to WhatsApp & SMS.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left pt-3">
-                  {/* Step 1 */}
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
-                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
-                      01
-                    </div>
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Select Test or Package</h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Browse our wide catalog of lab pathology tests, 3D/4D USG scans, or subsidised health packages.
-                    </p>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
-                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
-                      02
-                    </div>
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Choose Visit or Home Visit</h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Pick home blood sample collection at your doorstep or schedule a visit to Malad / Goregaon centers.
-                    </p>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
-                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
-                      03
-                    </div>
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Sterile Sample Collection</h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      DHA-certified phlebotomist visits your doorstep with sterile vacuum tube collection kits.
-                    </p>
-                  </div>
-
-                  {/* Step 4 */}
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-2.5 relative group hover:border-purple-500/50 transition-all shadow-sm">
-                    <div className="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700/60 text-[#80CBC4] font-black text-sm flex items-center justify-center">
-                      04
-                    </div>
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">Receive Digital Reports</h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Download MD Pathologist & Radiologist verified PDF reports sent directly to WhatsApp & SMS.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
+              </section>
             </LazySection>
 
             {/* AUTOPLAY PROMO SLIDER SECTION (Items 9, 10, 11 merged) */}
@@ -1461,75 +1506,75 @@ function AppContent() {
               <section className="max-w-3xl mx-auto px-4 md:px-6 py-6 text-left" id="promo-slider-section">
                 <div className="relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:border-emerald-500/30 transition-all duration-350 border border-gray-250 group">
 
-                {/* Horizontal Sliding container */}
-                <div
-                  className="flex transition-transform duration-700 ease-in-out"
-                  style={{ transform: `translate3d(-${activePromoIndex * 100}%, 0, 0)` }}
-                >
-                  {[
-                    { src: '/sonography_equipment.png', alt: 'Sonography & Ultrasound Scans Features', tab: 'scans' },
-                    { src: '/family_health_offer.png', alt: 'Why AssurRx and 4 Steps Booking Guide', tab: 'packages' },
-                    { src: '/promo_code_offers.png', alt: 'Tests and Health Packages Promo Codes', tab: 'packages' }
-                  ].map((banner, index) => (
-                    <div
-                      key={index}
-                      onClick={() => setCurrentTab(banner.tab as any)}
-                      className="w-full flex-shrink-0 cursor-pointer"
-                    >
-                      <img
-                        src={banner.src}
-                        alt={banner.alt}
-                        loading="lazy"
-                        decoding="async"
-                        width={768}
-                        height={768}
-                        className="w-full aspect-square object-contain block select-none"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  ))}
+                  {/* Horizontal Sliding container */}
+                  <div
+                    className="flex transition-transform duration-700 ease-in-out"
+                    style={{ transform: `translate3d(-${activePromoIndex * 100}%, 0, 0)` }}
+                  >
+                    {[
+                      { src: '/sonography_equipment.png', alt: 'Sonography & Ultrasound Scans Features', tab: 'scans' },
+                      { src: '/family_health_offer.png', alt: 'Why AssurRx and 4 Steps Booking Guide', tab: 'packages' },
+                      { src: '/promo_code_offers.png', alt: 'Tests and Health Packages Promo Codes', tab: 'packages' }
+                    ].map((banner, index) => (
+                      <div
+                        key={index}
+                        onClick={() => setCurrentTab(banner.tab as any)}
+                        className="w-full flex-shrink-0 cursor-pointer"
+                      >
+                        <img
+                          src={banner.src}
+                          alt={banner.alt}
+                          loading="lazy"
+                          decoding="async"
+                          width={768}
+                          height={768}
+                          className="w-full aspect-square object-contain block select-none"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Left navigation arrow */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePromoIndex((prev) => (prev - 1 + 3) % 3);
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer border-0"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+
+                  {/* Right navigation arrow */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePromoIndex((prev) => (prev + 1) % 3);
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer border-0"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+
+                  {/* Pagination Dots */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                    {[0, 1, 2].map((index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePromoIndex(index);
+                        }}
+                        className={`w-2 h-2 rounded-full transition-all cursor-pointer border-0 ${activePromoIndex === index ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70'
+                          }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                      ></button>
+                    ))}
+                  </div>
+
                 </div>
-
-                {/* Left navigation arrow */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActivePromoIndex((prev) => (prev - 1 + 3) % 3);
-                  }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer border-0"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-
-                {/* Right navigation arrow */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActivePromoIndex((prev) => (prev + 1) % 3);
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer border-0"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-
-                {/* Pagination Dots */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-                  {[0, 1, 2].map((index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActivePromoIndex(index);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-all cursor-pointer border-0 ${activePromoIndex === index ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70'
-                        }`}
-                      aria-label={`Go to slide ${index + 1}`}
-                    ></button>
-                  ))}
-                </div>
-
-              </div>
-            </section>
+              </section>
             </LazySection>
 
             {/* SOCIAL & SOCIETY HEALTH CAMPS (Item 12) */}
@@ -1646,125 +1691,125 @@ function AppContent() {
             {/* TESTIMONIALS (PATIENT SUCCESS STORIES) */}
             <LazySection minHeight="420px">
               <section className="max-w-7xl mx-auto px-4 md:px-6 text-left space-y-8 py-6">
-              {/* Header */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-100 pb-6">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/60 rounded-full text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-1">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>5.0 Star Rated on Google Maps</span>
-                  </div>
-                  <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-[#2D006B]">Success Stories</span></h3>
-                  <p className="text-sm text-slate-500">Read authentic positive experiences from our satisfied health patrons.</p>
-                </div>
-                <a
-                  href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-white border border-gray-250 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-full transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-red-500" />
-                  <span>View All Google Reviews</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-
-              {/* Layout for rating and carousel */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-2">
-                {/* Left Column: Rating Info & Controls */}
-                <div className="lg:col-span-4 bg-slate-50 border border-gray-150 p-8 rounded-3xl flex flex-col justify-between space-y-6">
-                  <div className="space-y-4">
-                    {/* Stars */}
-                    <div className="flex gap-1 text-amber-500">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="w-6 h-6 fill-amber-400 text-amber-400" />
-                      ))}
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-100 pb-6">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200/60 rounded-full text-emerald-800 text-[10px] font-bold uppercase tracking-wider mb-1">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      <span>5.0 Star Rated on Google Maps</span>
                     </div>
-                    {/* Big Rating text */}
-                    <div>
-                      <h4 className="text-5xl font-black text-slate-900 tracking-tight leading-none">
-                        4.7
-                      </h4>
-                      <p className="text-lg font-bold text-slate-800 mt-2">
-                        Google Rating
+                    <h3 className="font-serif font-light text-slate-900 text-2xl md:text-3xl tracking-tight">Patient <span className="italic font-medium text-[#2D006B]">Success Stories</span></h3>
+                    <p className="text-sm text-slate-500">Read authentic positive experiences from our satisfied health patrons.</p>
+                  </div>
+                  <a
+                    href="https://maps.app.goo.gl/kUPZqcjN3dcsRyNo7?g_st=aw"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2.5 bg-white border border-gray-250 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-full transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-red-500" />
+                    <span>View All Google Reviews</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                {/* Layout for rating and carousel */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-2">
+                  {/* Left Column: Rating Info & Controls */}
+                  <div className="lg:col-span-4 bg-slate-50 border border-gray-150 p-8 rounded-3xl flex flex-col justify-between space-y-6">
+                    <div className="space-y-4">
+                      {/* Stars */}
+                      <div className="flex gap-1 text-amber-500">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="w-6 h-6 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                      {/* Big Rating text */}
+                      <div>
+                        <h4 className="text-5xl font-black text-slate-900 tracking-tight leading-none">
+                          4.7
+                        </h4>
+                        <p className="text-lg font-bold text-slate-800 mt-2">
+                          Google Rating
+                        </p>
+                      </div>
+                      {/* Trusted text */}
+                      <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                        Trusted Over 10,000+ Doctors
                       </p>
                     </div>
-                    {/* Trusted text */}
-                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                      Trusted Over 10,000+ Doctors
-                    </p>
+
+                    {/* Buttons */}
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        onClick={() => scrollTestimonials('left')}
+                        className="w-11 h-11 rounded-full border border-gray-250 hover:border-emerald-500 hover:text-emerald-700 text-slate-600 flex items-center justify-center bg-white shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                        aria-label="Scroll testimonials left"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => scrollTestimonials('right')}
+                        className="w-11 h-11 rounded-full border border-gray-250 hover:border-emerald-500 hover:text-emerald-700 text-slate-600 flex items-center justify-center bg-white shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
+                        aria-label="Scroll testimonials right"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Buttons */}
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={() => scrollTestimonials('left')}
-                      className="w-11 h-11 rounded-full border border-gray-250 hover:border-emerald-500 hover:text-emerald-700 text-slate-600 flex items-center justify-center bg-white shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
-                      aria-label="Scroll testimonials left"
+                  {/* Right Column: Sliding Carousel */}
+                  <div className="lg:col-span-8 overflow-hidden relative flex items-center">
+                    <div
+                      ref={testimonialScrollRef}
+                      className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x pb-4 w-full"
                     >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => scrollTestimonials('right')}
-                      className="w-11 h-11 rounded-full border border-gray-250 hover:border-emerald-500 hover:text-emerald-700 text-slate-600 flex items-center justify-center bg-white shadow-xs hover:shadow transition-all cursor-pointer active:scale-95"
-                      aria-label="Scroll testimonials right"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+                      {testimonials.map((testimonial) => {
+                        const isExpanded = expandedTestimonialId === testimonial.id;
+                        const comment = testimonial.comment || "";
+                        const isLong = comment.length > 100;
 
-                {/* Right Column: Sliding Carousel */}
-                <div className="lg:col-span-8 overflow-hidden relative flex items-center">
-                  <div
-                    ref={testimonialScrollRef}
-                    className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x pb-4 w-full"
-                  >
-                    {testimonials.map((testimonial) => {
-                      const isExpanded = expandedTestimonialId === testimonial.id;
-                      const comment = testimonial.comment || "";
-                      const isLong = comment.length > 100;
-
-                      return (
-                        <div
-                          key={testimonial.id}
-                          className="min-w-[290px] md:min-w-[340px] w-[290px] md:w-[340px] snap-start bg-white border border-gray-200 p-6 rounded-3xl shadow-sm hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between group"
-                        >
-                          <div className="space-y-3">
-                            <p className="text-xs text-slate-600 leading-relaxed italic group-hover:text-slate-900 transition-colors">
-                              "{isLong && !isExpanded ? `${comment.substring(0, 100)}...` : comment}"
-                            </p>
-                            {isLong && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setExpandedTestimonialId(isExpanded ? null : testimonial.id);
-                                }}
-                                className="text-[11px] font-bold text-teal-600 hover:text-[#2D006B] block transition-colors cursor-pointer text-left"
-                              >
-                                {isExpanded ? "Read Less" : "Read More"}
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="border-t border-gray-100 pt-4 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-bold">
-                            <div>
-                              <span className="text-slate-800 font-bold block text-xs">{testimonial.name}</span>
-                              <span className="text-slate-400 font-medium">{testimonial.date} - {testimonial.location}</span>
+                        return (
+                          <div
+                            key={testimonial.id}
+                            className="min-w-[290px] md:min-w-[340px] w-[290px] md:w-[340px] snap-start bg-white border border-gray-200 p-6 rounded-3xl shadow-sm hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between group"
+                          >
+                            <div className="space-y-3">
+                              <p className="text-xs text-slate-600 leading-relaxed italic group-hover:text-slate-900 transition-colors">
+                                "{isLong && !isExpanded ? `${comment.substring(0, 100)}...` : comment}"
+                              </p>
+                              {isLong && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setExpandedTestimonialId(isExpanded ? null : testimonial.id);
+                                  }}
+                                  className="text-[11px] font-bold text-teal-600 hover:text-[#2D006B] block transition-colors cursor-pointer text-left"
+                                >
+                                  {isExpanded ? "Read Less" : "Read More"}
+                                </button>
+                              )}
                             </div>
 
-                            {/* Rating badge pill (5 ★) */}
-                            <div className="bg-amber-500 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] flex items-center gap-0.5 shadow-sm">
-                              <span>{testimonial.rating || 5}</span>
-                              <Star className="w-2.5 h-2.5 fill-white text-white" />
+                            <div className="border-t border-gray-100 pt-4 mt-4 flex justify-between items-center text-[10px] text-slate-400 font-bold">
+                              <div>
+                                <span className="text-slate-800 font-bold block text-xs">{testimonial.name}</span>
+                                <span className="text-slate-400 font-medium">{testimonial.date} - {testimonial.location}</span>
+                              </div>
+
+                              {/* Rating badge pill (5 ★) */}
+                              <div className="bg-amber-500 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] flex items-center gap-0.5 shadow-sm">
+                                <span>{testimonial.rating || 5}</span>
+                                <Star className="w-2.5 h-2.5 fill-white text-white" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
             </LazySection>
 
             {/* MEDIA BOOTH SECTION (Item 14) */}

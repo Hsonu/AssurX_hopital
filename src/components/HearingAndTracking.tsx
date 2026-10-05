@@ -23,6 +23,7 @@ import {
   Send
 } from 'lucide-react';
 import { auth } from '../lib/firebase.ts';
+import { safeFetch } from '../lib/apiClient.ts';
 import { onAuthStateChanged } from 'firebase/auth';
 import { userFetch } from '../lib/sessionGuard.ts';
 
@@ -164,8 +165,9 @@ export function TrackOrderSection({ onGoToBooking, selectedBranch }: TrackOrderP
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`/api/bookings/track/${cleanId}`, {
-        headers
+      const res = await safeFetch(`/api/bookings/track/${cleanId}`, {
+        headers,
+        retries: 3
       });
       if (!res.ok) {
         const data = await res.json();

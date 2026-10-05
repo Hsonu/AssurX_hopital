@@ -110,9 +110,11 @@ async function isSessionConflict(response: Response): Promise<boolean> {
   }
 }
 
+import { safeFetch } from './apiClient';
+
 /**
  * fetch() wrapper for user-authenticated API calls.
- * Automatically injects X-User-Session header.
+ * Automatically injects X-User-Session header and uses safeFetch for network resiliency.
  * On session-conflict 401, fires the registered 'user' kick handlers.
  */
 export async function userFetch(
@@ -125,7 +127,7 @@ export async function userFetch(
     headers.set('X-User-Session', sessionId);
   }
 
-  const response = await fetch(input, { ...init, headers });
+  const response = await safeFetch(input, { ...init, headers });
 
   if (await isSessionConflict(response)) {
     fireKick('user');
@@ -136,7 +138,7 @@ export async function userFetch(
 
 /**
  * fetch() wrapper for admin-authenticated API calls.
- * Automatically injects X-Admin-Session header.
+ * Automatically injects X-Admin-Session header and uses safeFetch for network resiliency.
  * On session-conflict 401, fires the registered 'admin' kick handlers.
  */
 export async function adminFetch(
@@ -159,7 +161,7 @@ export async function adminFetch(
     headers.set('X-Admin-Key', 'assurx2026health');
   }
 
-  const response = await fetch(input, { ...init, headers });
+  const response = await safeFetch(input, { ...init, headers });
 
   if (await isSessionConflict(response)) {
     fireKick('admin');
@@ -167,3 +169,4 @@ export async function adminFetch(
 
   return response;
 }
+

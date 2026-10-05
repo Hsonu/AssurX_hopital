@@ -5764,8 +5764,8 @@ async function startServer() {
       }, 10 * 60 * 1e3);
     }
   });
-  server.keepAliveTimeout = 65e3;
-  server.headersTimeout = 66e3;
+  server.keepAliveTimeout = 125e3;
+  server.headersTimeout = 126e3;
   server.requestTimeout = 12e4;
   server.timeout = 12e4;
   server.on("connection", (socket) => {

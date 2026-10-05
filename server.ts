@@ -1773,9 +1773,11 @@ async function startServer() {
     }
   });
 
-  // === Server timeouts for slow network resilience ===
-  server.keepAliveTimeout = 65000; // 65 seconds (longer than default 5s, helps slow connections)
-  server.headersTimeout = 66000;   // Must be > keepAliveTimeout
+  // === Server timeouts for slow network & reverse proxy resilience ===
+  // Note: keepAliveTimeout must exceed the Keep-Alive header (120s) so Node.js
+  // does not close connections before the reverse proxy (LiteSpeed / Nginx) does.
+  server.keepAliveTimeout = 125000; // 125 seconds (exceeds 120s proxy keep-alive)
+  server.headersTimeout = 126000;   // 126 seconds (must be > keepAliveTimeout)
   server.requestTimeout = 120000;  // 2 minutes max for a request (slow networks)
   server.timeout = 120000;         // Overall socket timeout
 
