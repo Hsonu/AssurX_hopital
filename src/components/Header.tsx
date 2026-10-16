@@ -206,7 +206,7 @@ export default function Header({
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            NABL Accredited & Certified Labs
+            Labs 9001 Certified
           </span>
           <span className="hidden md:flex items-center gap-1 text-slate-300 font-serif italic text-[11px]">
             Serving 2 Crore+ Indians with 100% Reliable Reports
