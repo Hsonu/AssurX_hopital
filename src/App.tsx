@@ -2297,6 +2297,10 @@ function AppContent() {
               onUpdateCenters={setCenters}
               doctors={doctors}
               onUpdateDoctors={setDoctors}
+              onUpdatePromoAd={(newPromo) => {
+                setPromoAd(newPromo);
+                setIsPromoAdOpen(true); // Re-open popup so new ad is visible immediately
+              }}
             />
           </React.Suspense>
         )}

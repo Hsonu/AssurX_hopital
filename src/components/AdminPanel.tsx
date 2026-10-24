@@ -27,6 +27,7 @@ interface AdminPanelProps {
   onUpdateCenters?: (centers: ClinicCenter[]) => void;
   doctors?: Doctor[];
   onUpdateDoctors?: (doctors: Doctor[]) => void;
+  onUpdatePromoAd?: (promo: { title: string; imageUrl: string; targetTab: string; targetUrl?: string; isActive: boolean }) => void;
 }
 
 // Default pre-seeded clinical data for our laboratory reports
@@ -127,7 +128,8 @@ export default function AdminPanel({
   centers = [],
   onUpdateCenters = () => { },
   doctors = [],
-  onUpdateDoctors = () => { }
+  onUpdateDoctors = () => { },
+  onUpdatePromoAd = () => { }
 }: AdminPanelProps) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     const hasFlag = localStorage.getItem('assurx_admin_auth') === 'true' || sessionStorage.getItem('assurx_admin_auth') === 'true';
@@ -1101,10 +1103,14 @@ export default function AdminPanel({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(promoAdConfig),
+        timeoutMs: 60000, // 60s timeout — base64 images can be large (up to ~6.6MB)
       });
 
       if (res.ok) {
+        const result = await res.json().catch(() => ({}));
         showToast('🎉 Homepage Promotional Popup Ad updated successfully!', 'success');
+        // Notify parent App to update promo ad state immediately — replaces old ad with new one
+        onUpdatePromoAd(promoAdConfig);
       } else {
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to update promo ad', 'error');

@@ -110,7 +110,7 @@ async function isSessionConflict(response: Response): Promise<boolean> {
   }
 }
 
-import { safeFetch } from './apiClient';
+import { safeFetch, SafeFetchOptions } from './apiClient';
 
 /**
  * fetch() wrapper for user-authenticated API calls.
@@ -143,7 +143,7 @@ export async function userFetch(
  */
 export async function adminFetch(
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: SafeFetchOptions
 ): Promise<Response> {
   const sessionId = getAdminSessionId();
   const email = typeof window !== 'undefined' ? (localStorage.getItem('adminEmail') || '') : '';
