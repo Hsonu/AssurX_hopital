@@ -1088,10 +1088,15 @@ export default function AdminPanel({
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPromoAdConfig(prev => ({ ...prev, imageUrl: reader.result as string }));
-        showToast('Image selected! Click "Save & Publish Ad Settings" to apply.', 'info');
+        setPromoAdConfig(prev => ({
+          ...prev,
+          imageUrl: reader.result as string,
+          isActive: true
+        }));
+        showToast('New ad image selected! Click "Save & Publish Ad Settings" to overwrite and delete the previous ad.', 'info');
       };
       reader.readAsDataURL(file);
+      e.target.value = ''; // Reset input so selecting another image works every time
     }
   };
 
@@ -1108,15 +1113,47 @@ export default function AdminPanel({
 
       if (res.ok) {
         const result = await res.json().catch(() => ({}));
-        showToast('🎉 Homepage Promotional Popup Ad updated successfully!', 'success');
+        showToast('🎉 Promotional Ad updated! Old ad deleted and new ad published.', 'success');
         // Notify parent App to update promo ad state immediately — replaces old ad with new one
-        onUpdatePromoAd(promoAdConfig);
+        onUpdatePromoAd(result.promo || promoAdConfig);
       } else {
         const err = await res.json().catch(() => ({}));
         showToast(err.error || 'Failed to update promo ad', 'error');
       }
     } catch (err: any) {
       showToast(err.message || 'Network error updating promo ad', 'error');
+    } finally {
+      setPromoAdSaving(false);
+    }
+  };
+
+  const handleDeletePromoAd = async () => {
+    if (!window.confirm("Kya aap purana promotional ad poori tarah delete karna chahte hain?")) {
+      return;
+    }
+    setPromoAdSaving(true);
+    try {
+      const res = await adminFetch('/api/admin/promo-ad', {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        const clearedPromo = {
+          title: '',
+          imageUrl: '',
+          targetTab: 'labs',
+          targetUrl: '',
+          isActive: false,
+        };
+        setPromoAdConfig(clearedPromo);
+        onUpdatePromoAd(clearedPromo);
+        showToast('🗑️ Purana promotional ad successfully delete ho gaya!', 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to delete promo ad', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error deleting promo ad', 'error');
     } finally {
       setPromoAdSaving(false);
     }
@@ -5101,8 +5138,18 @@ export default function AdminPanel({
                   </label>
                 </div>
 
-                {/* Submit button */}
-                <div className="pt-3 border-t border-slate-100 flex justify-end">
+                {/* Submit & Delete buttons */}
+                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={handleDeletePromoAd}
+                    disabled={promoAdSaving}
+                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <span>Purana Ad Delete Karein</span>
+                  </button>
+
                   <button
                     type="submit"
                     disabled={promoAdSaving}
@@ -5141,7 +5188,7 @@ export default function AdminPanel({
                         decoding="async"
                         className="w-full h-auto max-h-[260px] object-contain rounded-xl"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/promotional_camp.jpg';
+                          (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
                     ) : (

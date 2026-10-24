@@ -58,6 +58,7 @@ import {
   getAllDoctors,
   getPromoAd,
   updatePromoAd,
+  deletePromoAd,
 } from "./src/db/queries.ts";
 
 const DEFAULT_ADMIN_BOOKINGS_SEED = [
@@ -1446,10 +1447,22 @@ async function startServer() {
         targetUrl: typeof targetUrl === "string" ? targetUrl.trim() : undefined,
         isActive: typeof isActive === "boolean" ? isActive : undefined,
       });
+      initDataCache = null; // Clear cached init data so website gets updated promo immediately
       res.json({ success: true, promo: updated });
     } catch (error: any) {
       console.error("Error updating promo ad:", error);
       res.status(500).json({ error: error.message || "Failed to update promo ad" });
+    }
+  });
+
+  app.delete("/api/admin/promo-ad", requireAdminAuth, async (req, res) => {
+    try {
+      await deletePromoAd();
+      initDataCache = null; // Clear cached init data
+      res.json({ success: true, message: "Promotional ad deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting promo ad:", error);
+      res.status(500).json({ error: error.message || "Failed to delete promo ad" });
     }
   });
 

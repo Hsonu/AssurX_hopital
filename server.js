@@ -4145,7 +4145,16 @@ async function updatePromoAd(data) {
   try {
     const updated = await PromoAdModel.findOneAndUpdate(
       { id: "main_promo" },
-      { $set: { ...data, updatedAt: /* @__PURE__ */ new Date() } },
+      {
+        $set: {
+          title: data.title ?? "",
+          imageUrl: data.imageUrl ?? "",
+          targetTab: data.targetTab ?? "labs",
+          targetUrl: data.targetUrl ?? "",
+          isActive: typeof data.isActive === "boolean" ? data.isActive : true,
+          updatedAt: /* @__PURE__ */ new Date()
+        }
+      },
       { upsert: true, returnDocument: "after" }
     );
     return updated ? {
@@ -4160,6 +4169,29 @@ async function updatePromoAd(data) {
   } catch (error) {
     console.error("Failed to update promo ad in database:", error);
     throw new Error("Failed to save promo ad configuration in database.", { cause: error });
+  }
+}
+async function deletePromoAd() {
+  await ensureConnected();
+  try {
+    const updated = await PromoAdModel.findOneAndUpdate(
+      { id: "main_promo" },
+      {
+        $set: {
+          title: "",
+          imageUrl: "",
+          targetTab: "labs",
+          targetUrl: "",
+          isActive: false,
+          updatedAt: /* @__PURE__ */ new Date()
+        }
+      },
+      { upsert: true, returnDocument: "after" }
+    );
+    return updated;
+  } catch (error) {
+    console.error("Failed to delete promo ad from database:", error);
+    throw new Error("Failed to delete promo ad from database.", { cause: error });
   }
 }
 
@@ -5492,10 +5524,21 @@ async function startServer() {
         targetUrl: typeof targetUrl === "string" ? targetUrl.trim() : void 0,
         isActive: typeof isActive === "boolean" ? isActive : void 0
       });
+      initDataCache = null;
       res.json({ success: true, promo: updated });
     } catch (error) {
       console.error("Error updating promo ad:", error);
       res.status(500).json({ error: error.message || "Failed to update promo ad" });
+    }
+  });
+  app.delete("/api/admin/promo-ad", requireAdminAuth, async (req, res) => {
+    try {
+      await deletePromoAd();
+      initDataCache = null;
+      res.json({ success: true, message: "Promotional ad deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting promo ad:", error);
+      res.status(500).json({ error: error.message || "Failed to delete promo ad" });
     }
   });
   app.get("/api/admin/bookings", requireAdminAuth, async (req, res) => {

@@ -899,9 +899,19 @@ export async function updatePromoAd(data: {
 }) {
   await ensureConnected();
   try {
+    // Completely overwrite main_promo so the old ad data is removed/replaced
     const updated = await PromoAdModel.findOneAndUpdate(
       { id: 'main_promo' },
-      { $set: { ...data, updatedAt: new Date() } },
+      {
+        $set: {
+          title: data.title ?? '',
+          imageUrl: data.imageUrl ?? '',
+          targetTab: data.targetTab ?? 'labs',
+          targetUrl: data.targetUrl ?? '',
+          isActive: typeof data.isActive === 'boolean' ? data.isActive : true,
+          updatedAt: new Date(),
+        }
+      },
       { upsert: true, returnDocument: 'after' }
     );
     return updated ? {
@@ -916,6 +926,31 @@ export async function updatePromoAd(data: {
   } catch (error) {
     console.error("Failed to update promo ad in database:", error);
     throw new Error("Failed to save promo ad configuration in database.", { cause: error });
+  }
+}
+
+export async function deletePromoAd() {
+  await ensureConnected();
+  try {
+    // Delete/clear current promo ad so no ad is active
+    const updated = await PromoAdModel.findOneAndUpdate(
+      { id: 'main_promo' },
+      {
+        $set: {
+          title: '',
+          imageUrl: '',
+          targetTab: 'labs',
+          targetUrl: '',
+          isActive: false,
+          updatedAt: new Date(),
+        }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+    return updated;
+  } catch (error) {
+    console.error("Failed to delete promo ad from database:", error);
+    throw new Error("Failed to delete promo ad from database.", { cause: error });
   }
 }
 

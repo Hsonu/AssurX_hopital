@@ -124,14 +124,14 @@ function AppContent() {
     targetUrl?: string;
     isActive: boolean;
   }>({
-    title: 'AssurX Diagnostics Promotional Camp',
-    imageUrl: '/promotional_camp.jpg',
+    title: '',
+    imageUrl: '',
     targetTab: 'labs',
     targetUrl: '',
-    isActive: true,
+    isActive: false,
   });
 
-  const [isPromoAdOpen, setIsPromoAdOpen] = useState(true);
+  const [isPromoAdOpen, setIsPromoAdOpen] = useState(false);
 
   const handleClosePromoAd = () => {
     setIsPromoAdOpen(false);
@@ -344,8 +344,13 @@ function AppContent() {
         setTestimonials(CUSTOMER_TESTIMONIALS);
       }
       if (data.faqs) setFaqs(data.faqs);
-      if (data.promoAd && data.promoAd.imageUrl) {
+      if (data.promoAd) {
         setPromoAd(data.promoAd);
+        if (data.promoAd.isActive && data.promoAd.imageUrl) {
+          setIsPromoAdOpen(true);
+        } else {
+          setIsPromoAdOpen(false);
+        }
       }
     } catch (err) {
       console.error("Error loading initial data:", err);
@@ -2299,7 +2304,7 @@ function AppContent() {
               onUpdateDoctors={setDoctors}
               onUpdatePromoAd={(newPromo) => {
                 setPromoAd(newPromo);
-                setIsPromoAdOpen(true); // Re-open popup so new ad is visible immediately
+                setIsPromoAdOpen(Boolean(newPromo.isActive && newPromo.imageUrl));
               }}
             />
           </React.Suspense>
@@ -2442,8 +2447,8 @@ function AppContent() {
                 decoding="async"
                 width={512}
                 height={640}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/promotional_camp.jpg';
+                onError={() => {
+                  setIsPromoAdOpen(false);
                 }}
                 onClick={() => {
                   if (promoAd.targetTab === 'camps') {
