@@ -1428,11 +1428,11 @@ async function startServer() {
       console.error("Error fetching promo ad:", error);
       res.json({
         id: "main_promo",
-        title: "AssurX Diagnostics Promotional Camp",
-        imageUrl: "/promotional_camp.jpg",
+        title: "",
+        imageUrl: "",
         targetTab: "labs",
         targetUrl: "",
-        isActive: true,
+        isActive: false,
       });
     }
   });

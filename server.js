@@ -4110,11 +4110,11 @@ async function getPromoAd() {
     if (!promo) {
       promo = await PromoAdModel.create({
         id: "main_promo",
-        title: "AssurX Diagnostics Promotional Camp",
-        imageUrl: "/promotional_camp.jpg",
+        title: "",
+        imageUrl: "",
         targetTab: "labs",
         targetUrl: "",
-        isActive: true,
+        isActive: false,
         updatedAt: /* @__PURE__ */ new Date()
       });
     }
@@ -4131,11 +4131,11 @@ async function getPromoAd() {
     console.error("Failed to get promo ad from database:", error);
     return {
       id: "main_promo",
-      title: "AssurX Diagnostics Promotional Camp",
-      imageUrl: "/promotional_camp.jpg",
+      title: "",
+      imageUrl: "",
       targetTab: "labs",
       targetUrl: "",
-      isActive: true,
+      isActive: false,
       updatedAt: /* @__PURE__ */ new Date()
     };
   }
@@ -5506,11 +5506,11 @@ async function startServer() {
       console.error("Error fetching promo ad:", error);
       res.json({
         id: "main_promo",
-        title: "AssurX Diagnostics Promotional Camp",
-        imageUrl: "/promotional_camp.jpg",
+        title: "",
+        imageUrl: "",
         targetTab: "labs",
         targetUrl: "",
-        isActive: true
+        isActive: false
       });
     }
   });

@@ -205,11 +205,11 @@ export default function AdminPanel({
 
   // Promotional Popup Ad Configuration State
   const [promoAdConfig, setPromoAdConfig] = useState({
-    title: 'AssurX Diagnostics Promotional Camp',
-    imageUrl: '/promotional_camp.jpg',
+    title: '',
+    imageUrl: '',
     targetTab: 'labs',
     targetUrl: '',
-    isActive: true,
+    isActive: false,
   });
   const [promoAdSaving, setPromoAdSaving] = useState(false);
 
@@ -1053,16 +1053,24 @@ export default function AdminPanel({
         throw new Error(`Real-time careers fetch returned status ${careersRes.status}`);
       }
 
-      // Fetch Promo Ad Configuration
-      try {
-        const promoRes = await fetch('/api/promo-ad');
-        if (promoRes.ok) {
-          const promoData = await promoRes.json();
-          if (promoData && promoData.imageUrl) {
-            setPromoAdConfig(promoData);
+      // Fetch Promo Ad Configuration only on initial load (not on 5s background sync)
+      if (!silent) {
+        try {
+          const promoRes = await fetch('/api/promo-ad');
+          if (promoRes.ok) {
+            const promoData = await promoRes.json();
+            if (promoData) {
+              setPromoAdConfig({
+                title: promoData.title || '',
+                imageUrl: promoData.imageUrl || '',
+                targetTab: promoData.targetTab || 'labs',
+                targetUrl: promoData.targetUrl || '',
+                isActive: Boolean(promoData.isActive),
+              });
+            }
           }
-        }
-      } catch (_) { /* continue */ }
+        } catch (_) { /* continue */ }
+      }
     } catch (error) {
       console.error("Failed to load real-time admin records, using cached state.", error);
       // Fallback to LocalStorage
@@ -5085,10 +5093,10 @@ export default function AdminPanel({
                     <span className="text-[10px] text-slate-400 font-medium">Supports JPG, PNG, WebP (Max 5MB)</span>
                     <button
                       type="button"
-                      onClick={() => setPromoAdConfig(prev => ({ ...prev, imageUrl: '/promotional_camp.jpg' }))}
-                      className="text-[10px] text-emerald-600 font-bold hover:underline cursor-pointer"
+                      onClick={() => setPromoAdConfig(prev => ({ ...prev, imageUrl: '' }))}
+                      className="text-[10px] text-rose-600 font-bold hover:underline cursor-pointer"
                     >
-                      Restore Original Camp Ad Image
+                      Clear Image
                     </button>
                   </div>
                 </div>
